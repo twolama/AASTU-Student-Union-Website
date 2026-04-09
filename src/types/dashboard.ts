@@ -368,6 +368,7 @@ export interface BookingDetailSimilarVenue {
 export interface BookingDetailItem {
   id: string;
   venueSelectionId: string;
+  isBookable: boolean;
   venueIdLabel: string;
   availabilityLabel: string;
   title: string;

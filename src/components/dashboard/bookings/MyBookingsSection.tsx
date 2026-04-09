@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import type { BookingStatus, MyBookingItem } from "@/types/dashboard";
@@ -11,6 +11,7 @@ interface MyBookingsSectionProps {
   totalCount: number;
   pageSize: number;
   onPageChange: (page: number) => void;
+  onDelete: (bookingId: string) => void;
 }
 
 const statusLabelMap: Record<BookingStatus, string> = {
@@ -32,6 +33,7 @@ export function MyBookingsSection({
   totalCount,
   pageSize,
   onPageChange,
+  onDelete,
 }: MyBookingsSectionProps) {
   const start = items.length > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const end = (currentPage - 1) * pageSize + items.length;
@@ -42,8 +44,8 @@ export function MyBookingsSection({
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-[#fbfcff] text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">
-              <th className="px-5 py-3.5">Venue Name</th>
               <th className="px-5 py-3.5">Event Title</th>
+              <th className="px-5 py-3.5">Venue Name</th>
               <th className="px-5 py-3.5">Date & Time</th>
               <th className="px-5 py-3.5">Status</th>
               <th className="px-5 py-3.5 text-right">Actions</th>
@@ -53,8 +55,22 @@ export function MyBookingsSection({
           <tbody>
             {items.map((item) => (
               <tr key={item.id} className="border-b border-gray-100 last:border-b-0">
-                <td className="px-5 py-4 text-base font-semibold text-[#1f2a44]">{item.venueName}</td>
-                <td className="px-5 py-4 text-base leading-5 text-[#44506b]">{item.eventTitle}</td>
+                <td className="px-5 py-4 text-base leading-5 text-[#44506b]">
+                  <Link
+                    href={`/bookings/${item.id}`}
+                    className="transition-colors hover:text-[#b48a1b]"
+                  >
+                    {item.eventTitle}
+                  </Link>
+                </td>
+                <td className="px-5 py-4 text-base font-semibold text-[#1f2a44]">
+                  <Link
+                    href={`/bookings/${item.id}`}
+                    className="transition-colors hover:text-[#b48a1b]"
+                  >
+                    {item.venueName}
+                  </Link>
+                </td>
                 <td className="px-5 py-4 text-[#79839a]">
                   <p>{item.dateLabel}</p>
                   <p>{item.timeLabel}</p>
@@ -64,14 +80,29 @@ export function MyBookingsSection({
                     {statusLabelMap[item.status]}
                   </Badge>
                 </td>
-                <td className="px-5 py-4 text-right">
-                  <Link
-                    href={`/bookings/${item.id}`}
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-[#b48a1b] transition-colors hover:text-[#8f6d14]"
-                  >
-                    View Details
-                    <ExternalLink size={14} />
-                  </Link>
+                <td className="px-5 py-4">
+                  <div className="flex items-center justify-end gap-2">
+                    {item.status === "pending" ? (
+                      <Link
+                        href={`/bookings/${item.id}/edit`}
+                        className="inline-flex h-8 items-center rounded-[8px] border border-[#d9e0ee] px-3 text-xs font-semibold text-[#1f2a44] transition-colors hover:border-[#b48a1b]/40 hover:text-[#b48a1b]"
+                      >
+                        Edit
+                      </Link>
+                    ) : (
+                      <span className="inline-flex h-8 items-center rounded-[8px] border border-gray-200 px-3 text-xs font-semibold text-gray-400">
+                        Locked
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => onDelete(item.id)}
+                      className="inline-flex h-8 items-center rounded-[8px] border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -84,8 +115,18 @@ export function MyBookingsSection({
           <article key={item.id} className="rounded-[10px] border border-gray-100 bg-[#fbfcff] p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[#1f2a44]">{item.venueName}</p>
-                <p className="mt-1 text-sm text-[#44506b]">{item.eventTitle}</p>
+                <Link
+                  href={`/bookings/${item.id}`}
+                  className="block truncate text-sm font-semibold text-[#1f2a44] transition-colors hover:text-[#b48a1b]"
+                >
+                  {item.eventTitle}
+                </Link>
+                <Link
+                  href={`/bookings/${item.id}`}
+                  className="mt-1 block text-sm text-[#44506b] transition-colors hover:text-[#b48a1b]"
+                >
+                  {item.venueName}
+                </Link>
               </div>
 
               <Badge className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold", statusClassMap[item.status])}>
@@ -98,13 +139,29 @@ export function MyBookingsSection({
               <p>{item.timeLabel}</p>
             </div>
 
-            <Link
-              href={`/bookings/${item.id}`}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#b48a1b] transition-colors hover:text-[#8f6d14]"
-            >
-              View Details
-              <ExternalLink size={12} />
-            </Link>
+            <div className="mt-3 flex items-center gap-2">
+              {item.status === "pending" ? (
+                <Link
+                  href={`/bookings/${item.id}/edit`}
+                  className="inline-flex h-8 items-center rounded-[8px] border border-[#d9e0ee] px-3 text-xs font-semibold text-[#1f2a44] transition-colors hover:border-[#b48a1b]/40 hover:text-[#b48a1b]"
+                >
+                  Edit
+                </Link>
+              ) : (
+                <span className="inline-flex h-8 items-center rounded-[8px] border border-gray-200 px-3 text-xs font-semibold text-gray-400">
+                  Locked
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={() => onDelete(item.id)}
+                className="inline-flex h-8 items-center rounded-[8px] border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+              >
+                Delete
+              </button>
+            </div>
+
           </article>
         ))}
       </div>

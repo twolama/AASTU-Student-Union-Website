@@ -31,6 +31,7 @@ function buildFallbackBookingDetail(bookingId: string) {
   return {
     id: bookingId,
     venueSelectionId: venue?.id ?? bookingId,
+    isBookable: venue?.status !== "blocked",
     venueIdLabel: bookingId.toUpperCase(),
     availabilityLabel: venue?.status === "blocked" ? "Limited Access" : "Available Now",
     title,

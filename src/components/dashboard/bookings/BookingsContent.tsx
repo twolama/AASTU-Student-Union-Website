@@ -56,6 +56,7 @@ export function BookingsContent() {
   const [browsePage, setBrowsePage] = useState(1);
 
   const [myBookingsPage, setMyBookingsPage] = useState(1);
+  const [myBookings, setMyBookings] = useState(myBookingItems);
 
   const [requests, setRequests] = useState(bookingRequests);
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,9 +103,9 @@ export function BookingsContent() {
     browseClampedPage * BROWSE_PAGE_SIZE
   );
 
-  const myBookingsTotalPages = Math.max(1, Math.ceil(myBookingItems.length / MY_BOOKINGS_PAGE_SIZE));
+  const myBookingsTotalPages = Math.max(1, Math.ceil(myBookings.length / MY_BOOKINGS_PAGE_SIZE));
   const myBookingsClampedPage = Math.min(myBookingsPage, myBookingsTotalPages);
-  const myBookingsPaginatedItems = myBookingItems.slice(
+  const myBookingsPaginatedItems = myBookings.slice(
     (myBookingsClampedPage - 1) * MY_BOOKINGS_PAGE_SIZE,
     myBookingsClampedPage * MY_BOOKINGS_PAGE_SIZE
   );
@@ -187,9 +188,12 @@ export function BookingsContent() {
             items={myBookingsPaginatedItems}
             currentPage={myBookingsClampedPage}
             totalPages={myBookingsTotalPages}
-            totalCount={myBookingItems.length}
+            totalCount={myBookings.length}
             pageSize={MY_BOOKINGS_PAGE_SIZE}
             onPageChange={setMyBookingsPage}
+            onDelete={(bookingId) => {
+              setMyBookings((previous) => previous.filter((booking) => booking.id !== bookingId));
+            }}
           />
         </>
       ) : null}

@@ -1058,6 +1058,7 @@ export const bookingDetailItems: Record<string, BookingDetailItem> = {
   "my-booking-1": {
     id: "my-booking-1",
     venueSelectionId: "booking-venue-1",
+    isBookable: true,
     venueIdLabel: "AUD-001",
     availabilityLabel: "Available Now",
     title: "Main Auditorium",

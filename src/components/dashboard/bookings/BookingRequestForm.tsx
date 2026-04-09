@@ -31,6 +31,27 @@ interface EquipmentOption {
   label: string;
 }
 
+type BookingFormMode = "create" | "edit";
+
+export interface BookingRequestFormInitialData {
+  clubAssociation: string;
+  eventTitle: string;
+  expectedAttendance: string;
+  startDate: string;
+  endDate: string;
+  selectedSlots: string[];
+  purpose: string;
+  selectedVenueId: string;
+  equipment: string[];
+  specialRequests: string;
+}
+
+interface BookingRequestFormProps {
+  mode?: BookingFormMode;
+  bookingId?: string;
+  initialData?: Partial<BookingRequestFormInitialData>;
+}
+
 const stepLabels: { id: StepId; label: string }[] = [
   { id: 1, label: "Event Details" },
   { id: 2, label: "Requirements" },
@@ -121,26 +142,37 @@ function StepIndicator({ currentStep }: { currentStep: StepId }) {
   );
 }
 
-export function BookingRequestForm() {
+export function BookingRequestForm({
+  mode = "create",
+  bookingId,
+  initialData,
+}: BookingRequestFormProps) {
   const searchParams = useSearchParams();
   const venueIdFromUrl = searchParams.get("venueId");
+  const fallbackVenueId =
+    initialData?.selectedVenueId &&
+    bookingVenueCards.some((venue) => venue.id === initialData.selectedVenueId)
+      ? initialData.selectedVenueId
+      : bookingVenueCards[0]?.id ?? "";
   const defaultVenueId =
     venueIdFromUrl && bookingVenueCards.some((venue) => venue.id === venueIdFromUrl)
       ? venueIdFromUrl
-      : bookingVenueCards[0]?.id ?? "";
+      : fallbackVenueId;
+  const isEditMode = mode === "edit";
+  const pageTitle = isEditMode ? "Edit Booking Request" : "New Booking Request";
   const [currentStep, setCurrentStep] = useState<StepId>(1);
 
-  const [clubAssociation, setClubAssociation] = useState("");
-  const [eventTitle, setEventTitle] = useState("");
-  const [expectedAttendance, setExpectedAttendance] = useState("500");
-  const [startDate, setStartDate] = useState("2024-10-25");
-  const [endDate, setEndDate] = useState("2024-10-25");
-  const [selectedSlots, setSelectedSlots] = useState<string[]>(["10:00", "11:00"]);
-  const [purpose, setPurpose] = useState("");
+  const [clubAssociation, setClubAssociation] = useState(initialData?.clubAssociation ?? "");
+  const [eventTitle, setEventTitle] = useState(initialData?.eventTitle ?? "");
+  const [expectedAttendance, setExpectedAttendance] = useState(initialData?.expectedAttendance ?? "500");
+  const [startDate, setStartDate] = useState(initialData?.startDate ?? "2024-10-25");
+  const [endDate, setEndDate] = useState(initialData?.endDate ?? "2024-10-25");
+  const [selectedSlots, setSelectedSlots] = useState<string[]>(initialData?.selectedSlots ?? ["10:00", "11:00"]);
+  const [purpose, setPurpose] = useState(initialData?.purpose ?? "");
   const [selectedVenueId, setSelectedVenueId] = useState(defaultVenueId);
 
-  const [equipment, setEquipment] = useState<string[]>(["microphones", "sound-system"]);
-  const [specialRequests, setSpecialRequests] = useState("");
+  const [equipment, setEquipment] = useState<string[]>(initialData?.equipment ?? ["microphones", "sound-system"]);
+  const [specialRequests, setSpecialRequests] = useState(initialData?.specialRequests ?? "");
 
   const [guidelinesChecked, setGuidelinesChecked] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -185,7 +217,11 @@ export function BookingRequestForm() {
   }
 
   function handleSubmit() {
-    setStatusMessage("Booking request submitted successfully. You can track status in My Bookings.");
+    setStatusMessage(
+      isEditMode
+        ? `Booking ${bookingId ?? "request"} updated successfully.`
+        : "Booking request submitted successfully. You can track status in My Bookings."
+    );
   }
 
   return (
@@ -199,11 +235,11 @@ export function BookingRequestForm() {
           Bookings
         </Link>
         <ChevronRight size={14} />
-        <span className="text-gray-500">New Booking Request</span>
+        <span className="text-gray-500">{pageTitle}</span>
       </nav>
 
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-[#1f2a44] sm:text-[34px]">New Booking Request</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-[#1f2a44] sm:text-[34px]">{pageTitle}</h1>
         <StepIndicator currentStep={currentStep} />
       </header>
 
@@ -586,7 +622,7 @@ export function BookingRequestForm() {
                 Save Draft
               </Button>
               <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={handleSubmit} disabled={!guidelinesChecked}>
-                Submit
+                {isEditMode ? "Update Booking" : "Submit"}
                 <ArrowRight size={14} />
               </Button>
             </div>

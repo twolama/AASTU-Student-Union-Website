@@ -57,10 +57,23 @@ export function BookingDetailView({ item }: BookingDetailViewProps) {
               <Share2 size={14} />
               Share Venue
             </Button>
-            <Link href={`/bookings/new?venueId=${item.venueSelectionId}`} className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-[#c49a22] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#b18a1f] sm:w-auto">
-              <CalendarDays size={14} />
-              Book Venue
-            </Link>
+            {item.isBookable ? (
+              <Link href={`/bookings/new?venueId=${item.venueSelectionId}`} className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-[#c49a22] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#b18a1f] sm:w-auto">
+                <CalendarDays size={14} />
+                Book Venue
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-gray-200 px-4 text-sm font-semibold text-gray-500 sm:w-auto"
+                aria-disabled="true"
+                title="This venue is currently booked or unavailable"
+              >
+                <CalendarDays size={14} />
+                Already Booked
+              </button>
+            )}
           </div>
         </div>
 
