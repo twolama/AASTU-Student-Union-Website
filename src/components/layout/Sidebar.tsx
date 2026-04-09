@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -172,10 +173,15 @@ export function Sidebar({ isCollapsed, isMobileOpen, onCloseMobile }: SidebarPro
           )}
         >
           {/* Logo mark */}
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-            <span className="text-[9px] font-black text-[#14213d] leading-none tracking-tight">
-              AASTU
-            </span>
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+            <Image
+              src="/aastu_logo.jpg"
+              alt="AASTU Student Union logo"
+              fill
+              sizes="40px"
+              className="object-contain p-1"
+              priority
+            />
           </div>
 
           {/* Brand text — hidden when collapsed */}

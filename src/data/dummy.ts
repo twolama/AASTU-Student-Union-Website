@@ -7,6 +7,10 @@ import type {
   AnnouncementTab,
   AnnouncementItem,
   AnnouncementPreviewData,
+  ClubStat,
+  ClubFilterTab,
+  ClubItem,
+  ClubDetailItem,
 } from "@/types/dashboard";
 
 // ─── Current User ──────────────────────────────────────────────────────────────
@@ -258,5 +262,207 @@ export const announcementPreviewData: Record<string, AnnouncementPreviewData> = 
     supportNote:
       "Contact the council secretariat for meeting materials and attendance confirmations.",
     tags: ["#StudentCouncil", "#Union", "#CampusPlanning"],
+  },
+};
+
+// ─── Clubs ───────────────────────────────────────────────────────────────────
+export const clubStats: ClubStat[] = [
+  { id: "total", title: "Total Clubs", value: "42", icon: "Users" },
+  { id: "pending", title: "Pending Approvals", value: "08", icon: "Clock3" },
+  { id: "categories", title: "Active Categories", value: "12", icon: "Layers3" },
+];
+
+export const clubFilterTabs: ClubFilterTab[] = [
+  { id: "all", label: "All Clubs" },
+  { id: "active", label: "Active" },
+  { id: "pending", label: "Pending" },
+  { id: "rejected", label: "Rejected" },
+];
+
+export const clubCategoryOptions = [
+  { value: "all", label: "All Categories" },
+  { value: "technology", label: "Technology" },
+  { value: "arts-culture", label: "Arts & Culture" },
+  { value: "sports", label: "Sports" },
+  { value: "social-service", label: "Social Service" },
+];
+
+export const clubItems: ClubItem[] = [
+  {
+    id: "club-1",
+    name: "AASTU Google DSC",
+    categoryLabel: "Technology",
+    status: "active",
+    presidentName: "Abel Tadesse",
+    advisorName: "Dr. Elias M.",
+    headerGradient: "from-[#2f3d67] to-[#3d4e7f]",
+    logoLabel: "G",
+  },
+  {
+    id: "club-2",
+    name: "Literature Society",
+    categoryLabel: "Arts & Culture",
+    status: "pending",
+    presidentName: "Martha Solomon",
+    advisorName: "W/ro Selamawit G.",
+    headerGradient: "from-[#b38f2b] to-[#c8a13b]",
+    logoLabel: "L",
+  },
+  {
+    id: "club-3",
+    name: "AASTU FC",
+    categoryLabel: "Sports",
+    status: "active",
+    presidentName: "Dawit Yohannes",
+    advisorName: "Ato Samuel K.",
+    headerGradient: "from-[#0e1b37] to-[#1c2a4e]",
+    logoLabel: "F",
+  },
+  {
+    id: "club-4",
+    name: "Gaming Alliance",
+    categoryLabel: "Social Service",
+    status: "rejected",
+    presidentName: "Bereket Kebede",
+    advisorName: "Not Assigned",
+    headerGradient: "from-[#864040] to-[#a04f4f]",
+    logoLabel: "G",
+  },
+];
+
+export const clubDetailItems: Record<string, ClubDetailItem> = {
+  "club-1": {
+    id: "club-1",
+    name: "AASTU Robotics & AI Club",
+    status: "active",
+    categoryLabel: "Academic & Technology",
+    locationLabel: "Main Campus, Block 24",
+    logoLabel: "R",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1519452575417-564c1401ecc0?w=1600&auto=format&fit=crop",
+    about: [
+      "The AASTU Robotics & AI Club is a vibrant community of innovators dedicated to exploring the boundaries of automation and intelligence.",
+      "Founded in 2018, the club provides a platform for students to engage in hands-on projects, from autonomous drones to neural network applications.",
+      "Its mission is to foster technological excellence at AASTU by preparing students through competitions, workshops, and industry collaboration.",
+    ],
+    stats: [
+      { id: "members", label: "Total Members", value: "156" },
+      { id: "events", label: "Events Hosted", value: "24" },
+      { id: "rank", label: "Campus Ranking", value: "#04" },
+    ],
+    links: {
+      website: "https://ieeerobotics.example.org/aastu",
+      externalMembership: "https://ieeerobotics.example.org/club/aastu-robotics",
+    },
+    contacts: [
+      {
+        id: "president",
+        roleLabel: "Club President",
+        name: "John Doe",
+        subtitle: "Software Engineering, 4th Year",
+        email: "j.doe@aastu.edu.et",
+        phone: "+251 912 345 678",
+        location: "Block 24, Room 08",
+        initials: "JD",
+      },
+      {
+        id: "advisor",
+        roleLabel: "Club Advisor",
+        name: "Dr. Birhanu Alemu",
+        subtitle: "Department of Electrical Engineering",
+        email: "birhanu.alemu@aastu.edu.et",
+        phone: "+251 911 564 230",
+        location: "Block 6, Room 102",
+        initials: "BA",
+      },
+    ],
+    upcomingEvents: [
+      {
+        id: "evt-1",
+        month: "OCT",
+        day: "24",
+        title: "AI Bootcamp 2024",
+        timeVenue: "09:00 AM · Main Hall",
+      },
+      {
+        id: "evt-2",
+        month: "NOV",
+        day: "02",
+        title: "Robo-Race Competition",
+        timeVenue: "02:30 PM · Gym Arena",
+      },
+    ],
+    recentActivities: [
+      {
+        id: "ra-1",
+        timestamp: "2 days ago",
+        description: "Updated club description and added new projects.",
+      },
+      {
+        id: "ra-2",
+        timestamp: "1 week ago",
+        description: "Added 12 new members from the freshman batch.",
+      },
+    ],
+  },
+  "club-2": {
+    id: "club-2",
+    name: "Literature Society",
+    status: "pending",
+    categoryLabel: "Arts & Culture",
+    locationLabel: "Library Wing, Block 3",
+    logoLabel: "L",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1455885666463-9c6f5f7122c5?w=1600&auto=format&fit=crop",
+    about: [
+      "Literature Society nurtures critical thinking and creative writing through reading circles, critique sessions, and author discussions.",
+    ],
+    stats: [
+      { id: "members", label: "Total Members", value: "68" },
+      { id: "events", label: "Events Hosted", value: "11" },
+      { id: "rank", label: "Campus Ranking", value: "#09" },
+    ],
+    links: {
+      website: "https://aastu-literature.example.org",
+      externalMembership: "https://writers-foundation.example.org/join/aastu",
+    },
+    contacts: [
+      {
+        id: "president",
+        roleLabel: "Club President",
+        name: "Martha Solomon",
+        subtitle: "Applied Linguistics, 3rd Year",
+        email: "m.solomon@aastu.edu.et",
+        phone: "+251 921 112 233",
+        location: "Block 3, Room 14",
+        initials: "MS",
+      },
+      {
+        id: "advisor",
+        roleLabel: "Club Advisor",
+        name: "W/ro Selamawit G.",
+        subtitle: "Department of Social Sciences",
+        email: "selamawit.g@aastu.edu.et",
+        phone: "+251 911 223 344",
+        location: "Block 2, Room 11",
+        initials: "SG",
+      },
+    ],
+    upcomingEvents: [
+      {
+        id: "evt-1",
+        month: "OCT",
+        day: "18",
+        title: "Open Mic Poetry Night",
+        timeVenue: "05:00 PM · Student Lounge",
+      },
+    ],
+    recentActivities: [
+      {
+        id: "ra-1",
+        timestamp: "3 days ago",
+        description: "Submitted revised advisor documentation.",
+      },
+    ],
   },
 };

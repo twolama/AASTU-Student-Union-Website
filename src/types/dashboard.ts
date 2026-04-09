@@ -84,6 +84,82 @@ export interface AnnouncementPreviewData {
   tags: string[];
 }
 
+// ─── Clubs ───────────────────────────────────────────────────────────────────
+export type ClubStatus = "active" | "pending" | "rejected";
+
+export interface ClubStat {
+  id: string;
+  title: string;
+  value: string;
+  icon: string;
+}
+
+export interface ClubFilterTab {
+  id: "all" | "active" | "pending" | "rejected";
+  label: string;
+}
+
+export interface ClubItem {
+  id: string;
+  name: string;
+  categoryLabel: string;
+  status: ClubStatus;
+  presidentName: string;
+  advisorName: string;
+  headerGradient: string;
+  logoLabel: string;
+}
+
+export interface ClubDetailStat {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface ClubMemberProfile {
+  id: string;
+  roleLabel: string;
+  name: string;
+  subtitle: string;
+  email: string;
+  phone: string;
+  location: string;
+  initials: string;
+}
+
+export interface ClubUpcomingEventItem {
+  id: string;
+  day: string;
+  month: string;
+  title: string;
+  timeVenue: string;
+}
+
+export interface ClubActivityItem {
+  id: string;
+  timestamp: string;
+  description: string;
+}
+
+export interface ClubDetailItem {
+  id: string;
+  name: string;
+  status: ClubStatus;
+  categoryLabel: string;
+  locationLabel: string;
+  logoLabel: string;
+  coverImageUrl: string;
+  about: string[];
+  stats: ClubDetailStat[];
+  links: {
+    website: string;
+    externalMembership: string;
+  };
+  contacts: ClubMemberProfile[];
+  upcomingEvents: ClubUpcomingEventItem[];
+  recentActivities: ClubActivityItem[];
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 export interface AdminUser {
   name: string;
