@@ -97,7 +97,7 @@ function NavLink({ item, isCollapsed, isActive, onClick }: NavLinkProps) {
       onMouseLeave={() => setIsTooltipOpen(false)}
       aria-label={item.label}
       className={cn(
-        "group relative flex items-center rounded-xl text-sm font-medium",
+        "group relative flex items-center rounded-xl text-[13px] font-medium",
         isCollapsed ? "h-10 w-10 justify-center p-0" : "gap-3 px-3 py-2.5",
         "transition-all duration-150",
         isActive
@@ -181,10 +181,10 @@ export function Sidebar({ isCollapsed, isMobileOpen, onCloseMobile }: SidebarPro
           {/* Brand text — hidden when collapsed */}
           {!effectiveCollapsed && (
             <div className="overflow-hidden text-center">
-              <p className="text-sm font-bold uppercase tracking-widest text-white leading-tight whitespace-nowrap">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white leading-tight whitespace-nowrap">
                 Student Union
               </p>
-              <p className="mt-0.5 text-[11px] font-medium text-[#a8b4cc] whitespace-nowrap">
+              <p className="mt-0.5 text-[10px] font-medium text-[#a8b4cc] whitespace-nowrap">
                 Admin Dashboard
               </p>
             </div>

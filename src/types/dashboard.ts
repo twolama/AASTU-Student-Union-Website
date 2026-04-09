@@ -48,6 +48,24 @@ export interface Activity {
   timestamp: string; // e.g. "2 hours ago"
 }
 
+// ─── Announcements ───────────────────────────────────────────────────────────
+export type AnnouncementCategory = "academic" | "social" | "union";
+
+export interface AnnouncementTab {
+  id: string;
+  label: string;
+}
+
+export interface AnnouncementItem {
+  id: string;
+  title: string;
+  summary: string;
+  imageUrl: string;
+  category: AnnouncementCategory;
+  publishedAgo: string;
+  authorName: string;
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 export interface AdminUser {
   name: string;
