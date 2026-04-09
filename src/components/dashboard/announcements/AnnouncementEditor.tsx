@@ -373,13 +373,13 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
             </div>
 
             <div className="flex items-center gap-4 text-sm">
-              <button
-                type="button"
-                onClick={() => setSelectionToolbar((current) => ({ ...current, visible: false }))}
-                className="text-gray-600 transition-colors hover:text-gray-900"
-              >
-                Preview
-              </button>
+              {announcementId ? (
+                <Link href={`/announcements/${announcementId}`} className="text-gray-600 transition-colors hover:text-gray-900">
+                  Preview
+                </Link>
+              ) : (
+                <span className="text-gray-400">Preview</span>
+              )}
 
               <Button type="submit" variant="goldSolid" size="md" className="rounded-xl px-5">
                 {actionLabel}

@@ -48,7 +48,11 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-[#1a1a2e]">{item.title}</h3>
+            <Link href={`/announcements/${item.id}`} className="group inline-block">
+              <h3 className="text-lg font-bold text-[#1a1a2e] transition-colors group-hover:text-[#c49a22]">
+                {item.title}
+              </h3>
+            </Link>
             <p className="mt-1 text-sm leading-6 text-gray-500">{item.summary}</p>
           </div>
 

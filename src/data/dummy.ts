@@ -6,6 +6,7 @@ import type {
   AdminUser,
   AnnouncementTab,
   AnnouncementItem,
+  AnnouncementPreviewData,
 } from "@/types/dashboard";
 
 // ─── Current User ──────────────────────────────────────────────────────────────
@@ -169,3 +170,93 @@ export const announcementItems: AnnouncementItem[] = [
     authorName: "SU President",
   },
 ];
+
+export const announcementPreviewData: Record<string, AnnouncementPreviewData> = {
+  "ann-1": {
+    id: "ann-1",
+    title: "New Semester Registration Guidelines: Academic Year 2023/24",
+    subtitleBadge: "Important Update",
+    imageUrl:
+      "https://images.unsplash.com/photo-1562774053-701939374585?w=1400&auto=format&fit=crop",
+    authorName: "AASTU ICT Club Coordinator",
+    authorRole: "Registrar Office",
+    publishedDate: "Oct 24, 2023",
+    readTime: "4 min read",
+    introText:
+      "Attention all students! The registration process for the upcoming semester has been streamlined to improve efficiency and reduce wait times. Please read the following instructions carefully.",
+    timelineHeading: "Registration Timeline",
+    timelineText:
+      "Regular registration will begin on Monday, November 6th and conclude on Friday, November 10th. Students who miss this window will be subject to a late registration fee as per university policy.",
+    keyRequirements: [
+      "Cleared financial statements for the previous academic year.",
+      "Updated medical insurance documentation.",
+      "Valid Student ID card for scanning at the Registrar.",
+    ],
+    procedureSteps: [
+      "Online Pre-Registration: Log into the AASTU student portal using your credentials and navigate to the Academic section.",
+      "Departmental Approval: Visit your department head with a printed copy of your pre-registration form for academic advising and signature.",
+      "Final Verification: Submit signed documents to the Registrar office located in Block 5, 2nd Floor.",
+    ],
+    supportNote:
+      "If you encounter technical difficulties during the online phase, contact ICT Support Center or visit the help desk in the library basement.",
+    tags: ["#AcademicUpdate", "#Registrar", "#Fall2023"],
+  },
+  "ann-2": {
+    id: "ann-2",
+    title: "Annual Cultural Night 2024",
+    subtitleBadge: "Social Events",
+    imageUrl:
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1400&auto=format&fit=crop",
+    authorName: "Events Committee",
+    authorRole: "AASTU Student Union",
+    publishedDate: "Nov 02, 2024",
+    readTime: "3 min read",
+    introText:
+      "Join us for a colorful night of music, dance, and celebration of campus diversity. Students from all departments are invited to attend and participate.",
+    timelineHeading: "Event Timeline",
+    timelineText:
+      "Doors open at 4:30 PM with cultural booths and exhibitions. Stage performances begin at 6:00 PM and continue until 9:30 PM.",
+    keyRequirements: [
+      "Carry your valid student ID.",
+      "Register your group performance before Wednesday.",
+      "Follow event safety and seating guidelines.",
+    ],
+    procedureSteps: [
+      "Collect your participation ticket from the Student Union office.",
+      "Arrive at the Main Hall at least 30 minutes early.",
+      "Check in with your department coordinator before entering.",
+    ],
+    supportNote:
+      "For coordination support, reach the Events Committee desk near the Main Hall entrance.",
+    tags: ["#CulturalNight", "#StudentLife", "#AASTU"],
+  },
+  "ann-3": {
+    id: "ann-3",
+    title: "Student Council Monthly Meeting",
+    subtitleBadge: "Union Meetings",
+    imageUrl:
+      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1400&auto=format&fit=crop",
+    authorName: "SU President",
+    authorRole: "Student Council",
+    publishedDate: "Sep 15, 2024",
+    readTime: "5 min read",
+    introText:
+      "This month’s council meeting will focus on student facilities, semester feedback, and strategic plans for the next quarter.",
+    timelineHeading: "Meeting Agenda",
+    timelineText:
+      "The meeting will be held on Friday at 2:00 PM in Senate Room B. Department delegates are expected to present key feedback from students.",
+    keyRequirements: [
+      "Department representatives must attend.",
+      "Bring previous meeting action reports.",
+      "Submit agenda proposals before noon Thursday.",
+    ],
+    procedureSteps: [
+      "Confirm attendance through your department chair.",
+      "Prepare concise agenda points.",
+      "Submit finalized minutes within 24 hours after meeting.",
+    ],
+    supportNote:
+      "Contact the council secretariat for meeting materials and attendance confirmations.",
+    tags: ["#StudentCouncil", "#Union", "#CampusPlanning"],
+  },
+};

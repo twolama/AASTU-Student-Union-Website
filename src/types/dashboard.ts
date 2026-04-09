@@ -66,6 +66,24 @@ export interface AnnouncementItem {
   authorName: string;
 }
 
+export interface AnnouncementPreviewData {
+  id: string;
+  title: string;
+  subtitleBadge: string;
+  imageUrl: string;
+  authorName: string;
+  authorRole: string;
+  publishedDate: string;
+  readTime: string;
+  introText: string;
+  timelineHeading: string;
+  timelineText: string;
+  keyRequirements: string[];
+  procedureSteps: string[];
+  supportNote: string;
+  tags: string[];
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 export interface AdminUser {
   name: string;
