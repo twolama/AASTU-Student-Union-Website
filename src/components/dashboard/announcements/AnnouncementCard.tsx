@@ -1,6 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Pencil, Trash2, UserCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import type { AnnouncementCategory, AnnouncementItem } from "@/types/dashboard";
 
@@ -59,10 +59,13 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="gold" size="sm" className="h-8 px-3 text-[11px]">
+              <Link
+                href={`/announcements/${item.id}/edit`}
+                className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-[#c49a22] bg-white px-3 text-[11px] font-semibold text-[#c49a22] transition-colors hover:bg-[#fdf8ec]"
+              >
                 <Pencil size={12} />
                 Edit
-              </Button>
+              </Link>
               <button
                 type="button"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:text-gray-600"

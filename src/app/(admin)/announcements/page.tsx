@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { AnnouncementsContent } from "@/components/dashboard/announcements/AnnouncementsContent";
 
 export const metadata: Metadata = {
@@ -31,10 +30,13 @@ export default function AnnouncementsPage() {
           </p>
         </div>
 
-        <Button variant="goldSolid" size="md" className="self-start rounded-lg sm:self-auto">
+        <Link
+          href="/announcements/new"
+          className="inline-flex h-9 items-center justify-center gap-2 self-start rounded-[10px] bg-[#c49a22] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#b18a1f] sm:self-auto"
+        >
           <PlusCircle size={15} />
           Create New Announcement
-        </Button>
+        </Link>
       </section>
 
       <AnnouncementsContent />
