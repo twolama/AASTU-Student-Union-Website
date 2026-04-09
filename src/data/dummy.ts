@@ -15,6 +15,9 @@ import type {
   EventManagementItem,
   VenueOccupancyPoint,
   EventDetailItem,
+  VenueStat,
+  VenueItem,
+  VenueDetailItem,
 } from "@/types/dashboard";
 
 // ─── Current User ──────────────────────────────────────────────────────────────
@@ -661,5 +664,176 @@ export const eventDetailItems: Record<string, EventDetailItem> = {
     ],
     mapImageUrl:
       "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop",
+  },
+};
+
+// ─── Venues ──────────────────────────────────────────────────────────────────
+export const venueStats: VenueStat[] = [
+  { id: "total-venues", title: "Total Venues", value: "42", icon: "Building2" },
+  { id: "active-now", title: "Active Now", value: "38", icon: "CircleCheck" },
+  { id: "maintenance", title: "Maintenance", value: "04", icon: "Wrench" },
+  { id: "total-capacity", title: "Total Capacity", value: "12,500", icon: "Users" },
+];
+
+export const venueItems: VenueItem[] = [
+  {
+    id: "venue-1",
+    name: "Main Auditorium",
+    typeLabel: "Auditorium",
+    imageUrl:
+      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=500&auto=format&fit=crop",
+    location: "Admin Block, 2nd Floor",
+    locationHint: "Campus East",
+    capacityLabel: "1,200 Seats",
+    status: "active",
+  },
+  {
+    id: "venue-2",
+    name: "Meeting Room B-12",
+    typeLabel: "Meeting Room",
+    imageUrl:
+      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=500&auto=format&fit=crop",
+    location: "Block B, Ground Floor",
+    locationHint: "West Wing",
+    capacityLabel: "25 Seats",
+    status: "maintenance",
+  },
+  {
+    id: "venue-3",
+    name: "Amphitheater",
+    typeLabel: "Outdoor Space",
+    imageUrl:
+      "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=500&auto=format&fit=crop",
+    location: "Central Plaza",
+    locationHint: "Main Campus",
+    capacityLabel: "2,500 Seats",
+    status: "active",
+  },
+  {
+    id: "venue-4",
+    name: "Student Hub Lounge",
+    typeLabel: "Indoor Space",
+    imageUrl:
+      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=500&auto=format&fit=crop",
+    location: "Union Building, 1st Floor",
+    locationHint: "Student Center",
+    capacityLabel: "150 People",
+    status: "inactive",
+  },
+  {
+    id: "venue-5",
+    name: "Innovation Lab",
+    typeLabel: "Laboratory",
+    imageUrl:
+      "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=500&auto=format&fit=crop",
+    location: "Block C, 3rd Floor",
+    locationHint: "Engineering Wing",
+    capacityLabel: "80 Seats",
+    status: "active",
+  },
+  {
+    id: "venue-6",
+    name: "Seminar Hall 3",
+    typeLabel: "Seminar Hall",
+    imageUrl:
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=500&auto=format&fit=crop",
+    location: "ICT Center, 2nd Floor",
+    locationHint: "North Campus",
+    capacityLabel: "220 Seats",
+    status: "active",
+  },
+  {
+    id: "venue-7",
+    name: "Green Court",
+    typeLabel: "Outdoor Space",
+    imageUrl:
+      "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=500&auto=format&fit=crop",
+    location: "Athletics Zone",
+    locationHint: "South Campus",
+    capacityLabel: "600 People",
+    status: "maintenance",
+  },
+  {
+    id: "venue-8",
+    name: "Debate Chamber",
+    typeLabel: "Debate Room",
+    imageUrl:
+      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=500&auto=format&fit=crop",
+    location: "Block D, 1st Floor",
+    locationHint: "Main Campus",
+    capacityLabel: "90 Seats",
+    status: "active",
+  },
+];
+
+export const venueDetailItems: Record<string, VenueDetailItem> = {
+  "venue-1": {
+    id: "venue-1",
+    name: "AASTU Grand Hall",
+    subtitle:
+      "The premier destination for academic excellence, major conferences, and cultural celebrations at the heart of Kilinto Campus.",
+    status: "active",
+    locationLabel: "Kilinto Campus, Block B",
+    capacityLabel: "500 Seats",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&auto=format&fit=crop",
+    logoLabel: "GH",
+    overview: [
+      "The AASTU Grand Hall is the premier venue for large-scale events, conferences, and graduation ceremonies.",
+      "Featuring state-of-the-art acoustic design and premium seating, it provides a professional environment for both academic and extracurricular activities.",
+      "The hall is equipped with a raised stage, digital lighting controls, and dedicated media booths.",
+    ],
+    gallery: [
+      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&auto=format&fit=crop",
+    ],
+    amenities: ["Audio System", "Wifi", "Projector"],
+    upcomingSchedule: [
+      {
+        id: "s-1",
+        day: "24",
+        month: "Oct",
+        title: "Annual Tech Symposium 2024",
+        timeRange: "09:00 AM - 05:00 PM",
+        organizer: "ICT Dept.",
+        status: "confirmed",
+      },
+      {
+        id: "s-2",
+        day: "26",
+        month: "Oct",
+        title: "Student Union General Assembly",
+        timeRange: "02:00 PM - 04:30 PM",
+        organizer: "Student Council",
+        status: "pending",
+      },
+      {
+        id: "s-3",
+        day: "28",
+        month: "Oct",
+        title: "Freshman Welcome Ceremony",
+        timeRange: "08:30 AM - 12:00 PM",
+        organizer: "Registrar Office",
+        status: "confirmed",
+      },
+    ],
+    mapImageUrl:
+      "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&auto=format&fit=crop",
+    gettingThere:
+      "Located near the East Gate entrance, adjacent to the Library Complex, Kilinto Campus, Block B.",
+    venueStatistics: {
+      monthlyUtilization: "78%",
+      eventsThisMonth: "14 Events",
+      averageRating: "4.8 / 5.0",
+    },
+    contact: {
+      name: "Abebe Kebede",
+      role: "Hall Manager",
+      phone: "+251 911 234 567",
+      email: "hall.manager@aastu.edu.et",
+    },
   },
 };

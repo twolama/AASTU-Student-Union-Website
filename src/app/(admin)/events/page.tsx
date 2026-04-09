@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarPlus2, ChevronRight } from "lucide-react";
 import { EventsContent } from "@/components/dashboard/events/EventsContent";
+import { DashboardFooter } from "@/components/layout/DashboardFooter";
 
 export const metadata: Metadata = {
   title: "Event Management",
@@ -35,9 +36,7 @@ export default function EventsPage() {
 
       <EventsContent />
 
-      <footer className="mt-2 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
-        © 2026 AASTU Student Union. Designed for administrators. All rights reserved.
-      </footer>
+      <DashboardFooter />
     </div>
   );
 }

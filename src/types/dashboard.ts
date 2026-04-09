@@ -99,6 +99,65 @@ export interface EventDetailItem {
   mapImageUrl: string;
 }
 
+// ─── Venues ──────────────────────────────────────────────────────────────────
+export type VenueStatus = "active" | "maintenance" | "inactive";
+
+export interface VenueStat {
+  id: string;
+  title: string;
+  value: string;
+  icon: string;
+}
+
+export interface VenueItem {
+  id: string;
+  name: string;
+  typeLabel: string;
+  imageUrl: string;
+  location: string;
+  locationHint: string;
+  capacityLabel: string;
+  status: VenueStatus;
+}
+
+export interface VenueScheduleItem {
+  id: string;
+  day: string;
+  month: string;
+  title: string;
+  timeRange: string;
+  organizer: string;
+  status: "confirmed" | "pending";
+}
+
+export interface VenueDetailItem {
+  id: string;
+  name: string;
+  subtitle: string;
+  status: VenueStatus;
+  locationLabel: string;
+  capacityLabel: string;
+  coverImageUrl: string;
+  logoLabel: string;
+  overview: string[];
+  gallery: string[];
+  amenities: string[];
+  upcomingSchedule: VenueScheduleItem[];
+  mapImageUrl: string;
+  gettingThere: string;
+  venueStatistics: {
+    monthlyUtilization: string;
+    eventsThisMonth: string;
+    averageRating: string;
+  };
+  contact: {
+    name: string;
+    role: string;
+    phone: string;
+    email: string;
+  };
+}
+
 // ─── Activity Feed ────────────────────────────────────────────────────────────
 export type ActivityType = "club" | "approval" | "student" | "alert" | "info";
 

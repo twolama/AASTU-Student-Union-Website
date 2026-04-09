@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
 import type { ClubDetailItem } from "@/types/dashboard";
 
@@ -249,9 +250,7 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
         </aside>
       </section>
 
-      <footer className="mt-2 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
-        © 2026 AASTU Student Union. Designed for administrators. All rights reserved.
-      </footer>
+      <DashboardFooter />
     </div>
   );
 }

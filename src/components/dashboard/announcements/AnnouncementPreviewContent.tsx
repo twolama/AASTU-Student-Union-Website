@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
+import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { Button } from "@/components/ui/Button";
 import { Calendar, CheckCircle2, CircleAlert, Clock3, Printer, Share2, TriangleAlert } from "lucide-react";
 import type { AnnouncementPreviewData } from "@/types/dashboard";
@@ -121,9 +122,7 @@ export function AnnouncementPreviewContent({ item }: AnnouncementPreviewContentP
         </div>
       </article>
 
-      <footer className="mt-2 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
-        © 2026 AASTU Student Union. Designed for administrators. All rights reserved.
-      </footer>
+      <DashboardFooter />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, PlusCircle } from "lucide-react";
 import { AnnouncementsContent } from "@/components/dashboard/announcements/AnnouncementsContent";
+import { DashboardFooter } from "@/components/layout/DashboardFooter";
 
 export const metadata: Metadata = {
   title: "Campus Announcements",
@@ -41,9 +42,7 @@ export default function AnnouncementsPage() {
 
       <AnnouncementsContent />
 
-      <footer className="mt-2 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
-        © 2026 AASTU Student Union. Designed for administrators. All rights reserved.
-      </footer>
+      <DashboardFooter />
     </div>
   );
 }

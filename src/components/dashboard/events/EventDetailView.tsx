@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import type { EventDetailItem } from "@/types/dashboard";
 
 interface EventDetailViewProps {
@@ -202,9 +203,7 @@ export function EventDetailView({ item }: EventDetailViewProps) {
         </aside>
       </section>
 
-      <footer className="mt-2 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
-        © 2026 AASTU Student Union. Designed for administrators. All rights reserved.
-      </footer>
+      <DashboardFooter />
     </div>
   );
 }

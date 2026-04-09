@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { StatsSection } from "@/components/dashboard/StatsSection";
 import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { DashboardFooter } from "@/components/layout/DashboardFooter";
 
 export const metadata: Metadata = {
   title: "Dashboard Overview",
@@ -44,9 +45,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Footer ──────────────────────────────────────────── */}
-      <footer className="mt-2 border-t border-gray-100 pt-4 text-center text-xs text-gray-400">
-        © 2026 AASTU Student Union. Designed for administrators. All rights reserved.
-      </footer>
+        <DashboardFooter />
     </div>
   );
 }
