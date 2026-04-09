@@ -11,6 +11,10 @@ import type {
   ClubFilterTab,
   ClubItem,
   ClubDetailItem,
+  EventManagementStat,
+  EventManagementItem,
+  VenueOccupancyPoint,
+  EventDetailItem,
 } from "@/types/dashboard";
 
 // ─── Current User ──────────────────────────────────────────────────────────────
@@ -464,5 +468,198 @@ export const clubDetailItems: Record<string, ClubDetailItem> = {
         description: "Submitted revised advisor documentation.",
       },
     ],
+  },
+};
+
+// ─── Events Management ───────────────────────────────────────────────────────
+export const eventManagementStats: EventManagementStat[] = [
+  {
+    id: "total-events",
+    title: "Total Events",
+    value: "128",
+    trend: "+12% vs last month",
+    icon: "CalendarDays",
+  },
+  {
+    id: "mega-events",
+    title: "Mega Events",
+    value: "12",
+    trend: "Priority Tier",
+    icon: "BadgeCheck",
+  },
+  {
+    id: "venue-utilization",
+    title: "Venue Utilization",
+    value: "84%",
+    trend: "+5.2% efficiency",
+    icon: "MapPin",
+  },
+];
+
+export const eventManagementItems: EventManagementItem[] = [
+  {
+    id: "event-1",
+    title: "Tech-Quest Hackathon 2024",
+    organizingClub: "Google DSC AASTU",
+    venue: "Grand Library Hall",
+    scheduleDate: "Oct 24, 2024",
+    scheduleTime: "09:00 AM - 05:00 PM",
+    status: "live-now",
+  },
+  {
+    id: "event-2",
+    title: "Cultural Arts Festival",
+    organizingClub: "AASTU Arts Club",
+    venue: "Outdoor Plaza",
+    scheduleDate: "Nov 02, 2024",
+    scheduleTime: "02:00 PM",
+    status: "upcoming",
+  },
+  {
+    id: "event-3",
+    title: "Stem-Expo 2024",
+    organizingClub: "Robotics Society",
+    venue: "Block 54 Auditorium",
+    scheduleDate: "Sep 15, 2024",
+    scheduleTime: "Closed",
+    status: "archived",
+  },
+  {
+    id: "event-4",
+    title: "Leadership Summit",
+    organizingClub: "Rotaract AASTU",
+    venue: "ICT Center Seminar Room",
+    scheduleDate: "Dec 12, 2024",
+    scheduleTime: "10:00 AM",
+    status: "upcoming",
+  },
+  {
+    id: "event-5",
+    title: "Women in Engineering Meetup",
+    organizingClub: "IEEE Women Chapter",
+    venue: "Innovation Hub",
+    scheduleDate: "Jan 09, 2025",
+    scheduleTime: "01:30 PM",
+    status: "upcoming",
+  },
+  {
+    id: "event-6",
+    title: "Campus Wellness Week",
+    organizingClub: "Health & Wellness Club",
+    venue: "Student Lounge",
+    scheduleDate: "Feb 03, 2025",
+    scheduleTime: "08:30 AM",
+    status: "live-now",
+  },
+  {
+    id: "event-7",
+    title: "Green Campus Campaign",
+    organizingClub: "Eco Action Team",
+    venue: "Main Quadrant",
+    scheduleDate: "Mar 14, 2025",
+    scheduleTime: "11:00 AM",
+    status: "upcoming",
+  },
+  {
+    id: "event-8",
+    title: "Debate Championship Finals",
+    organizingClub: "Debate Society",
+    venue: "Senate Hall",
+    scheduleDate: "Apr 22, 2025",
+    scheduleTime: "03:00 PM",
+    status: "archived",
+  },
+];
+
+export const venueOccupancyTrends: VenueOccupancyPoint[] = [
+  { day: "Mon", value: 30 },
+  { day: "Tue", value: 62 },
+  { day: "Wed", value: 46 },
+  { day: "Thu", value: 84 },
+  { day: "Fri", value: 68 },
+  { day: "Sat", value: 25 },
+  { day: "Sun", value: 20 },
+];
+
+export const eventDetailItems: Record<string, EventDetailItem> = {
+  "event-1": {
+    id: "event-1",
+    title: "Mega Tech Expo 2024",
+    summary:
+      "The most anticipated annual technology and innovation showcase featuring projects from across all engineering departments.",
+    status: "upcoming",
+    megaEvent: true,
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1600&auto=format&fit=crop",
+    dateDay: "24",
+    dateMonth: "Oct",
+    venueTitle: "AASTU Grand Auditorium",
+    venueSubtitle: "Kilinto, Addis Ababa",
+    timeRange: "09:00 AM - 05:30 PM",
+    startDateLabel: "Starts Thu, Oct 24, 2024",
+    locationName: "Block 54, Room 201",
+    locationWing: "North Campus Wing",
+    aboutParagraphs: [
+      "The Mega Tech Expo is the signature event of the AASTU Student Union, bringing together over 500 participants and 50+ innovative projects.",
+      "This year, we focus on Sustainable Engineering and AI applications in the Ethiopian context.",
+      "Attendees can expect keynote speeches from industry leaders, live coding sessions, robotics demonstrations, and a career fair featuring top local tech firms.",
+    ],
+    attendance: {
+      current: 342,
+      capacity: 500,
+      waitlist: 12,
+      vips: 25,
+    },
+    organizingClub: {
+      clubId: "club-1",
+      name: "Engineering Society",
+      subtitle: "Since 2018 · 120 Members",
+    },
+    logistics: [
+      { id: "venue", label: "Venue Name", value: "Main Auditorium (B-01)" },
+      { id: "coordinates", label: "Coordinates", value: "8.8920° N, 38.8055° E" },
+      { id: "team", label: "Team Required", value: "15 Volunteers assigned" },
+    ],
+    mapImageUrl:
+      "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&auto=format&fit=crop",
+  },
+  "event-2": {
+    id: "event-2",
+    title: "Cultural Arts Festival",
+    summary:
+      "A vibrant arts celebration with performances, exhibitions, and student creative showcases from across campus communities.",
+    status: "upcoming",
+    megaEvent: false,
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1600&auto=format&fit=crop",
+    dateDay: "02",
+    dateMonth: "Nov",
+    venueTitle: "Outdoor Plaza",
+    venueSubtitle: "Main Campus",
+    timeRange: "02:00 PM - 08:00 PM",
+    startDateLabel: "Starts Sat, Nov 02, 2024",
+    locationName: "Central Plaza Stage",
+    locationWing: "Main Campus Open Area",
+    aboutParagraphs: [
+      "Cultural Arts Festival highlights music, dance, and visual arts presented by student organizations and invited guests.",
+    ],
+    attendance: {
+      current: 214,
+      capacity: 450,
+      waitlist: 6,
+      vips: 18,
+    },
+    organizingClub: {
+      clubId: "club-2",
+      name: "AASTU Arts Club",
+      subtitle: "Since 2020 · 87 Members",
+    },
+    logistics: [
+      { id: "venue", label: "Venue Name", value: "Outdoor Plaza" },
+      { id: "coordinates", label: "Coordinates", value: "8.8891° N, 38.8004° E" },
+      { id: "team", label: "Team Required", value: "10 Volunteers assigned" },
+    ],
+    mapImageUrl:
+      "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop",
   },
 };

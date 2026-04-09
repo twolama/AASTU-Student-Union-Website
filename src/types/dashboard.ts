@@ -37,6 +37,68 @@ export interface Event {
   attendees: Attendee[];
 }
 
+export type EventManagementStatus = "live-now" | "upcoming" | "archived";
+
+export interface EventManagementStat {
+  id: string;
+  title: string;
+  value: string;
+  trend: string;
+  icon: string;
+}
+
+export interface EventManagementItem {
+  id: string;
+  title: string;
+  organizingClub: string;
+  venue: string;
+  scheduleDate: string;
+  scheduleTime: string;
+  status: EventManagementStatus;
+}
+
+export interface VenueOccupancyPoint {
+  day: string;
+  value: number;
+}
+
+export interface EventLogisticsPoint {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface EventDetailItem {
+  id: string;
+  title: string;
+  summary: string;
+  status: EventManagementStatus;
+  megaEvent: boolean;
+  coverImageUrl: string;
+  dateDay: string;
+  dateMonth: string;
+  venueTitle: string;
+  venueSubtitle: string;
+  timeRange: string;
+  startDateLabel: string;
+  locationName: string;
+  locationWing: string;
+  aboutParagraphs: string[];
+  attendance: {
+    current: number;
+    capacity: number;
+    waitlist: number;
+    vips: number;
+  };
+  organizingClub: {
+    clubId: string;
+    name: string;
+    subtitle: string;
+  };
+  logistics: EventLogisticsPoint[];
+  mapImageUrl: string;
+}
+
 // ─── Activity Feed ────────────────────────────────────────────────────────────
 export type ActivityType = "club" | "approval" | "student" | "alert" | "info";
 
