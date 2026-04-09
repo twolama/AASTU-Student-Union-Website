@@ -18,6 +18,13 @@ import type {
   VenueStat,
   VenueItem,
   VenueDetailItem,
+  BookingTab,
+  BookingStat,
+  BookingVenueFilter,
+  BookingVenueCard,
+  MyBookingItem,
+  BookingRequestItem,
+  BookingDetailItem,
 } from "@/types/dashboard";
 
 // ─── Current User ──────────────────────────────────────────────────────────────
@@ -835,5 +842,313 @@ export const venueDetailItems: Record<string, VenueDetailItem> = {
       phone: "+251 911 234 567",
       email: "hall.manager@aastu.edu.et",
     },
+  },
+};
+
+// ─── Bookings ───────────────────────────────────────────────────────────────
+export const bookingTabs: BookingTab[] = [
+  { id: "browse-venues", label: "Browse Venues" },
+  { id: "my-bookings", label: "My Bookings" },
+  { id: "approval-queue", label: "Approval Queue", showAdminBadge: true },
+];
+
+export const bookingStats: BookingStat[] = [
+  { id: "total", title: "Total Bookings", value: "24", icon: "BookOpenCheck", accent: "navy" },
+  { id: "pending", title: "Pending", value: "5", icon: "Clock3", accent: "gold" },
+  { id: "approved", title: "Approved", value: "16", icon: "BadgeCheck", accent: "green" },
+  { id: "cancelled", title: "Cancelled", value: "3", icon: "XCircle", accent: "red" },
+];
+
+export const bookingVenueFilters: BookingVenueFilter[] = [
+  { id: "all", label: "All Venues" },
+  { id: "auditorium", label: "Auditoriums" },
+  { id: "meeting-room", label: "Meeting Rooms" },
+  { id: "sports-facility", label: "Sports Facilities" },
+  { id: "lab", label: "Labs" },
+];
+
+export const bookingVenueCards: BookingVenueCard[] = [
+  {
+    id: "booking-venue-1",
+    name: "Red Hall Auditorium",
+    description:
+      "The premier venue for large-scale academic conferences and student showcases.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?w=900&auto=format&fit=crop",
+    capacity: 500,
+    category: "auditorium",
+    status: "available",
+  },
+  {
+    id: "booking-venue-2",
+    name: "Senate Chamber",
+    description:
+      "Exclusive chamber for high-level administrative meetings and formal sessions.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=900&auto=format&fit=crop",
+    capacity: 50,
+    category: "meeting-room",
+    status: "blocked",
+  },
+  {
+    id: "booking-venue-3",
+    name: "ICT Seminar Room",
+    description:
+      "Tech-ready room ideal for workshops, software training, and hybrid presentations.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&auto=format&fit=crop",
+    capacity: 100,
+    category: "lab",
+    status: "available",
+  },
+  {
+    id: "booking-venue-4",
+    name: "Student Lounge",
+    description:
+      "A relaxed open-concept space perfect for networking events and club socials.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=900&auto=format&fit=crop",
+    capacity: 200,
+    category: "meeting-room",
+    status: "available",
+  },
+  {
+    id: "booking-venue-5",
+    name: "Multipurpose Court",
+    description:
+      "Vast indoor space suitable for sports tournaments, career fairs, and large exhibitions.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&auto=format&fit=crop",
+    capacity: 1500,
+    category: "sports-facility",
+    status: "available",
+  },
+  {
+    id: "booking-venue-6",
+    name: "Executive Boardroom",
+    description:
+      "Small, highly professional setting for sensitive committee meetings and strategic reviews.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1517502884422-41eaead166d4?w=900&auto=format&fit=crop",
+    capacity: 15,
+    category: "meeting-room",
+    status: "blocked",
+  },
+];
+
+export const myBookingItems: MyBookingItem[] = [
+  {
+    id: "my-booking-1",
+    venueName: "Red Carpet Hall",
+    eventTitle: "Freshman Welcome Ceremony",
+    dateLabel: "Oct 25, 2024",
+    timeLabel: "10:00 AM",
+    status: "pending",
+  },
+  {
+    id: "my-booking-2",
+    venueName: "Block 54 Seminar Room",
+    eventTitle: "Advanced Coding Workshop",
+    dateLabel: "Oct 28, 2024",
+    timeLabel: "02:00 PM",
+    status: "approved",
+  },
+  {
+    id: "my-booking-3",
+    venueName: "Main Stadium",
+    eventTitle: "Inter-College Sports Cup",
+    dateLabel: "Nov 05, 2024",
+    timeLabel: "08:30 AM",
+    status: "approved",
+  },
+  {
+    id: "my-booking-4",
+    venueName: "Library Basement",
+    eventTitle: "Study Group Marathon",
+    dateLabel: "Oct 20, 2024",
+    timeLabel: "09:00 AM",
+    status: "cancelled",
+  },
+  {
+    id: "my-booking-5",
+    venueName: "Amphitheater",
+    eventTitle: "Cultural Night Rehearsal",
+    dateLabel: "Nov 12, 2024",
+    timeLabel: "05:00 PM",
+    status: "pending",
+  },
+  {
+    id: "my-booking-6",
+    venueName: "Innovation Hub",
+    eventTitle: "Start-up Pitch Session",
+    dateLabel: "Nov 18, 2024",
+    timeLabel: "01:00 PM",
+    status: "approved",
+  },
+  {
+    id: "my-booking-7",
+    venueName: "Main Plaza",
+    eventTitle: "Community Art Showcase",
+    dateLabel: "Nov 23, 2024",
+    timeLabel: "03:30 PM",
+    status: "cancelled",
+  },
+  {
+    id: "my-booking-8",
+    venueName: "ICT Seminar Room",
+    eventTitle: "Cybersecurity Awareness Meetup",
+    dateLabel: "Dec 01, 2024",
+    timeLabel: "11:00 AM",
+    status: "approved",
+  },
+];
+
+export const bookingRequests: BookingRequestItem[] = [
+  {
+    id: "REQ-8829",
+    requesterName: "Abebe Kebede",
+    clubName: "Coding Club",
+    venueName: "Block 52 - Hall A",
+    capacityLabel: "Capacity: 120",
+    dateLabel: "Oct 24, 2023",
+    timeRange: "14:00 - 17:30",
+    purpose: "Weekly programming seminar and coding challenge session.",
+    venueType: "hall",
+    requestedDateIso: "2023-10-24",
+  },
+  {
+    id: "REQ-8830",
+    requesterName: "Sara Tesfaye",
+    clubName: "IEEE Student Branch",
+    venueName: "Auditorium",
+    capacityLabel: "Capacity: 500",
+    dateLabel: "Oct 26, 2023",
+    timeRange: "09:00 - 12:00",
+    purpose: "Guest lecture series featuring local industry leaders.",
+    venueType: "auditorium",
+    requestedDateIso: "2023-10-26",
+  },
+  {
+    id: "REQ-8831",
+    requesterName: "Yonas Daniel",
+    clubName: "Debate Club",
+    venueName: "Library Basement B",
+    capacityLabel: "Capacity: 40",
+    dateLabel: "Oct 27, 2023",
+    timeRange: "16:30 - 18:30",
+    purpose: "Inter-college debate preparation and mock rounds.",
+    venueType: "meeting-room",
+    requestedDateIso: "2023-10-27",
+  },
+  {
+    id: "REQ-8832",
+    requesterName: "Hana Selassie",
+    clubName: "Charity Group",
+    venueName: "Main Plaza (Open)",
+    capacityLabel: "Capacity: N/A",
+    dateLabel: "Oct 30, 2023",
+    timeRange: "08:00 - 18:00",
+    purpose: "Awareness and donation campaign for local shelters.",
+    venueType: "outdoor",
+    requestedDateIso: "2023-10-30",
+  },
+];
+
+export const bookingDetailItems: Record<string, BookingDetailItem> = {
+  "my-booking-1": {
+    id: "my-booking-1",
+    venueSelectionId: "booking-venue-1",
+    venueIdLabel: "AUD-001",
+    availabilityLabel: "Available Now",
+    title: "Main Auditorium",
+    subtitle:
+      "The premier venue for large-scale academic, cultural, and corporate events at AASTU.",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1464375117522-1311dd7d5b93?w=1400&auto=format&fit=crop",
+    gallery: [
+      "https://images.unsplash.com/photo-1464375117522-1311dd7d5b93?w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1503095396549-807759245b35?w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1475727946784-2890b16be9e4?w=1400&auto=format&fit=crop",
+    ],
+    aboutParagraphs: [
+      "The Main Auditorium at Addis Ababa Science & Technology University stands as a testament to architectural excellence and functional design. Spanning a vast area on the ground floor of Block B, this facility serves as the heart of campus life, hosting everything from prestigious international research symposiums to vibrant student cultural festivals.",
+      "Equipped with state-of-the-art acoustic engineering, the hall ensures crystal-clear sound delivery to every one of its 1,200 seats. The recent renovation introduced a zero-emission climate control system and upgraded visual infrastructure to support 4K cinematic projection.",
+    ],
+    capacityLabel: "1,200 Seats",
+    levelLabel: "Ground Floor",
+    amenities: [
+      "Full Audio Control Booth",
+      "Integrated Climate Control",
+      "Dedicated VIP Lounge",
+      "High-Speed Campus WiFi",
+      "Accessible Seating",
+      "4K Laser Projection",
+    ],
+    locationTitle: "Central Campus, Block B",
+    locationAddress:
+      "Addis Ababa Science & Technology University, Akaki Kaliti, Addis Ababa.",
+    locationMapImageUrl:
+      "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1400&auto=format&fit=crop",
+    availabilityMonthLabel: "Oct 2023",
+    availabilityDays: [
+      { dayLabel: "M", date: "1" },
+      { dayLabel: "T", date: "2" },
+      { dayLabel: "W", date: "3" },
+      { dayLabel: "T", date: "4", active: true },
+      { dayLabel: "F", date: "5" },
+      { dayLabel: "S", date: "6" },
+      { dayLabel: "S", date: "7" },
+      { dayLabel: "M", date: "8" },
+      { dayLabel: "T", date: "9", busy: true },
+      { dayLabel: "W", date: "10" },
+      { dayLabel: "T", date: "11" },
+      { dayLabel: "F", date: "12" },
+      { dayLabel: "S", date: "13" },
+      { dayLabel: "S", date: "14" },
+    ],
+    upcomingEvents: [
+      {
+        id: "u-1",
+        dateLabel: "Oct 4",
+        timeLabel: "10:00 AM",
+        title: "Annual Research Expo",
+      },
+      {
+        id: "u-2",
+        dateLabel: "Oct 9",
+        timeLabel: "02:00 PM",
+        title: "Private University Gala",
+      },
+    ],
+    similarVenues: [
+      {
+        id: "booking-venue-2",
+        tag: "Conference",
+        name: "Digital Innovation Hub",
+        capacity: 250,
+        location: "Block D",
+        imageUrl:
+          "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=600&auto=format&fit=crop",
+      },
+      {
+        id: "booking-venue-6",
+        tag: "Boardroom",
+        name: "Executive Council Hall",
+        capacity: 50,
+        location: "Admin Wing",
+        imageUrl:
+          "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=600&auto=format&fit=crop",
+      },
+      {
+        id: "booking-venue-5",
+        tag: "Outdoor",
+        name: "The Grand Amphitheater",
+        capacity: 3000,
+        location: "East Plaza",
+        imageUrl:
+          "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&auto=format&fit=crop",
+      },
+    ],
   },
 };

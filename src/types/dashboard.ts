@@ -281,6 +281,112 @@ export interface ClubDetailItem {
   recentActivities: ClubActivityItem[];
 }
 
+// ─── Bookings ───────────────────────────────────────────────────────────────
+export type BookingTabId = "browse-venues" | "my-bookings" | "approval-queue";
+
+export interface BookingTab {
+  id: BookingTabId;
+  label: string;
+  showAdminBadge?: boolean;
+}
+
+export interface BookingStat {
+  id: string;
+  title: string;
+  value: string;
+  icon: string;
+  accent: "navy" | "gold" | "green" | "red";
+}
+
+export type BookingVenueStatus = "available" | "blocked";
+
+export interface BookingVenueFilter {
+  id: string;
+  label: string;
+}
+
+export interface BookingVenueCard {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  capacity: number;
+  category: string;
+  status: BookingVenueStatus;
+}
+
+export type BookingStatus = "pending" | "approved" | "cancelled";
+
+export interface MyBookingItem {
+  id: string;
+  venueName: string;
+  eventTitle: string;
+  dateLabel: string;
+  timeLabel: string;
+  status: BookingStatus;
+}
+
+export type BookingRequestDateRange = "next-7-days" | "next-14-days" | "this-month" | "all";
+
+export interface BookingRequestItem {
+  id: string;
+  requesterName: string;
+  clubName: string;
+  venueName: string;
+  capacityLabel: string;
+  dateLabel: string;
+  timeRange: string;
+  purpose: string;
+  venueType: string;
+  requestedDateIso: string;
+  requesterAvatarUrl?: string;
+}
+
+export interface BookingDetailAvailabilityDay {
+  dayLabel: string;
+  date: string;
+  active?: boolean;
+  busy?: boolean;
+}
+
+export interface BookingDetailUpcomingEvent {
+  id: string;
+  dateLabel: string;
+  timeLabel: string;
+  title: string;
+}
+
+export interface BookingDetailSimilarVenue {
+  id: string;
+  tag: string;
+  name: string;
+  capacity: number;
+  location: string;
+  imageUrl: string;
+}
+
+export interface BookingDetailItem {
+  id: string;
+  venueSelectionId: string;
+  venueIdLabel: string;
+  availabilityLabel: string;
+  title: string;
+  subtitle: string;
+  coverImageUrl: string;
+  gallery: string[];
+  aboutParagraphs: string[];
+  capacityLabel: string;
+  levelLabel: string;
+  amenities: string[];
+  locationTitle: string;
+  locationAddress: string;
+  locationMapImageUrl: string;
+  availabilityMonthLabel: string;
+  availabilityDays: BookingDetailAvailabilityDay[];
+  upcomingEvents: BookingDetailUpcomingEvent[];
+  similarVenues: BookingDetailSimilarVenue[];
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 export interface AdminUser {
   name: string;
