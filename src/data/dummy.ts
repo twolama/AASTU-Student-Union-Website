@@ -25,6 +25,8 @@ import type {
   MyBookingItem,
   BookingRequestItem,
   BookingDetailItem,
+  UserManagementStat,
+  UserManagementItem,
 } from "@/types/dashboard";
 
 // ─── Current User ──────────────────────────────────────────────────────────────
@@ -844,6 +846,88 @@ export const venueDetailItems: Record<string, VenueDetailItem> = {
     },
   },
 };
+
+// ─── Users Management ───────────────────────────────────────────────────────
+export const userManagementStats: UserManagementStat[] = [
+  { id: "admins", title: "Admins", value: "12", icon: "ShieldCheck", accent: "navy" },
+  { id: "club-leaders", title: "Club Leaders", value: "48", icon: "Star", accent: "gold" },
+  { id: "students", title: "Total Students", value: "1,240", icon: "Users", accent: "slate" },
+];
+
+export const userManagementItems: UserManagementItem[] = [
+  {
+    id: "user-1",
+    name: "Abebe Molla",
+    email: "abebe.molla@aastu.edu.et",
+    initials: "AM",
+    studentId: "ETS/0012/12",
+    department: "Software Engineering",
+    role: "su-admin",
+  },
+  {
+    id: "user-2",
+    name: "Bethlehem Kassaye",
+    email: "bethlehem.k@aastu.edu.et",
+    initials: "BK",
+    studentId: "ETS/0458/13",
+    department: "Architecture",
+    role: "club-president",
+  },
+  {
+    id: "user-3",
+    name: "Dawit Mekonnen",
+    email: "dawit.m@aastu.edu.et",
+    initials: "DM",
+    studentId: "ETS/1129/14",
+    department: "Electrical Engineering",
+    role: "general-student",
+  },
+  {
+    id: "user-4",
+    name: "Hanna Alemu",
+    email: "hanna.a@aastu.edu.et",
+    initials: "HA",
+    studentId: "ETS/0882/13",
+    department: "Civil Engineering",
+    role: "club-president",
+  },
+  {
+    id: "user-5",
+    name: "Meron Belay",
+    email: "meron.b@aastu.edu.et",
+    initials: "MB",
+    studentId: "ETS/0567/12",
+    department: "Computer Science",
+    role: "su-admin",
+  },
+  {
+    id: "user-6",
+    name: "Samuel Getachew",
+    email: "samuel.g@aastu.edu.et",
+    initials: "SG",
+    studentId: "ETS/0941/14",
+    department: "Mechanical Engineering",
+    role: "general-student",
+  },
+  {
+    id: "user-7",
+    name: "Rahel Girma",
+    email: "rahel.g@aastu.edu.et",
+    initials: "RG",
+    studentId: "ETS/0324/13",
+    department: "Chemical Engineering",
+    role: "club-president",
+  },
+  {
+    id: "user-8",
+    name: "Fitsum Teshome",
+    email: "fitsum.t@aastu.edu.et",
+    initials: "FT",
+    studentId: "ETS/0109/12",
+    department: "Software Engineering",
+    role: "general-student",
+  },
+];
 
 // ─── Bookings ───────────────────────────────────────────────────────────────
 export const bookingTabs: BookingTab[] = [

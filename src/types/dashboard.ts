@@ -388,6 +388,27 @@ export interface BookingDetailItem {
   similarVenues: BookingDetailSimilarVenue[];
 }
 
+// ─── Users Management ───────────────────────────────────────────────────────
+export type UserManagementRole = "su-admin" | "club-president" | "general-student";
+
+export interface UserManagementStat {
+  id: string;
+  title: string;
+  value: string;
+  icon: string;
+  accent: "navy" | "gold" | "slate";
+}
+
+export interface UserManagementItem {
+  id: string;
+  name: string;
+  email: string;
+  initials: string;
+  studentId: string;
+  department: string;
+  role: UserManagementRole;
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 export interface AdminUser {
   name: string;
