@@ -10,11 +10,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | AASTU Student Union Admin",
-    default: "AASTU Student Union Admin",
+    template: "%s | AASTU Student Union",
+    default: "AASTU Student Union",
   },
   description:
-    "Admin dashboard for AASTU Student Union — manage students, clubs, events, venues, bookings and more.",
+    "Official AASTU Student Union platform for clubs, events, announcements, and student engagement.",
 };
 
 export default function RootLayout({
