@@ -8,15 +8,17 @@ export const metadata: Metadata = {
 };
 
 interface ForgotPasswordPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     email?: string;
-  };
+  }>;
 }
 
-export default function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
+export default async function ForgotPasswordPage({ searchParams }: ForgotPasswordPageProps) {
+  const params = await searchParams;
+
   return (
     <AuthSplitLayout>
-      <ForgotPasswordForm initialEmail={searchParams?.email} />
+      <ForgotPasswordForm initialEmail={params?.email} />
     </AuthSplitLayout>
   );
 }
