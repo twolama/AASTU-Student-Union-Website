@@ -53,24 +53,24 @@ export function StatsBreakdownCard({
       </div>
 
       {showDonut ? (
-        <div className="mt-5 grid gap-5 lg:grid-cols-[180px_1fr] lg:items-center">
-          <div className="relative mx-auto flex h-44 w-44 items-center justify-center rounded-full" style={{ background: `conic-gradient(${stops})` }}>
-            <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full border border-gray-100 bg-white text-center shadow-sm">
+        <div className="mt-5 grid gap-5 xl:grid-cols-[160px_minmax(0,1fr)] xl:items-center">
+          <div className="relative mx-auto flex h-36 w-36 items-center justify-center rounded-full sm:h-44 sm:w-44" style={{ background: `conic-gradient(${stops})` }}>
+            <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full border border-gray-100 bg-white text-center shadow-sm sm:h-28 sm:w-28">
               <p className="text-3xl font-bold tracking-tight text-[#1f2a44]">{total}</p>
               <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">{donutLabel}</p>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             {items.map((item) => {
               const percent = Math.round((item.value / total) * 100);
 
               return (
                 <div key={item.id} className="rounded-2xl border border-gray-100 bg-[#f9fafc] p-3.5">
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="font-medium text-gray-700">{item.label}</span>
+                      <span className="truncate font-medium text-gray-700">{item.label}</span>
                     </div>
                     <span className="font-semibold text-gray-900">{item.value}</span>
                   </div>

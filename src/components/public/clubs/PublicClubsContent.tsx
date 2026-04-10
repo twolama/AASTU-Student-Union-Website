@@ -61,7 +61,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
   const featuredMembers =
     featuredClubDetail?.stats.find((stat) => stat.id === "members")?.value ?? "--";
 
-  const proposalCategoryOptions = [
+  const proposalCategoryOptions: { value: string; label: string }[] = [
     { value: "", label: "Select category" },
     { value: "Engineering & Tech", label: "Engineering & Tech" },
     { value: "Arts & Culture", label: "Arts & Culture" },
