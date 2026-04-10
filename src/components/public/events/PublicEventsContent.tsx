@@ -138,9 +138,9 @@ export function PublicEventsContent() {
     <div className="space-y-7 sm:space-y-8">
       <section>
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#b6861f]">
-          Institutional Calendar 2024
+          Institutional Calendar
         </p>
-        <h1 className="mt-4 max-w-[14ch] text-5xl font-black leading-[0.95] text-[#08143c] sm:text-6xl">
+        <h1 className="mt-4 max-w-[14ch] text-4xl font-black leading-[0.96] text-[#08143c] sm:text-5xl lg:text-6xl">
           Upcoming Events
         </h1>
         <p className="mt-4 max-w-[72ch] text-base leading-8 text-slate-600">
