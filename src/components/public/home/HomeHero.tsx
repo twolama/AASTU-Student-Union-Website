@@ -48,13 +48,13 @@ export function HomeHero() {
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
-                href="/clubs"
+                href="/public/clubs"
                 className="inline-flex min-h-12 items-center justify-center rounded-[10px] bg-[#c49a22] px-8 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(196,154,34,0.28)] transition-colors hover:bg-[#b58d20]"
               >
                 Join Clubs
               </Link>
               <Link
-                href="/events"
+                href="/public/events"
                 className="inline-flex min-h-12 items-center justify-center rounded-[10px] border border-[#14213d] px-8 text-sm font-semibold text-[#14213d] transition-colors hover:bg-[#e9edf7]"
               >
                 Explore Events

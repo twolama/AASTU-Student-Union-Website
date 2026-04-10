@@ -659,6 +659,80 @@ export const clubDetailItems: Record<string, ClubDetailItem> = {
       },
     ],
   },
+  "club-3": {
+    id: "club-3",
+    name: "AASTU FC",
+    status: "active",
+    categoryLabel: "Sports",
+    locationLabel: "Main Field Complex",
+    logoLabel: "F",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1570498839593-e565b39455fc?w=1600&auto=format&fit=crop",
+    about: [
+      "AASTU FC is the university's flagship football club focused on competitive performance, sportsmanship, and student wellness.",
+      "The club runs year-round training cycles, inter-campus tournaments, and mentoring sessions for first-year athletes.",
+      "Beyond competition, AASTU FC promotes leadership and discipline through team culture and community outreach.",
+    ],
+    stats: [
+      { id: "members", label: "Total Members", value: "94" },
+      { id: "events", label: "Matches Played", value: "31" },
+      { id: "rank", label: "Campus Ranking", value: "#02" },
+    ],
+    links: {
+      website: "https://aastu-fc.example.org",
+      externalMembership: "https://sports.example.org/clubs/aastu-fc",
+    },
+    contacts: [
+      {
+        id: "president",
+        roleLabel: "Club President",
+        name: "Dawit Yohannes",
+        subtitle: "Civil Engineering, 4th Year",
+        email: "d.yohannes@aastu.edu.et",
+        phone: "+251 913 440 220",
+        location: "Sports Center, Office 4",
+        initials: "DY",
+      },
+      {
+        id: "advisor",
+        roleLabel: "Club Advisor",
+        name: "Ato Samuel K.",
+        subtitle: "University Sports Department",
+        email: "samuel.k@aastu.edu.et",
+        phone: "+251 911 440 220",
+        location: "Sports Department, Block 1",
+        initials: "SK",
+      },
+    ],
+    upcomingEvents: [
+      {
+        id: "evt-1",
+        month: "MAY",
+        day: "12",
+        title: "Inter-Faculty Championship Final",
+        timeVenue: "04:00 PM · Main Field",
+      },
+      {
+        id: "evt-2",
+        month: "JUN",
+        day: "03",
+        title: "Open Tryouts - New Season",
+        timeVenue: "08:00 AM · Stadium Annex",
+      },
+    ],
+    recentActivities: [
+      {
+        id: "ra-1",
+        timestamp: "1 day ago",
+        description: "Published training roster for the upcoming week.",
+      },
+      {
+        id: "ra-2",
+        timestamp: "5 days ago",
+        description: "Won quarter-final match in the inter-campus league.",
+      },
+    ],
+  },
 };
 
 // ─── Events Management ───────────────────────────────────────────────────────

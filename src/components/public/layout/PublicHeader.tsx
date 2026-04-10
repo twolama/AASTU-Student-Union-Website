@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -13,13 +14,21 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Home", href: "/" },
-  { label: "Clubs", href: "/clubs" },
-  { label: "Events", href: "/events" },
-  { label: "Announcements", href: "/announcements" },
+  { label: "Clubs", href: "/public/clubs" },
+  { label: "Events", href: "/public/events" },
+  { label: "Announcements", href: "/public/announcements" },
 ];
 
 export function PublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <>
@@ -46,7 +55,7 @@ export function PublicHeader() {
                 href={item.href}
                 className={cn(
                   "text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
-                  item.href === "/"
+                  isActive(item.href)
                     ? "text-[#c49a22]"
                     : "text-[#14213d]/80 hover:text-[#14213d]"
                 )}
@@ -117,7 +126,7 @@ export function PublicHeader() {
                 onClick={() => setMenuOpen(false)}
                 className={cn(
                   "rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                  item.href === "/"
+                  isActive(item.href)
                     ? "bg-[#fdf8ec] text-[#c49a22]"
                     : "text-[#14213d]/85 hover:bg-slate-100"
                 )}

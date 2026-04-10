@@ -4,9 +4,9 @@ import { Facebook, Linkedin, Youtube } from "lucide-react";
 
 const quickLinks = [
   { label: "Home", href: "/" },
-  { label: "Clubs", href: "/clubs" },
-  { label: "Events", href: "/events" },
-  { label: "Announcements", href: "/announcements" },
+  { label: "Clubs", href: "/public/clubs" },
+  { label: "Events", href: "/public/events" },
+  { label: "Announcements", href: "/public/announcements" },
 ];
 
 const socials = [
