@@ -46,7 +46,7 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
 
       <section className="w-full overflow-hidden bg-[#02081d]">
         <article className="relative">
-          <div className="relative h-[320px] sm:h-[360px] lg:h-[390px]">
+          <div className="relative h-[220px] sm:h-[250px] lg:h-[280px]">
             <Image
               src={club.coverImageUrl}
               alt={club.name}
@@ -57,10 +57,10 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
             />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_42%,rgba(8,33,120,0.38),rgba(2,8,29,0.88)_68%)]" />
 
-            <div className="absolute inset-x-0 bottom-0 px-4 pb-6 sm:px-8 sm:pb-9 lg:px-10">
-              <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="absolute inset-x-0 bottom-0 px-4 pb-4 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
+              <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex items-end gap-3 sm:gap-6">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-white/80 bg-[#1d2b58] text-2xl font-black text-[#f1c44d] sm:h-28 sm:w-28 sm:text-3xl">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-white/80 bg-[#1d2b58] text-xl font-black text-[#f1c44d] sm:h-20 sm:w-20 sm:text-2xl">
                     {club.logoLabel}
                   </div>
 
@@ -68,7 +68,7 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                     <p className="inline-flex rounded-full bg-[#152a67]/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f1c44d]">
                       {club.categoryLabel}
                     </p>
-                    <h1 className="mt-2 text-3xl font-black leading-tight text-white sm:text-5xl">
+                    <h1 className="mt-2 text-2xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
                       {club.name}
                     </h1>
                     <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-slate-200 sm:text-sm">
