@@ -2,6 +2,8 @@ import {
   GraduationCap,
   Users2,
   ClipboardList,
+  CalendarDays,
+  Building2,
   TrendingUp,
   TrendingDown,
   AlertCircle,
@@ -13,6 +15,8 @@ const iconMap: Record<string, React.ElementType> = {
   GraduationCap,
   Users2,
   ClipboardList,
+  CalendarDays,
+  Building2,
 };
 
 interface StatsCardProps {

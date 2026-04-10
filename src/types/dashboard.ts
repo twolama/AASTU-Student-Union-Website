@@ -20,6 +20,45 @@ export interface StatCard {
   requiresAttention?: boolean;
 }
 
+export type StatsRangeId = "last-8-months" | "academic-year" | "calendar-year";
+
+export interface StatsPeriodOption {
+  id: StatsRangeId;
+  label: string;
+  description: string;
+}
+
+export interface StatsTrendPoint {
+  label: string;
+  value: number;
+}
+
+export interface StatsBreakdownItem {
+  id: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface StatsReportItem {
+  id: string;
+  title: string;
+  meta: string;
+  format: string;
+  size: string;
+  duration: string;
+  icon: string;
+  accent: string;
+}
+
+export interface StatsInsightItem {
+  id: string;
+  title: string;
+  description: string;
+  value: string;
+  tone: "positive" | "neutral" | "warning";
+}
+
 // ─── Events ───────────────────────────────────────────────────────────────────
 export interface Attendee {
   id: string;

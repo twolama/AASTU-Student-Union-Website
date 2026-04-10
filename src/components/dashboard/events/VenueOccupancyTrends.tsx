@@ -1,11 +1,20 @@
 import { ChartColumn } from "lucide-react";
-import type { VenueOccupancyPoint } from "@/types/dashboard";
+import { cn } from "@/lib/utils";
+import type { VenueOccupancyPoint, StatsTrendPoint } from "@/types/dashboard";
 
 interface VenueOccupancyTrendsProps {
-  points: VenueOccupancyPoint[];
+  points: Array<VenueOccupancyPoint | StatsTrendPoint>;
+  title?: string;
+  subtitle?: string;
+  className?: string;
 }
 
-export function VenueOccupancyTrends({ points }: VenueOccupancyTrendsProps) {
+export function VenueOccupancyTrends({
+  points,
+  title = "Venue Occupancy Trends",
+  subtitle = "Weekly peak utilization trends",
+  className,
+}: VenueOccupancyTrendsProps) {
   const maxValue = Math.max(...points.map((point) => point.value), 100);
   const width = 720;
   const height = 260;
@@ -15,20 +24,24 @@ export function VenueOccupancyTrends({ points }: VenueOccupancyTrendsProps) {
   const graphHeight = height - paddingY * 2;
 
   const coordinates = points.map((point, index) => {
+    const label = "day" in point ? point.day : point.label;
     const x = paddingX + (index / (points.length - 1)) * graphWidth;
     const y = paddingY + (1 - point.value / maxValue) * graphHeight;
-    return { ...point, x, y };
+    return { ...point, label, x, y };
   });
 
   const polylinePoints = coordinates.map((point) => `${point.x},${point.y}`).join(" ");
 
   return (
-    <section className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className={cn("rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5", className)}>
       <div className="flex items-center gap-2">
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#fdf8ec] text-[#c49a22]">
           <ChartColumn size={14} />
         </span>
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#1f2a44]">Venue Occupancy Trends</h2>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#1f2a44]">{title}</h2>
+          <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>
+        </div>
       </div>
 
       <div className="mt-4 overflow-x-auto">
@@ -49,12 +62,12 @@ export function VenueOccupancyTrends({ points }: VenueOccupancyTrendsProps) {
           <polyline points={polylinePoints} fill="none" stroke="#b68b1f" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
 
           {coordinates.map((point) => (
-            <circle key={`${point.day}-${point.value}`} cx={point.x} cy={point.y} r="4" fill="#c49a22" stroke="#fff" strokeWidth="2" />
+            <circle key={`${point.label}-${point.value}`} cx={point.x} cy={point.y} r="4" fill="#c49a22" stroke="#fff" strokeWidth="2" />
           ))}
 
           {coordinates.map((point) => (
-            <text key={`label-${point.day}`} x={point.x} y={height - 6} textAnchor="middle" className="fill-gray-400 text-[10px] uppercase tracking-[0.06em]">
-              {point.day}
+            <text key={`label-${point.label}`} x={point.x} y={height - 6} textAnchor="middle" className="fill-gray-400 text-[10px] uppercase tracking-[0.06em]">
+              {point.label}
             </text>
           ))}
         </svg>

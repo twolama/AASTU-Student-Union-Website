@@ -27,6 +27,12 @@ import type {
   BookingDetailItem,
   UserManagementStat,
   UserManagementItem,
+  StatsPeriodOption,
+  StatsRangeId,
+  StatsTrendPoint,
+  StatsBreakdownItem,
+  StatsReportItem,
+  StatsInsightItem,
 } from "@/types/dashboard";
 
 // ─── Current User ──────────────────────────────────────────────────────────────
@@ -82,6 +88,178 @@ export const statsCards: StatCard[] = [
     icon: "ClipboardList",
     iconBg: "#fdf8ec",
     requiresAttention: true,
+  },
+];
+
+export const statsPeriods: StatsPeriodOption[] = [
+  {
+    id: "last-8-months",
+    label: "Last 8 Months",
+    description: "Enrollment, events, and venue trends across the current cycle.",
+  },
+  {
+    id: "academic-year",
+    label: "Academic Year",
+    description: "Academic activity snapshot for planning and senate reporting.",
+  },
+  {
+    id: "calendar-year",
+    label: "Calendar Year",
+    description: "Operational performance from January through December.",
+  },
+];
+
+export const statsOverviewCards: StatCard[] = [
+  {
+    id: "overview-students",
+    title: "Total Students",
+    value: "1,240",
+    trend: "+5.2% from the previous cycle",
+    trendDirection: "up",
+    icon: "GraduationCap",
+    iconBg: "#fdf8ec",
+  },
+  {
+    id: "overview-clubs",
+    title: "Active Clubs",
+    value: "48",
+    trend: "+2.1% from last semester",
+    trendDirection: "up",
+    icon: "Users2",
+    iconBg: "#fdf8ec",
+  },
+  {
+    id: "overview-events",
+    title: "Monthly Events",
+    value: "24",
+    trend: "+12.5% from last month",
+    trendDirection: "up",
+    icon: "CalendarDays",
+    iconBg: "#fdf8ec",
+  },
+  {
+    id: "overview-bookings",
+    title: "Total Venue Bookings",
+    value: "156",
+    trend: "+8.4% from last month",
+    trendDirection: "up",
+    icon: "Building2",
+    iconBg: "#fdf8ec",
+  },
+];
+
+export const statsRegistrationTrends: Record<StatsRangeId, StatsTrendPoint[]> = {
+  "last-8-months": [
+    { label: "Jan", value: 58 },
+    { label: "Feb", value: 72 },
+    { label: "Mar", value: 68 },
+    { label: "Apr", value: 91 },
+    { label: "May", value: 112 },
+    { label: "Jun", value: 118 },
+    { label: "Jul", value: 129 },
+    { label: "Aug", value: 142 },
+  ],
+  "academic-year": [
+    { label: "Q1", value: 110 },
+    { label: "Q2", value: 138 },
+    { label: "Q3", value: 151 },
+    { label: "Q4", value: 167 },
+  ],
+  "calendar-year": [
+    { label: "H1", value: 244 },
+    { label: "H2", value: 291 },
+  ],
+};
+
+export const statsVenueOccupancyTrends: Record<StatsRangeId, StatsTrendPoint[]> = {
+  "last-8-months": [
+    { label: "Jan", value: 45 },
+    { label: "Feb", value: 51 },
+    { label: "Mar", value: 58 },
+    { label: "Apr", value: 64 },
+    { label: "May", value: 59 },
+    { label: "Jun", value: 72 },
+    { label: "Jul", value: 81 },
+    { label: "Aug", value: 76 },
+  ],
+  "academic-year": [
+    { label: "Q1", value: 56 },
+    { label: "Q2", value: 61 },
+    { label: "Q3", value: 69 },
+    { label: "Q4", value: 74 },
+  ],
+  "calendar-year": [
+    { label: "H1", value: 57 },
+    { label: "H2", value: 70 },
+  ],
+};
+
+export const statsClubBreakdown: StatsBreakdownItem[] = [
+  { id: "technology", label: "Technology & Innovation", value: 42, color: "#c49a22" },
+  { id: "arts", label: "Arts & Culture", value: 24, color: "#1f2a44" },
+  { id: "sports", label: "Sports & Health", value: 18, color: "#7d8ca8" },
+  { id: "service", label: "Social Service", value: 16, color: "#d4b45c" },
+];
+
+export const statsEventDistribution: StatsBreakdownItem[] = [
+  { id: "general", label: "General", value: 18, color: "#1f2a44" },
+  { id: "mega", label: "Mega", value: 6, color: "#c49a22" },
+];
+
+export const statsReports: StatsReportItem[] = [
+  {
+    id: "monthly-performance",
+    title: "Monthly Performance",
+    meta: "PDF • 2.4 MB • 2H AGO",
+    format: "PDF",
+    size: "2.4 MB",
+    duration: "2H AGO",
+    icon: "FileText",
+    accent: "#ef4444",
+  },
+  {
+    id: "club-registry",
+    title: "Club Registry Data",
+    meta: "CSV • 1.1 MB • 1D AGO",
+    format: "CSV",
+    size: "1.1 MB",
+    duration: "1D AGO",
+    icon: "FileSpreadsheet",
+    accent: "#22c55e",
+  },
+  {
+    id: "venue-usage",
+    title: "Venue Usage Audit",
+    meta: "XLSX • 840 KB • 4H AGO",
+    format: "XLSX",
+    size: "840 KB",
+    duration: "4H AGO",
+    icon: "BarChart3",
+    accent: "#3b82f6",
+  },
+];
+
+export const statsInsights: StatsInsightItem[] = [
+  {
+    id: "growth",
+    title: "Enrollment growth remains steady",
+    description: "Admissions-driven growth is strongest in April through August, with a sustained upward trend.",
+    value: "+5.2%",
+    tone: "positive",
+  },
+  {
+    id: "occupancy",
+    title: "Venue demand peaks midweek",
+    description: "Auditorium and workshop spaces see the highest usage on Tuesday and Thursday blocks.",
+    value: "72% peak",
+    tone: "neutral",
+  },
+  {
+    id: "events",
+    title: "Mega events need advance planning",
+    description: "Mega events still make up a smaller portion of the calendar but require the most lead time.",
+    value: "6 events",
+    tone: "warning",
   },
 ];
 
