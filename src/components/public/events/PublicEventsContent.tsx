@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import Image from "next/image";
@@ -115,15 +116,17 @@ export function PublicEventsContent() {
 
   const totalPages = Math.max(1, Math.ceil(filteredEvents.length / PAGE_SIZE));
 
+  // Keep page in sync with filters and totalPages
   useEffect(() => {
+    // If filters change, reset to first page
     setPage(1);
+     
   }, [activeCategory, query]);
 
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
+    // If current page is out of bounds, set to last page
+    setPage((prevPage) => (prevPage > totalPages ? totalPages : prevPage));
+  }, [totalPages]);
 
   const paginatedEvents = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
@@ -149,7 +152,7 @@ export function PublicEventsContent() {
       </section>
 
       <section className="relative overflow-hidden rounded-[28px] bg-[#020d2f] text-white shadow-[0_22px_44px_rgba(8,20,60,0.24)]">
-        <div className="relative h-[310px] sm:h-[370px] lg:h-[500px]">
+        <div className="relative flex flex-col justify-end">
           <Image
             src={publicEventsHero.imageUrl}
             alt={publicEventsHero.title}
@@ -160,7 +163,7 @@ export function PublicEventsContent() {
           />
           <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(4,18,63,0.85),rgba(4,18,63,0.2)_65%)]" />
 
-          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between lg:p-10">
+          <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between lg:p-10">
             <div className="max-w-[640px]">
               <p className="inline-flex items-center gap-3 text-xs uppercase tracking-[0.08em] text-white/90">
                 <span className="rounded-full bg-[#f1c44d] px-2.5 py-1 text-[10px] font-bold text-[#08143c]">

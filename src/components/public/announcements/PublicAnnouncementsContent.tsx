@@ -140,7 +140,7 @@ export function PublicAnnouncementsContent() {
 
       {featuredAnnouncement ? (
         <article className="relative overflow-hidden rounded-[24px] bg-[#071741] text-white shadow-[0_22px_44px_rgba(8,20,60,0.24)]">
-          <div className="relative h-[280px] sm:h-[320px] lg:h-[360px]">
+          <div className="relative flex min-h-[360px] flex-col justify-end sm:min-h-[400px] lg:h-[360px] lg:min-h-0 xl:h-[400px]">
             <Image
               src={featuredAnnouncement.imageUrl}
               alt={featuredAnnouncement.title}
@@ -151,7 +151,7 @@ export function PublicAnnouncementsContent() {
             />
             <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(4,18,63,0.92),rgba(4,18,63,0.18)_70%)]" />
 
-            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 lg:p-10">
+            <div className="relative z-10 p-5 sm:p-7 lg:p-10">
               <div className="max-w-[720px]">
                 <div className="flex flex-wrap items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white/85">
                   <Badge variant="gold">Pinned</Badge>

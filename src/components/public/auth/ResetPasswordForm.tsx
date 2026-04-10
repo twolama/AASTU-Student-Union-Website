@@ -1,0 +1,99 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { AuthPasswordField } from "@/components/public/auth/AuthPasswordField";
+import { AuthPasswordStrength } from "@/components/public/auth/AuthPasswordStrength";
+import { resetPasswordSchema, type ResetPasswordValues } from "@/lib/public/auth";
+
+interface ResetPasswordFormProps {
+  token?: string;
+  onSubmit?: (values: ResetPasswordValues & { token?: string }) => void | Promise<void>;
+}
+
+export function ResetPasswordForm({ token, onSubmit }: ResetPasswordFormProps) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState<Partial<Record<keyof ResetPasswordValues, string>>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const parsed = resetPasswordSchema.safeParse({ password, confirmPassword });
+    if (!parsed.success) {
+      const nextErrors: Partial<Record<keyof ResetPasswordValues, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as keyof ResetPasswordValues | undefined;
+        if (key) {
+          nextErrors[key] = issue.message;
+        }
+      }
+      setErrors(nextErrors);
+      return;
+    }
+
+    setErrors({});
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit?.({ ...parsed.data, token });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      <input type="hidden" name="token" value={token ?? ""} />
+
+      <div className="space-y-2">
+        <h2 className="text-[2rem] font-extrabold tracking-[-0.04em] text-[#1f2a44] sm:text-[2.1rem]">
+          Create new password
+        </h2>
+        <p className="text-sm leading-6 text-[#73819d]">
+          Please enter a strong password that you haven&apos;t used before.
+        </p>
+      </div>
+
+      <AuthPasswordField
+        id="new-password"
+        label="New Password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        placeholder="Enter new password"
+        autoComplete="new-password"
+        error={errors.password}
+      />
+
+      <AuthPasswordField
+        id="confirm-new-password"
+        label="Confirm New Password"
+        value={confirmPassword}
+        onChange={(event) => setConfirmPassword(event.target.value)}
+        placeholder="Confirm your password"
+        autoComplete="new-password"
+        error={errors.confirmPassword}
+      />
+
+      <AuthPasswordStrength password={password} />
+
+      <Button
+        type="submit"
+        variant="goldSolid"
+        size="lg"
+        isLoading={isSubmitting}
+        className="h-12 w-full rounded-[12px] shadow-[0_10px_24px_rgba(196,154,34,0.22)]"
+      >
+        Reset Password
+      </Button>
+
+      <div className="pt-1 text-center">
+        <Link href="/login" className="text-sm font-semibold text-[#c49a22] transition-colors hover:text-[#a9801f]">
+          Back to Login
+        </Link>
+      </div>
+    </form>
+  );
+}

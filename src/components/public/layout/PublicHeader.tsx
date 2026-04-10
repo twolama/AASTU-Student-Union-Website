@@ -67,7 +67,7 @@ export function PublicHeader() {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/dashboard"
+              href="/login"
               className="hidden rounded-[4px] bg-[#14213d] px-6 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#1f2f55] lg:inline-flex"
             >
               Login
@@ -135,7 +135,7 @@ export function PublicHeader() {
               </Link>
             ))}
             <Link
-              href="/dashboard"
+              href="/login"
               onClick={() => setMenuOpen(false)}
               className="mt-3 inline-flex items-center justify-center rounded-md bg-[#14213d] px-4 py-2.5 text-sm font-semibold text-white"
             >
