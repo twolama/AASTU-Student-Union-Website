@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AuthSplitLayout } from "@/components/public/auth/AuthSplitLayout";
-import { LoginForm } from "@/components/public/auth/LoginForm";
+import { LoginPageClient } from "@/components/public/auth/LoginPageClient";
 
 export const metadata: Metadata = {
   title: "Login",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <AuthSplitLayout>
-      <LoginForm />
+      <LoginPageClient />
     </AuthSplitLayout>
   );
 }

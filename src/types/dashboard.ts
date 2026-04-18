@@ -219,11 +219,28 @@ export interface AnnouncementTab {
 export interface AnnouncementItem {
   id: string;
   title: string;
-  summary: string;
+  body_excerpt: string;
   imageUrl: string;
   category: AnnouncementCategory;
   publishedAgo: string;
   authorName: string;
+}
+
+export interface EventItem {
+  id: string;
+  title: string;
+  shortDescription: string;
+  status: string;
+  megaEvent: boolean;
+  archived: boolean;
+  maxCapacity: number;
+  imageUrl: string;
+  clubName: string;
+  venueName: string;
+  startDateTime: string;
+  endDateTime: string;
+  dateDay: string;
+  dateMonth: string;
 }
 
 export interface AnnouncementPreviewData {

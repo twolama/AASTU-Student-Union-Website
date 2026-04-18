@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { Mail, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AuthCheckboxField } from "@/components/public/auth/AuthCheckboxField";
@@ -11,10 +11,11 @@ import { loginSchema, type LoginValues } from "@/lib/public/auth";
 
 interface LoginFormProps {
   onSubmit?: (values: LoginValues) => void | Promise<void>;
+  submissionError?: string | null;
 }
 
-export function LoginForm({ onSubmit }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+export function LoginForm({ onSubmit, submissionError = null }: LoginFormProps) {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<keyof LoginValues, string>>>({});
@@ -23,7 +24,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const parsed = loginSchema.safeParse({ email, password, rememberMe });
+    const parsed = loginSchema.safeParse({ username, password, rememberMe });
     if (!parsed.success) {
       const nextErrors: Partial<Record<keyof LoginValues, string>> = {};
       for (const issue of parsed.error.issues) {
@@ -56,16 +57,16 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       </div>
 
       <AuthField
-        id="student-email"
-        label="Student Email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        placeholder="e.g. student@aastu.edu.et"
-        autoComplete="email"
+        id="login-identifier"
+        label="Username or Student ID"
+        type="text"
+        value={username}
+        onChange={(event) => setUsername(event.target.value)}
+        placeholder="e.g. username or ETS1234/15"
+        autoComplete="username"
         inputMode="email"
         startIcon={<Mail size={15} />}
-        error={errors.email}
+        error={errors.username}
       />
 
       <AuthPasswordField
@@ -90,6 +91,13 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           Forgot Password?
         </Link>
       </div>
+
+      {submissionError ? (
+        <div className="flex items-start gap-2 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <p>{submissionError}</p>
+        </div>
+      ) : null}
 
       <Button
         type="submit"

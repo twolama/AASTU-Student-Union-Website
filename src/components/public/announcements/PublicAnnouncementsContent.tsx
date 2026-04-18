@@ -16,8 +16,6 @@ function categoryLabel(category: AnnouncementCategory) {
 }
 
 function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) {
-  const detail = announcementPreviewData[announcement.id];
-
   return (
     <article className="group overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]">
       <div className="relative h-40 bg-[#f2f4f8]">
@@ -42,7 +40,7 @@ function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) 
           {announcement.title}
         </h3>
         <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
-          {detail?.introText ?? announcement.summary}
+          {announcement.body_excerpt}
         </p>
 
         <div className="mt-5 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
@@ -100,7 +98,7 @@ export function PublicAnnouncementsContent() {
       const matchesQuery =
         normalized.length === 0 ||
         announcement.title.toLowerCase().includes(normalized) ||
-        announcement.summary.toLowerCase().includes(normalized) ||
+        announcement.body_excerpt.toLowerCase().includes(normalized) ||
         announcement.authorName.toLowerCase().includes(normalized);
 
       return matchesTab && matchesQuery;
@@ -161,7 +159,7 @@ export function PublicAnnouncementsContent() {
                   {featuredAnnouncement.title}
                 </h2>
                 <p className="mt-4 max-w-[54ch] text-sm leading-7 text-[#c7d3f2] sm:text-base">
-                  {featuredDetail?.introText ?? featuredAnnouncement.summary}
+                  {featuredAnnouncement.body_excerpt}
                 </p>
 
                 <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -171,7 +169,7 @@ export function PublicAnnouncementsContent() {
                     </span>
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.14em] text-white/60">From</p>
-                      <p className="font-semibold">{featuredDetail?.publishedDate}</p>
+                      <p className="font-semibold">{featuredDetail ? featuredDetail.publishedDate : featuredAnnouncement.publishedAgo}</p>
                     </div>
                   </div>
 

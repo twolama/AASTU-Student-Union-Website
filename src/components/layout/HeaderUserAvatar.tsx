@@ -1,10 +1,8 @@
-import { currentUser } from "@/data/dummy";
-
 interface HeaderUserAvatarProps {
   name?: string;
 }
 
-export function HeaderUserAvatar({ name = currentUser.name }: HeaderUserAvatarProps) {
+export function HeaderUserAvatar({ name = "User" }: HeaderUserAvatarProps) {
   const initials = name
     .split(" ")
     .map((chunk) => chunk[0])

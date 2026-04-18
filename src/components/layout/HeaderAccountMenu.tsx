@@ -1,15 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, LogOut, Settings } from "lucide-react";
-import { currentUser } from "@/data/dummy";
 import { cn } from "@/lib/utils";
 import { HeaderUserAvatar } from "@/components/layout/HeaderUserAvatar";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuthLogout } from "@/hooks/useAuthLogout";
 
 export function HeaderAccountMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const currentUserQuery = useCurrentUser();
+  const logoutMutation = useAuthLogout();
+
+  const displayName = currentUserQuery.data?.name ?? "User";
+  const displayRole = currentUserQuery.data?.roleDetails?.name ?? currentUserQuery.data?.role ?? "Member";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -34,6 +45,17 @@ export function HeaderAccountMenu() {
     };
   }, []);
 
+  async function handleLogout() {
+    try {
+      await logoutMutation.mutateAsync();
+    } finally {
+      queryClient.removeQueries({ queryKey: ["auth"] });
+      setOpen(false);
+      router.replace("/login");
+      router.refresh();
+    }
+  }
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -48,10 +70,10 @@ export function HeaderAccountMenu() {
         )}
       >
         <div className="hidden text-right sm:block">
-          <p className="text-sm font-semibold leading-tight text-gray-800">{currentUser.name}</p>
-          <p className="text-xs text-gray-400">{currentUser.role}</p>
+          <p className="text-sm font-semibold leading-tight text-gray-800">{displayName}</p>
+          <p className="text-xs text-gray-400">{displayRole}</p>
         </div>
-        <HeaderUserAvatar name={currentUser.name} />
+        <HeaderUserAvatar name={displayName} />
         <ChevronDown
           size={14}
           className={cn("hidden text-gray-400 transition-transform sm:block", open && "rotate-180")}
@@ -61,10 +83,10 @@ export function HeaderAccountMenu() {
       {open ? (
         <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-[250px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
           <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3.5">
-            <HeaderUserAvatar name={currentUser.name} />
+            <HeaderUserAvatar name={displayName} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">{currentUser.name}</p>
-              <p className="truncate text-xs text-gray-500">{currentUser.role}</p>
+              <p className="truncate text-sm font-semibold text-gray-900">{displayName}</p>
+              <p className="truncate text-xs text-gray-500">{displayRole}</p>
             </div>
           </div>
 
@@ -78,14 +100,15 @@ export function HeaderAccountMenu() {
               Settings
             </Link>
 
-            <Link
-              href="/sign-out"
-              onClick={() => setOpen(false)}
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
               className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#fdf8ec] hover:text-[#8c6c14]"
             >
               <LogOut size={15} />
-              Sign Out
-            </Link>
+              {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+            </button>
           </nav>
         </div>
       ) : null}
