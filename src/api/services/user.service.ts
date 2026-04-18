@@ -30,9 +30,11 @@ export interface RoleListResponse {
 
 export const userService = {
   // Users
-  getUsers: async (page = 1, limit = 20, search?: string) => {
+  getUsers: async (page = 1, limit = 20, search?: string, role?: string, department?: string) => {
     const params: Record<string, any> = { page, limit };
     if (search) params.search = search;
+    if (role && role !== "all") params.role = role;
+    if (department && department !== "all") params.department = department;
     
     const response = await apiClient.get<UserListResponse>(USER_ENDPOINTS.LIST, { params });
     return response.data;

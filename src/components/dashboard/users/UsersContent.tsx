@@ -39,7 +39,7 @@ export function UsersContent() {
   const [editingUser, setEditingUser] = useState<CurrentUser | null>(null);
 
   // Fetch real data
-  const { data: usersData, isLoading: isUsersLoading } = useUsers(currentPage, ITEMS_PER_PAGE, searchTerm);
+  const { data: usersData, isLoading: isUsersLoading } = useUsers(currentPage, ITEMS_PER_PAGE, searchTerm, selectedRole, selectedDepartment);
   const { data: rolesData, isLoading: isRolesLoading } = useRoles();
   const { data: departments = [], isLoading: isDeptsLoading } = useDepartments();
   const deleteUserMutation = useDeleteUser();
@@ -75,7 +75,9 @@ export function UsersContent() {
     }
   };
 
-  if (isUsersLoading || isRolesLoading || isDeptsLoading) {
+  const isInitialLoading = (isUsersLoading && !usersData) || isRolesLoading || isDeptsLoading;
+
+  if (isInitialLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
@@ -98,11 +100,11 @@ export function UsersContent() {
       <UsersStatsSection items={stats} />
 
       <div className="space-y-4">
-        <Tabs 
-          items={USERS_TABS} 
-          value={currentTab} 
-          onValueChange={setCurrentTab} 
-          className="w-full max-w-md" 
+        <Tabs
+          items={USERS_TABS}
+          value={currentTab}
+          onValueChange={setCurrentTab}
+          className="w-full max-w-md"
         />
 
         {currentTab === "students" ? (
@@ -147,10 +149,10 @@ export function UsersContent() {
         )}
       </div>
 
-      <UserEditDialog 
-        user={editingUser} 
-        isOpen={!!editingUser} 
-        onClose={() => setEditingUser(null)} 
+      <UserEditDialog
+        user={editingUser}
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
       />
     </div>
   );

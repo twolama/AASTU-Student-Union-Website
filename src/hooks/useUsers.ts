@@ -1,11 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { userService } from "@/api/services/user.service";
 import { type CurrentUser } from "@/schemas/user.schema";
 
-export function useUsers(page = 1, limit = 20, search?: string) {
+export function useUsers(page = 1, limit = 20, search?: string, role?: string, department?: string) {
   return useQuery({
-    queryKey: ["users", page, limit, search],
-    queryFn: () => userService.getUsers(page, limit, search),
+    queryKey: ["users", page, limit, search, role, department],
+    queryFn: () => userService.getUsers(page, limit, search, role, department),
+    placeholderData: keepPreviousData,
   });
 }
 

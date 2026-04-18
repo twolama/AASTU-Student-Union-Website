@@ -20,21 +20,26 @@ export async function updateProfile(payload: ProfileUpdate): Promise<CurrentUser
   const formData = new FormData();
 
   Object.entries(payload).forEach(([key, value]) => {
+    // Skip undefined values
+    if (value === undefined) return;
+
     if (value === null) {
-      // Sending empty string for a file field in multipart/form-data often clears it in DRF
+      // In Django REST Framework, an empty string on a FileField/ImageField clears it
       formData.append(key, "");
-    } else if (value !== undefined) {
-      if (key === "avatar" && typeof value === "string") {
-        // If avatar is a URL string, we don't need to send it back
-        return;
-      }
+    } else if (key === "avatar" && typeof value === "string") {
+      // If avatar is a URL string (existing), we don't need to send it back
+      return;
+    } else {
+      // For objects (like Files) or other primitives
       formData.append(key, value);
     }
   });
 
   const response = await apiClient.patch(USER_ENDPOINTS.ME_PATCH, formData, {
     headers: {
-      "Content-Type": "multipart/form-data",
+      // Do NOT set Content-Type here; axios will set it to multipart/form-data 
+      // with the correct boundary if the data is a FormData object.
+      "Content-Type": undefined,
     },
   });
 

@@ -212,7 +212,7 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     }
 
     const hasBody = !["GET", "HEAD"].includes(method);
-    const body = hasBody ? await request.text() : undefined;
+    const body = hasBody ? await request.arrayBuffer() : undefined;
 
     const upstreamResponse = await fetch(targetUrl, {
       method,
