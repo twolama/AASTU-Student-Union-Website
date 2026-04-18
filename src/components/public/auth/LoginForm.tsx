@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Mail, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { AuthCheckboxField } from "@/components/public/auth/AuthCheckboxField";
 import { AuthField } from "@/components/public/auth/AuthField";
@@ -19,7 +19,16 @@ export function LoginForm({ onSubmit, submissionError = null }: LoginFormProps) 
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<keyof LoginValues, string>>>({});
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  function handleUsernameKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter" && username.trim()) {
+      event.preventDefault();
+      passwordInputRef.current?.focus();
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,18 +65,21 @@ export function LoginForm({ onSubmit, submissionError = null }: LoginFormProps) 
         <p className="text-sm leading-6 text-[#73819d]">Please enter your credentials to access your account</p>
       </div>
 
+
       <AuthField
         id="login-identifier"
         label="Username or Student ID"
         type="text"
         value={username}
         onChange={(event) => setUsername(event.target.value)}
+        onKeyDown={handleUsernameKeyDown}
         placeholder="e.g. username or ETS1234/15"
         autoComplete="username"
         inputMode="email"
         startIcon={<Mail size={15} />}
         error={errors.username}
       />
+
 
       <AuthPasswordField
         id="student-password"
@@ -77,6 +89,7 @@ export function LoginForm({ onSubmit, submissionError = null }: LoginFormProps) 
         placeholder="••••••••"
         autoComplete="current-password"
         error={errors.password}
+        ref={passwordInputRef}
       />
 
       <div className="flex items-center justify-between gap-4">

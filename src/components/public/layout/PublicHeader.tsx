@@ -7,6 +7,9 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { HeaderAccountMenu } from "@/components/layout/HeaderAccountMenu";
+
 interface NavItem {
   label: string;
   href: string;
@@ -22,6 +25,7 @@ const navItems: NavItem[] = [
 export function PublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { data: user, isLoading } = useCurrentUser();
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -66,12 +70,20 @@ export function PublicHeader() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="hidden rounded-[4px] bg-[#14213d] px-6 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-white transition-colors hover:bg-[#1f2f55] lg:inline-flex"
-            >
-              Login
-            </Link>
+            {!isLoading && (
+              <>
+                {user ? (
+                  <HeaderAccountMenu />
+                ) : (
+                  <Link
+                    href="/login"
+                    className="hidden rounded-[4px] bg-[#14213d] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#1f2f55] lg:inline-flex"
+                  >
+                    Login
+                  </Link>
+                )}
+              </>
+            )}
             <button
               type="button"
               aria-label="Open menu"

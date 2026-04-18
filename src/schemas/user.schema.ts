@@ -45,6 +45,7 @@ export const CurrentUserDataSchema = z
     role: z.string().nullable().optional(),
     roleDetails: RoleDetailsSchema.nullable().optional(),
     initials: z.string().optional(),
+    bio: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -56,3 +57,28 @@ export const CurrentUserResponseSchema = z
   .passthrough();
 
 export type CurrentUser = z.infer<typeof CurrentUserDataSchema>;
+
+export const ProfileUpdateSchema = z.object({
+  name: z.string().optional(),
+  avatar: z.any().optional().nullable(),
+  phone_number: z.string().optional(),
+  dorm_block: z.string().optional(),
+  dorm_room: z.string().optional(),
+  department: z.string().uuid().optional(),
+  bio: z.string().optional().nullable(),
+});
+
+export type ProfileUpdate = z.infer<typeof ProfileUpdateSchema>;
+
+export const ChangePasswordSchema = z
+  .object({
+    current_password: z.string().min(1, "Current password is required"),
+    new_password: z.string().min(8, "New password must be at least 8 characters"),
+    confirm_password: z.string().min(8, "Please confirm your new password"),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "New passwords do not match",
+    path: ["confirm_password"],
+  });
+
+export type ChangePasswordRequest = z.infer<typeof ChangePasswordSchema>;

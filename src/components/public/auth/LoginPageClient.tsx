@@ -9,13 +9,15 @@ export function LoginPageClient() {
   const router = useRouter();
   const loginMutation = useAuthLogin();
 
-  async function handleSubmit(values: LoginValues) {
-    await loginMutation.mutateAsync({
+  function handleSubmit(values: LoginValues) {
+    loginMutation.mutate({
       username: values.username,
       password: values.password,
+    }, {
+      onSuccess: () => {
+        router.push("/dashboard");
+      }
     });
-
-    router.push("/dashboard");
   }
 
   return <LoginForm onSubmit={handleSubmit} submissionError={loginMutation.error?.message ?? null} />;

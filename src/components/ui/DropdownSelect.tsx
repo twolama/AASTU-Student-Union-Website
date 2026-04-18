@@ -15,6 +15,8 @@ interface DropdownSelectProps<T extends string = string> {
   options: DropdownOption<T>[];
   onValueChange: (value: T) => void;
   className?: string;
+  error?: string;
+  disabled?: boolean;
 }
 
 export function DropdownSelect<T extends string = string>({
@@ -23,6 +25,8 @@ export function DropdownSelect<T extends string = string>({
   options,
   onValueChange,
   className,
+  error,
+  disabled,
 }: DropdownSelectProps<T>) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -50,17 +54,28 @@ export function DropdownSelect<T extends string = string>({
         <button
           id={id}
           type="button"
+          disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={open}
           onClick={() => setOpen((current) => !current)}
           className={cn(
-            "flex h-11 w-full items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3.5 text-left text-sm text-gray-800 shadow-sm transition-colors",
-            "hover:border-[#c49a22]/50 focus:outline-none focus:ring-4 focus:ring-[#c49a22]/10"
+            "flex h-11 w-full items-center justify-between gap-3 rounded-lg border bg-white px-3.5 text-left text-sm text-gray-800 shadow-sm transition-colors",
+            error
+              ? "border-red-500 focus:ring-red-500/10"
+              : "border-gray-200 hover:border-[#c49a22]/50 focus:ring-4 focus:ring-[#c49a22]/10",
+            "focus:outline-none",
+            disabled && "cursor-not-allowed bg-gray-50 text-gray-400 opacity-60"
           )}
         >
-          <span className="truncate">{selectedOption?.label}</span>
+          <span className="truncate">{selectedOption?.label || "Select an option..."}</span>
           <ChevronDown size={16} className={cn("shrink-0 text-gray-400 transition-transform", open && "rotate-180")} />
         </button>
+
+        {error && (
+          <p className="mt-1.5 px-1 text-xs font-medium text-red-500 animate-in fade-in slide-in-from-top-1 duration-200">
+            {error}
+          </p>
+        )}
 
         {open ? (
           <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">

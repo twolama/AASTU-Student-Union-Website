@@ -73,7 +73,7 @@ export function HeaderAccountMenu() {
           <p className="text-sm font-semibold leading-tight text-gray-800">{displayName}</p>
           <p className="text-xs text-gray-400">{displayRole}</p>
         </div>
-        <HeaderUserAvatar name={displayName} />
+        <HeaderUserAvatar name={displayName} src={currentUserQuery.data?.avatar} />
         <ChevronDown
           size={14}
           className={cn("hidden text-gray-400 transition-transform sm:block", open && "rotate-180")}
@@ -83,7 +83,7 @@ export function HeaderAccountMenu() {
       {open ? (
         <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-[250px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
           <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3.5">
-            <HeaderUserAvatar name={displayName} />
+            <HeaderUserAvatar name={displayName} src={currentUserQuery.data?.avatar} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-gray-900">{displayName}</p>
               <p className="truncate text-xs text-gray-500">{displayRole}</p>

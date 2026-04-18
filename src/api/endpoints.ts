@@ -29,8 +29,31 @@ export const API_ENDPOINTS = {
     PATCH: (id: string) => `${API_V1_PREFIX}/roles/${id}/`,
     DELETE: (id: string) => `${API_V1_PREFIX}/roles/${id}/`,
   },
+  CORE: {
+    ANALYTICS: {
+      DASHBOARD: `${API_V1_PREFIX}/analytics/dashboard/`,
+      EXPORT: `${API_V1_PREFIX}/analytics/reports/export/`,
+    },
+    COLLEGES: {
+      LIST: `${API_V1_PREFIX}/colleges/`,
+      CREATE: `${API_V1_PREFIX}/colleges/`,
+      DETAIL: (id: string) => `${API_V1_PREFIX}/colleges/${id}/`,
+      UPDATE: (id: string) => `${API_V1_PREFIX}/colleges/${id}/`,
+      PATCH: (id: string) => `${API_V1_PREFIX}/colleges/${id}/`,
+      DELETE: (id: string) => `${API_V1_PREFIX}/colleges/${id}/`,
+    },
+    DEPARTMENTS: {
+      LIST: `${API_V1_PREFIX}/departments/`,
+      CREATE: `${API_V1_PREFIX}/departments/`,
+      DETAIL: (id: string) => `${API_V1_PREFIX}/departments/${id}/`,
+      UPDATE: (id: string) => `${API_V1_PREFIX}/departments/${id}/`,
+      PATCH: (id: string) => `${API_V1_PREFIX}/departments/${id}/`,
+      DELETE: (id: string) => `${API_V1_PREFIX}/departments/${id}/`,
+    },
+  },
 } as const;
 
 export const AUTH_ENDPOINTS = API_ENDPOINTS.AUTHENTICATION;
 export const USER_ENDPOINTS = API_ENDPOINTS.USERS;
 export const ROLE_ENDPOINTS = API_ENDPOINTS.ROLES;
+export const CORE_ENDPOINTS = API_ENDPOINTS.CORE;

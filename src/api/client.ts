@@ -34,7 +34,11 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorPayload>) => {
     const payload = error.response?.data;
+    
+    // Prioritize descriptive error messages from the payload
     const message =
+      (typeof payload?.error === "string" ? payload.error : undefined) ||
+      (typeof (payload?.error as any)?.message === "string" ? (payload?.error as any).message : undefined) ||
       payload?.message ||
       error.message ||
       "Request failed";
