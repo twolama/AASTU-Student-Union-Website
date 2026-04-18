@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicAnnouncementDetailPage } from "@/components/public/announcements/PublicAnnouncementDetailPage";
-import { getPublicAnnouncementDetail, getPublicAnnouncements } from "@/lib/public/announcements";
 
 interface AnnouncementDetailRouteProps {
   params: Promise<{
@@ -9,9 +8,39 @@ interface AnnouncementDetailRouteProps {
   }>;
 }
 
+async function getAnnouncement(id: string) {
+  const baseUrl = process.env.API_BASE_URL || "http://localhost:8000";
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/announcements/${id}/`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data;
+  } catch (error) {
+    console.error("Error fetching announcement:", error);
+    return null;
+  }
+}
+
+async function getRelatedAnnouncements(currentId: string) {
+  const baseUrl = process.env.API_BASE_URL || "http://localhost:8000";
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/announcements/?limit=4`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return (json.data || []).filter((a: any) => a.id !== currentId).slice(0, 3);
+  } catch (error) {
+    console.error("Error fetching related announcements:", error);
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: AnnouncementDetailRouteProps): Promise<Metadata> {
   const { announcementId } = await params;
-  const announcement = getPublicAnnouncementDetail(announcementId);
+  const announcement = await getAnnouncement(announcementId);
 
   if (!announcement) {
     return {
@@ -21,22 +50,26 @@ export async function generateMetadata({ params }: AnnouncementDetailRouteProps)
 
   return {
     title: announcement.title,
-    description: `Details for ${announcement.title}.`,
+    description: announcement.bodyExcerpt || `Details for ${announcement.title}.`,
   };
-}
-
-export function generateStaticParams() {
-  return getPublicAnnouncements().map((announcement) => ({ announcementId: announcement.id }));
 }
 
 export default async function AnnouncementDetailPage({ params }: AnnouncementDetailRouteProps) {
   const { announcementId } = await params;
-  const announcement = getPublicAnnouncementDetail(announcementId);
-  const item = getPublicAnnouncements().find((entry) => entry.id === announcementId);
+  
+  const [announcement, relatedAnnouncements] = await Promise.all([
+    getAnnouncement(announcementId),
+    getRelatedAnnouncements(announcementId),
+  ]);
 
-  if (!announcement || !item) {
+  if (!announcement) {
     notFound();
   }
 
-  return <PublicAnnouncementDetailPage announcement={announcement} item={item} />;
+  return (
+    <PublicAnnouncementDetailPage 
+      announcement={announcement} 
+      relatedAnnouncements={relatedAnnouncements} 
+    />
+  );
 }

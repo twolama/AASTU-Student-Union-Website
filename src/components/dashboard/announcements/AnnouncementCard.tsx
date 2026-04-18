@@ -1,83 +1,128 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { Pencil, Trash2, UserCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { AnnouncementCategory, AnnouncementItem } from "@/types/dashboard";
+import { Pin, User, Clock, Edit3, Trash2, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import { type Announcement } from "@/schemas/announcement.schema";
+import { useDeleteAnnouncement } from "@/hooks/useAnnouncements";
+import { toast } from "sonner";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 
-const categoryLabelMap: Record<AnnouncementCategory, string> = {
-  academic: "Academic",
-  social: "Social",
-  union: "Union",
-};
-
-const categoryStyleMap: Record<AnnouncementCategory, string> = {
-  academic: "bg-gray-100 text-gray-700",
-  social: "bg-blue-50 text-blue-600",
-  union: "bg-slate-100 text-slate-700",
-};
+dayjs.extend(relativeTime);
 
 interface AnnouncementCardProps {
-  item: AnnouncementItem;
+  item: Announcement;
 }
 
 export function AnnouncementCard({ item }: AnnouncementCardProps) {
+  const publishedAt = item.publishedDate || dayjs(item.createdAt).fromNow();
+  const deleteMutation = useDeleteAnnouncement();
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this announcement?")) {
+      try {
+        await deleteMutation.mutateAsync(item.id);
+        toast.success("Announcement deleted successfully");
+      } catch (error) {
+        toast.error("Failed to delete announcement");
+      }
+    }
+  };
+
   return (
-    <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-      <div className="flex flex-col sm:flex-row">
-        <div className="relative h-44 w-full sm:h-auto sm:w-[210px] md:w-[240px] lg:w-[260px]">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all hover:shadow-xl hover:shadow-gray-200/40 sm:flex-row">
+      {/* Image Section */}
+      <div className="relative aspect-video w-full overflow-hidden bg-gray-50 sm:w-64 sm:shrink-0">
+        {item.image ? (
           <Image
-            src={item.imageUrl}
+            src={item.image}
             alt={item.title}
             fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, 260px"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-[#fdf8ec]">
+            <Pin className="h-10 w-10 text-[#c49a22]/10" />
+          </div>
+        )}
+        
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
+          {item.isPinned && (
+            <Badge className="bg-[#c49a22] text-white shadow-lg shadow-[#c49a22]/30 ring-0">
+              <Pin className="h-3 w-3 mr-1" />
+              Pinned
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="flex flex-1 flex-col p-6">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {item.categoryDetails && (
+              <Badge variant="outline" className="border-gray-200 text-[#1f2a44] font-bold text-[10px] uppercase tracking-wider">
+                {item.categoryDetails.name}
+              </Badge>
+            )}
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+              <Clock size={12} />
+              {publishedAt}
+            </div>
+          </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-5">
-          <div className="flex flex-wrap items-center gap-2 text-[11px]">
-            <span
-              className={cn(
-                "rounded-md px-2 py-0.5 font-semibold uppercase tracking-wide",
-                categoryStyleMap[item.category]
-              )}
+        <Link
+          href={`/announcements/${item.id}`}
+          className="mb-2 block text-xl font-bold text-[#1f2a44] transition-colors hover:text-[#c49a22]"
+        >
+          {item.title}
+        </Link>
+
+        <p className="mb-6 line-clamp-2 text-sm leading-relaxed text-gray-500">
+          {item.bodyExcerpt}
+        </p>
+
+        <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-4">
+          <div className="flex items-center gap-3">
+             <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-lg">
+              <User size={12} className="text-[#c49a22]" />
+              {item.authorName || item.author.name}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {item.tags?.slice(0, 2).map((tag, i) => (
+                <span key={i} className="text-[10px] font-bold text-[#c49a22]">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/announcements/${item.id}`}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-[#c49a22]/10 hover:text-[#c49a22]"
+              title="View Detail"
             >
-              {categoryLabelMap[item.category]}
-            </span>
-            <span className="text-gray-400">{item.publishedAgo}</span>
-          </div>
-
-          <div>
-            <Link href={`/announcements/${item.id}`} className="group inline-block">
-              <h3 className="text-lg font-bold text-[#1a1a2e] transition-colors group-hover:text-[#c49a22]">
-                {item.title}
-              </h3>
+              <Eye size={16} />
             </Link>
-            <p className="mt-1 text-sm leading-6 text-gray-500">{item.summary}</p>
-          </div>
-
-          <div className="mt-auto flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
-              <UserCircle2 size={15} className="text-gray-400" />
-              <span>{item.authorName}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/announcements/${item.id}/edit`}
-                className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-[#c49a22] bg-white px-3 text-[11px] font-semibold text-[#c49a22] transition-colors hover:bg-[#fdf8ec]"
-              >
-                <Pencil size={12} />
-                Edit
-              </Link>
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:text-gray-600"
-                aria-label={`Delete ${item.title}`}
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
+            <Link
+              href={`/announcements/${item.id}/edit`}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-blue-50 hover:text-blue-600"
+              title="Edit Announcement"
+            >
+              <Edit3 size={16} />
+            </Link>
+            <button
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+              title="Delete Announcement"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
         </div>
       </div>

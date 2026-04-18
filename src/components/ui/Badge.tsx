@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "gold";
+type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "gold" | "outline";
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -15,6 +15,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   danger: "bg-red-50 text-red-600",
   info: "bg-blue-50 text-blue-600",
   gold: "bg-[#fdf8ec] text-[#c49a22]",
+  outline: "bg-transparent border border-current text-gray-600",
 };
 
 export function Badge({ children, variant = "default", className }: BadgeProps) {

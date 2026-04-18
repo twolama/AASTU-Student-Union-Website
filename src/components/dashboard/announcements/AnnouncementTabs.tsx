@@ -1,12 +1,32 @@
-import type { AnnouncementTab } from "@/types/dashboard";
+"use client";
+
+import { useMemo } from "react";
 import { Tabs } from "@/components/ui/Tabs";
+import { type AnnouncementCategory } from "@/schemas/announcement.schema";
 
 interface AnnouncementTabsProps {
-  tabs: AnnouncementTab[];
+  categories: AnnouncementCategory[];
   activeTabId: string;
-  onTabChange: (tabId: string) => void;
+  onTabChange: (id: string) => void;
 }
 
-export function AnnouncementTabs({ tabs, activeTabId, onTabChange }: AnnouncementTabsProps) {
-  return <Tabs items={tabs} value={activeTabId} onValueChange={onTabChange} />;
+export function AnnouncementTabs({ categories, activeTabId, onTabChange }: AnnouncementTabsProps) {
+  const tabs = useMemo(() => {
+    return [
+      { id: "all", label: "All Announcements" },
+      ...categories.map(cat => ({
+        id: cat.slug,
+        label: cat.name
+      }))
+    ];
+  }, [categories]);
+
+  return (
+    <Tabs
+      items={tabs}
+      value={activeTabId}
+      onValueChange={onTabChange}
+      className="w-full"
+    />
+  );
 }

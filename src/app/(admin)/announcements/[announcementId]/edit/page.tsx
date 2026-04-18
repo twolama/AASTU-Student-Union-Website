@@ -1,38 +1,50 @@
-import type { Metadata } from "next";
+"use client";
+
+import { use } from "react";
 import { AnnouncementEditor } from "@/components/dashboard/announcements/AnnouncementEditor";
-import { announcementItems } from "@/data/dummy";
+import { useAnnouncement } from "@/hooks/useAnnouncements";
+import { Loader2 } from "lucide-react";
+import { notFound } from "next/navigation";
 
 interface EditAnnouncementPageProps {
   params: Promise<{ announcementId: string }>;
 }
 
-export async function generateMetadata({ params }: EditAnnouncementPageProps): Promise<Metadata> {
-  const { announcementId } = await params;
-  const announcement = announcementItems.find((item) => item.id === announcementId);
+export default function EditAnnouncementPage({ params }: EditAnnouncementPageProps) {
+  const { announcementId } = use(params);
+  const { data: announcement, isLoading, isError } = useAnnouncement(announcementId);
 
-  return {
-    title: announcement ? `Edit ${announcement.title}` : "Edit Announcement",
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+      </div>
+    );
+  }
+
+  if (isError || !announcement) {
+    notFound();
+  }
+
+  // Map API response to Editor values
+  const initialValues = {
+    title: announcement.title,
+    summary: announcement.bodyExcerpt,
+    body: announcement.body || announcement.bodyExcerpt,
+    category: announcement.category || "",
+    originatingBody: announcement.authorRoleName || announcement.authorName || "AASTU Student Union",
+    pinned: announcement.isPinned,
+    coverImageUrl: announcement.image || "",
+    coverImageName: undefined,
+    tags: announcement.tags || [],
+    procedureSteps: announcement.procedure_steps || [],
   };
-}
-
-export default async function EditAnnouncementPage({ params }: EditAnnouncementPageProps) {
-  const { announcementId } = await params;
-  const announcement = announcementItems.find((item) => item.id === announcementId);
 
   return (
     <AnnouncementEditor
       mode="edit"
       announcementId={announcementId}
-      initialValues={{
-        title: announcement?.title ?? "",
-        summary: announcement?.summary ?? "",
-        body: announcement?.summary ?? "",
-        category: announcement?.category ?? "academic",
-        originatingBody: announcement?.authorName ?? "Office of the Registrar",
-        pinned: false,
-        coverImageUrl: announcement?.imageUrl ?? "",
-        coverImageName: undefined,
-      }}
+      initialValues={initialValues}
     />
   );
 }

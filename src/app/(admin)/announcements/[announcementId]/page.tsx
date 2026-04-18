@@ -1,29 +1,30 @@
-import type { Metadata } from "next";
+"use client";
+
+import { use } from "react";
 import { notFound } from "next/navigation";
-import { announcementItems, announcementPreviewData } from "@/data/dummy";
+import { useAnnouncement } from "@/hooks/useAnnouncements";
 import { AnnouncementPreviewContent } from "@/components/dashboard/announcements/AnnouncementPreviewContent";
+import { Loader2 } from "lucide-react";
 
 interface AnnouncementPreviewPageProps {
   params: Promise<{ announcementId: string }>;
 }
 
-export async function generateMetadata({ params }: AnnouncementPreviewPageProps): Promise<Metadata> {
-  const { announcementId } = await params;
-  const detail = announcementPreviewData[announcementId];
-  const basic = announcementItems.find((item) => item.id === announcementId);
+export default function AnnouncementPreviewPage({ params }: AnnouncementPreviewPageProps) {
+  const { announcementId } = use(params);
+  const { data: announcement, isLoading, isError } = useAnnouncement(announcementId);
 
-  return {
-    title: detail?.title ?? basic?.title ?? "Announcement Preview",
-  };
-}
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+      </div>
+    );
+  }
 
-export default async function AnnouncementPreviewPage({ params }: AnnouncementPreviewPageProps) {
-  const { announcementId } = await params;
-  const detail = announcementPreviewData[announcementId];
-
-  if (!detail) {
+  if (isError || !announcement) {
     notFound();
   }
 
-  return <AnnouncementPreviewContent item={detail} />;
+  return <AnnouncementPreviewContent item={announcement} />;
 }

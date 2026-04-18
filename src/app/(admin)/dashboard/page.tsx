@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { StatsSection } from "@/components/dashboard/StatsSection";
 import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { RecentAnnouncements } from "@/components/dashboard/RecentAnnouncements";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 
 export const metadata: Metadata = {
@@ -34,6 +35,9 @@ export default function DashboardPage() {
 
       {/* ── Stats Row ───────────────────────────────────────── */}
       <StatsSection />
+
+      {/* ── Latest Announcements ──────────────────────────────── */}
+      <RecentAnnouncements />
 
       {/* ── Main Grid: Events + Activity ─────────────────── */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">

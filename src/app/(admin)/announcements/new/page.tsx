@@ -13,11 +13,13 @@ export default function CreateAnnouncementPage() {
         title: "",
         summary: "",
         body: "",
-        category: "academic",
+        category: "",
         originatingBody: "Office of the Registrar",
         pinned: false,
         coverImageUrl: "",
         coverImageName: undefined,
+        tags: ["Announcement", "AASTU"],
+        procedureSteps: [],
       }}
     />
   );

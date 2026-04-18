@@ -209,7 +209,7 @@ export interface Activity {
 }
 
 // ─── Announcements ───────────────────────────────────────────────────────────
-export type AnnouncementCategory = "academic" | "social" | "union";
+export type AnnouncementCategory = string;
 
 export interface AnnouncementTab {
   id: string;

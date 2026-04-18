@@ -4,23 +4,27 @@ import {
   ArrowRight,
   CalendarDays,
   Clock3,
-  FileText,
   Mail,
   UserRound,
   Users2,
+  Tag,
 } from "lucide-react";
 import { PublicFooter } from "@/components/public/layout/PublicFooter";
 import { PublicHeader } from "@/components/public/layout/PublicHeader";
-import { getPublicAnnouncements } from "@/lib/public/announcements";
-import type { AnnouncementItem, AnnouncementPreviewData } from "@/types/dashboard";
+import type { Announcement } from "@/schemas/announcement.schema";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 interface PublicAnnouncementDetailPageProps {
-  announcement: AnnouncementPreviewData;
-  item: AnnouncementItem;
+  announcement: Announcement;
+  relatedAnnouncements?: Announcement[];
 }
 
-export function PublicAnnouncementDetailPage({ announcement, item }: PublicAnnouncementDetailPageProps) {
-  const relatedNotices = getPublicAnnouncements().filter((notice) => notice.id !== item.id).slice(0, 3);
+export function PublicAnnouncementDetailPage({ announcement, relatedAnnouncements = [] }: PublicAnnouncementDetailPageProps) {
+  const publishedAt = dayjs(announcement.createdAt).format("MMM D, YYYY");
+  const publishedAgo = dayjs(announcement.createdAt).fromNow();
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[#f3f3f3] text-[#14213d]">
@@ -29,24 +33,30 @@ export function PublicAnnouncementDetailPage({ announcement, item }: PublicAnnou
       <section className="w-full bg-[#071741]">
         <article className="relative overflow-hidden text-white">
           <div className="relative h-[250px] sm:h-[290px] lg:h-[330px]">
-            <Image
-              src={announcement.imageUrl}
-              alt={announcement.title}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover opacity-45"
-            />
+            {announcement.image ? (
+              <Image
+                src={announcement.image}
+                alt={announcement.title}
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover opacity-45"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[#0a1941]" />
+            )}
             <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(4,18,63,0.94),rgba(4,18,63,0.22)_68%)]" />
 
             <div className="absolute inset-x-0 bottom-0">
               <div className="mx-auto w-full max-w-[1280px] px-4 pb-4 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
                 <div className="max-w-[940px]">
                   <div className="flex flex-wrap items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white/85">
-                    <span className="rounded-full bg-[#f1c44d] px-3 py-1 text-[#08143c] font-bold">
-                      {announcement.subtitleBadge}
-                    </span>
-                    <span>{item.publishedAgo}</span>
+                    {announcement.categoryDetails && (
+                      <span className="rounded-full bg-[#f1c44d] px-3 py-1 text-[#08143c] font-bold">
+                        {announcement.categoryDetails.name}
+                      </span>
+                    )}
+                    <span>{publishedAgo}</span>
                   </div>
 
                   <h1 className="mt-3 text-3xl font-black leading-[1.02] text-white sm:text-4xl lg:text-5xl">
@@ -56,15 +66,11 @@ export function PublicAnnouncementDetailPage({ announcement, item }: PublicAnnou
                   <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#d7e1ff]">
                     <p className="inline-flex items-center gap-2.5">
                       <CalendarDays size={15} className="text-[#f1c44d]" />
-                      {announcement.publishedDate}
-                    </p>
-                    <p className="inline-flex items-center gap-2.5">
-                      <Clock3 size={15} className="text-[#f1c44d]" />
-                      {announcement.readTime}
+                      {publishedAt}
                     </p>
                     <p className="inline-flex items-center gap-2.5">
                       <Users2 size={15} className="text-[#f1c44d]" />
-                      {announcement.authorRole}
+                      {announcement.authorRoleName || "Official Notice"}
                     </p>
                   </div>
                 </div>
@@ -84,18 +90,8 @@ export function PublicAnnouncementDetailPage({ announcement, item }: PublicAnnou
                     <UserRound size={15} />
                   </span>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Author</p>
-                    <p className="font-semibold text-[#0f1d49]">{announcement.authorName}</p>
-                  </div>
-                </div>
-
-                <div className="inline-flex items-center gap-2">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#eef1f8] text-[#0f1d49]">
-                    <FileText size={15} />
-                  </span>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Posted</p>
-                    <p className="font-semibold text-[#0f1d49]">{announcement.publishedDate}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Originating Body</p>
+                    <p className="font-semibold text-[#0f1d49]">{announcement.authorName || announcement.author.name}</p>
                   </div>
                 </div>
 
@@ -104,90 +100,98 @@ export function PublicAnnouncementDetailPage({ announcement, item }: PublicAnnou
                     <Clock3 size={15} />
                   </span>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Priority</p>
-                    <p className="font-semibold text-[#c49a22]">High Importance</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Importance</p>
+                    <p className="font-semibold text-[#c49a22]">{announcement.isPinned ? "High Priority" : "Standard"}</p>
                   </div>
                 </div>
               </div>
 
-              <p className="mt-6 text-[1.05rem] leading-8 text-slate-600">
-                {announcement.introText}
-              </p>
+              {/* Rich Text Body */}
+              <div 
+                className="mt-8 prose prose-slate max-w-none prose-headings:text-[#0f1d49] prose-headings:font-black prose-p:leading-8 prose-p:text-slate-600 prose-a:text-[#c49a22] prose-strong:text-[#0f1d49] prose-ul:list-disc prose-ol:list-decimal"
+                dangerouslySetInnerHTML={{ __html: announcement.body || "" }}
+              />
 
-              <h2 className="mt-8 text-2xl font-black text-[#0f1d49]">{announcement.timelineHeading}</h2>
-              <p className="mt-3 text-[1rem] leading-8 text-slate-600">{announcement.timelineText}</p>
+              {announcement.procedureSteps && announcement.procedureSteps.length > 0 && (
+                <div className="mt-10">
+                  <h2 className="text-2xl font-black text-[#0f1d49] mb-4">Procedure Steps</h2>
+                  <div className="space-y-4">
+                    {announcement.procedureSteps.map((step, index) => (
+                      <div key={index} className="flex gap-4 items-start p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-[#0f1d49] text-white font-bold text-sm">
+                          {index + 1}
+                        </span>
+                        <p className="text-slate-600 leading-relaxed">{step}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="mt-6 rounded-[16px] border border-slate-100 bg-[#f7f8fc] p-5">
-                <p className="text-sm font-semibold text-[#0f1d49]">Revised Timeline</p>
-                <ul className="mt-4 space-y-3 text-sm text-slate-600">
-                  {announcement.keyRequirements.map((requirement, index) => (
-                    <li key={`${item.id}-requirement-${index}`} className="flex items-start gap-2">
-                      <span className="mt-1 h-2 w-2 rounded-full bg-[#c49a22]" />
-                      <span>{requirement}</span>
-                    </li>
+              <div className="mt-10 pt-6 border-t border-slate-100">
+                <div className="flex flex-wrap gap-2 mb-8">
+                  {announcement.tags.map((tag) => (
+                    <span key={tag} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f7f8fc] text-[12px] font-bold text-slate-500 border border-slate-100">
+                      <Tag size={12} />
+                      {tag}
+                    </span>
                   ))}
-                </ul>
-              </div>
+                </div>
 
-              <h2 className="mt-8 text-2xl font-black text-[#0f1d49]">Prerequisites</h2>
-              <div className="mt-3 space-y-3 text-sm leading-7 text-slate-600">
-                {announcement.procedureSteps.map((step, index) => (
-                  <p key={`${item.id}-step-${index}`}>{step}</p>
-                ))}
-              </div>
+                <div className="rounded-[14px] bg-[#08143c] p-6 text-sm leading-7 text-[#d7e1ff]">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f1c44d]/15 text-[#f1c44d]">
+                      <Mail size={14} />
+                    </span>
+                    <span className="font-bold text-white uppercase tracking-wider text-[11px]">Contact Support</span>
+                  </div>
+                  <p>
+                    If you have questions regarding this announcement, please contact the {announcement.authorName || "relevant office"} through the official student portal or visit their desk.
+                  </p>
+                </div>
 
-              <div className="mt-7 rounded-[14px] bg-[#08143c] p-5 text-sm leading-7 text-[#d7e1ff]">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f1c44d]/15 text-[#f1c44d]">
-                  <Mail size={14} />
-                </span>
-                <p className="mt-3">{announcement.supportNote}</p>
-              </div>
-
-              <p className="mt-8 text-sm leading-7 text-slate-600">
-                Signed,
-                <br />
-                AASTU Student Union Communications Team
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Share this notice</p>
-                <Link href="/public/announcements" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0f1d49] transition-colors hover:text-[#b6861f]">
-                  Back to Announcements
-                  <ArrowRight size={14} />
-                </Link>
+                <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Official Notice of AASTU Student Union</p>
+                  <Link href="/public/announcements" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0f1d49] transition-colors hover:text-[#b6861f]">
+                    Back to Announcements
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
               </div>
             </article>
           </div>
 
           <aside className="space-y-5">
-            <article className="rounded-[18px] bg-white p-5 shadow-sm sm:p-6">
-              <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-[#0f1d49]">Related Notices</h3>
+            {relatedAnnouncements.length > 0 && (
+              <article className="rounded-[18px] bg-white p-5 shadow-sm sm:p-6">
+                <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-[#0f1d49]">Related Notices</h3>
 
-              <div className="mt-5 space-y-4">
-                {relatedNotices.map((notice) => (
-                  <Link
-                    key={notice.id}
-                    href={`/public/announcements/${notice.id}`}
-                    className="block border-b border-slate-100 pb-4 last:border-0 last:pb-0"
-                  >
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#b6861f]">
-                      {notice.category === "academic" ? "Campus Life" : notice.category === "social" ? "Student Welfare" : "Financial Aid"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold leading-6 text-[#0f1d49]">
-                      {notice.title}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">{notice.publishedAgo}</p>
-                  </Link>
-                ))}
-              </div>
+                <div className="mt-5 space-y-4">
+                  {relatedAnnouncements.map((notice) => (
+                    <Link
+                      key={notice.id}
+                      href={`/public/announcements/${notice.id}`}
+                      className="block border-b border-slate-100 pb-4 last:border-0 last:pb-0 group"
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#b6861f]">
+                        {notice.categoryDetails?.name || "News"}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold leading-6 text-[#0f1d49] group-hover:text-[#c49a22] transition-colors">
+                        {notice.title}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">{dayjs(notice.createdAt).fromNow()}</p>
+                    </Link>
+                  ))}
+                </div>
 
-              <Link
-                href="/public/announcements"
-                className="mt-5 inline-flex w-full items-center justify-center rounded-[10px] border border-[#0f1d49] px-4 py-2.5 text-sm font-semibold text-[#0f1d49] transition-colors hover:bg-[#f6f7fb]"
-              >
-                View All Announcements
-              </Link>
-            </article>
+                <Link
+                  href="/public/announcements"
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-[10px] border border-[#0f1d49] px-4 py-2.5 text-sm font-semibold text-[#0f1d49] transition-colors hover:bg-[#f6f7fb]"
+                >
+                  View All Announcements
+                </Link>
+              </article>
+            )}
 
             <article className="overflow-hidden rounded-[18px] bg-[#08143c] p-5 text-white shadow-sm sm:p-6">
               <div className="relative h-36 overflow-hidden rounded-[12px] bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(255,255,255,0.02))]">

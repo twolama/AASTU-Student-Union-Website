@@ -22,6 +22,11 @@ import {
   Quote,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { announcementService } from "@/api/services/announcement.service";
+import { useCreateAnnouncement, useUpdateAnnouncement } from "@/hooks/useAnnouncements";
+import { toast } from "sonner";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Switch } from "@/components/ui/Switch";
 import { FileUpload } from "@/components/ui/FileUpload";
@@ -40,6 +45,8 @@ export interface AnnouncementEditorValues {
   pinned: boolean;
   coverImageUrl: string;
   coverImageName?: string;
+  tags: string[];
+  procedureSteps: string[];
 }
 
 interface AnnouncementEditorProps {
@@ -47,12 +54,6 @@ interface AnnouncementEditorProps {
   initialValues: AnnouncementEditorValues;
   announcementId?: string;
 }
-
-const categoryOptions: Array<{ value: AnnouncementCategory; label: string }> = [
-  { value: "academic", label: "Academic Updates" },
-  { value: "social", label: "Social Events" },
-  { value: "union", label: "Union Meetings" },
-];
 
 const originatingBodies = [
   "Office of the Registrar",
@@ -107,10 +108,26 @@ function normalizeBodyHtml(body: string) {
 }
 
 export function AnnouncementEditor({ mode, initialValues, announcementId }: AnnouncementEditorProps) {
+  const router = useRouter();
   const [values, setValues] = useState<AnnouncementEditorValues>(initialValues);
   const [bodyHtml, setBodyHtml] = useState(() => normalizeBodyHtml(initialValues.body));
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  
+  const createMutation = useCreateAnnouncement();
+  const updateMutation = useUpdateAnnouncement();
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ["announcement-categories"],
+    queryFn: () => announcementService.getCategories(),
+  });
+
+  const categoryOptions = useMemo(() => {
+    return categoriesData?.data.map((cat: any) => ({
+      value: cat.id,
+      label: cat.name,
+    })) || [];
+  }, [categoriesData]);
+
   const [selectionToolbar, setSelectionToolbar] = useState({ visible: false, top: 0, left: 0 });
   const [linkInputOpen, setLinkInputOpen] = useState(false);
   const [linkValue, setLinkValue] = useState("");
@@ -121,6 +138,15 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
   const selectionRef = useRef<Range | null>(null);
   const bodyHtmlRef = useRef(bodyHtml);
   const initialBodySyncedRef = useRef(false);
+
+  useEffect(() => {
+    if (categoriesData?.data && values.category) {
+      const isValid = categoriesData.data.some((cat: any) => cat.id === values.category);
+      if (!isValid) {
+        updateField("category", "");
+      }
+    }
+  }, [categoriesData, values.category]);
 
   useEffect(() => {
     bodyHtmlRef.current = bodyHtml;
@@ -341,13 +367,51 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     });
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatusMessage(
-      mode === "create"
-        ? "Announcement ready for publishing."
-        : `Announcement ${announcementId ?? ""} updated locally.`.trim()
-    );
+    
+    if (!values.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    if (!values.body.trim() && !bodyHtml.trim()) {
+      toast.error("Content is required");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", values.title);
+    formData.append("body", values.body || bodyHtml);
+    
+    if (values.category) {
+      formData.append("category", values.category);
+    }
+    
+    formData.append("author_name", values.originatingBody);
+    formData.append("is_pinned", String(values.pinned));
+    
+    // Tags and procedure steps from values
+    formData.append("tags", JSON.stringify(values.tags));
+    formData.append("procedure_steps", JSON.stringify(values.procedureSteps));
+
+    if (uploadedFile) {
+      formData.append("image", uploadedFile);
+    }
+
+    try {
+      if (mode === "create") {
+        await createMutation.mutateAsync(formData);
+        toast.success("Announcement published successfully");
+      } else if (announcementId) {
+        await updateMutation.mutateAsync({ id: announcementId, data: formData });
+        toast.success("Announcement updated successfully");
+      }
+      router.push("/announcements");
+    } catch (error: any) {
+      console.error("Submission error:", error);
+      toast.error(error.message || "Something went wrong");
+    }
   }
 
   return (
@@ -394,7 +458,7 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
                 role="toolbar"
                 aria-label="Text formatting toolbar"
                 className={cn(
-                  "absolute z-[50] flex items-center gap-1 rounded-[10px] border border-[#1f2844] bg-[#1a2238] px-2 py-1.5 shadow-[0_18px_50px_rgba(15,23,42,0.28)]",
+                  "absolute z-50 flex items-center gap-1 rounded-[10px] border border-[#1f2844] bg-[#1a2238] px-2 py-1.5 shadow-[0_18px_50px_rgba(15,23,42,0.28)]",
                   selectionToolbar.visible ? "opacity-100" : "pointer-events-none opacity-0"
                 )}
                 style={{ top: selectionToolbar.top, left: selectionToolbar.left }}
@@ -585,9 +649,9 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
             </div>
           </section>
 
-          {statusMessage ? (
+          {(createMutation.isPending || updateMutation.isPending) ? (
             <section className="rounded-[10px] border border-[#c49a22]/20 bg-[#fdf8ec] p-4 text-sm text-[#8c6c14] shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
-              {statusMessage}
+              {mode === "create" ? "Publishing..." : "Updating..."}
             </section>
           ) : null}
 
@@ -595,8 +659,14 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
             <Button type="button" variant="outline" size="md" className="flex-1">
               Save Draft
             </Button>
-            <Button type="submit" variant="goldSolid" size="md" className="flex-1">
-              {actionLabel}
+            <Button 
+               type="submit" 
+               variant="goldSolid" 
+               size="md" 
+               className="flex-1"
+               disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              {createMutation.isPending || updateMutation.isPending ? "Processing..." : actionLabel}
             </Button>
           </div>
         </aside>

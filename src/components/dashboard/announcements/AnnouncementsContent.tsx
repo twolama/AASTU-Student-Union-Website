@@ -1,33 +1,56 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AnnouncementTabs } from "@/components/dashboard/announcements/AnnouncementTabs";
 import { AnnouncementsList } from "@/components/dashboard/announcements/AnnouncementsList";
 import { AnnouncementsPagination } from "@/components/dashboard/announcements/AnnouncementsPagination";
-import { announcementItems, announcementTabs } from "@/data/dummy";
+import { useAnnouncements } from "@/hooks/useAnnouncements";
+import { useAnnouncementCategories } from "@/hooks/useAnnouncementCategories";
+import { Loader2 } from "lucide-react";
 
 export function AnnouncementsContent() {
   const [activeTabId, setActiveTabId] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 9;
 
-  const filteredItems = useMemo(() => {
-    if (activeTabId === "all") {
-      return announcementItems;
-    }
+  const { data: annData, isLoading: isAnnLoading } = useAnnouncements(currentPage, limit, activeTabId);
+  const { data: catData, isLoading: isCatLoading } = useAnnouncementCategories();
 
-    return announcementItems.filter((item) => item.category === activeTabId);
-  }, [activeTabId]);
+  // Reset page when tab changes
+  const handleTabChange = (tabId: string) => {
+    setActiveTabId(tabId);
+    setCurrentPage(1);
+  };
+
+  if ((isAnnLoading && !annData) || isCatLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+      </div>
+    );
+  }
+
+  const announcements = annData?.data || [];
+  const meta = annData?.meta || { page: 1, limit: 9, total: 0, totalPages: 1 };
+  const categories = catData?.data || [];
 
   return (
-    <>
+    <div className="space-y-6">
       <AnnouncementTabs
-        tabs={announcementTabs}
+        categories={categories}
         activeTabId={activeTabId}
-        onTabChange={setActiveTabId}
+        onTabChange={handleTabChange}
       />
 
-      <AnnouncementsList items={filteredItems} />
+      <AnnouncementsList items={announcements} />
 
-      <AnnouncementsPagination />
-    </>
+      {meta.totalPages > 1 && (
+        <AnnouncementsPagination 
+          currentPage={currentPage}
+          totalPages={meta.totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
+    </div>
   );
 }
