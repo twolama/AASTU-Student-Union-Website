@@ -32,6 +32,7 @@ import { Switch } from "@/components/ui/Switch";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import type { AnnouncementCategory as ApiAnnouncementCategory } from "@/schemas/announcement.schema";
 import type { AnnouncementCategory } from "@/types/dashboard";
 
 type EditorMode = "create" | "edit";
@@ -122,10 +123,10 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
   });
 
   const categoryOptions = useMemo(() => {
-    return categoriesData?.data.map((cat: any) => ({
+    return (categoriesData?.data ?? []).map((cat: ApiAnnouncementCategory) => ({
       value: cat.id,
       label: cat.name,
-    })) || [];
+    }));
   }, [categoriesData]);
 
   const [selectionToolbar, setSelectionToolbar] = useState({ visible: false, top: 0, left: 0 });
@@ -138,15 +139,6 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
   const selectionRef = useRef<Range | null>(null);
   const bodyHtmlRef = useRef(bodyHtml);
   const initialBodySyncedRef = useRef(false);
-
-  useEffect(() => {
-    if (categoriesData?.data && values.category) {
-      const isValid = categoriesData.data.some((cat: any) => cat.id === values.category);
-      if (!isValid) {
-        updateField("category", "");
-      }
-    }
-  }, [categoriesData, values.category]);
 
   useEffect(() => {
     bodyHtmlRef.current = bodyHtml;
@@ -353,6 +345,13 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     setLinkValue("");
   }
 
+  function handleCoverImageChange(file: File | null) {
+    setUploadedFile(file);
+    if (file) {
+      toast.success(`Cover image selected: ${file.name}`);
+    }
+  }
+
   function handleEditorBlur() {
     requestAnimationFrame(() => {
       const active = document.activeElement;
@@ -380,37 +379,51 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
       return;
     }
 
-    const formData = new FormData();
-    formData.append("title", values.title);
-    formData.append("body", values.body || bodyHtml);
-    
-    if (values.category) {
-      formData.append("category", values.category);
+    if (!values.category) {
+      toast.error("Please select a category before publishing");
+      return;
     }
-    
-    formData.append("author_name", values.originatingBody);
-    formData.append("is_pinned", String(values.pinned));
-    
-    // Tags and procedure steps from values
-    formData.append("tags", JSON.stringify(values.tags));
-    formData.append("procedure_steps", JSON.stringify(values.procedureSteps));
 
-    if (uploadedFile) {
-      formData.append("image", uploadedFile);
-    }
+    const payloadBase = {
+      title: values.title,
+      body: values.body || bodyHtml,
+      author_name: values.originatingBody,
+      is_pinned: values.pinned,
+      tags: values.tags,
+      procedure_steps: values.procedureSteps,
+      category: values.category,
+    };
+
+    const payload = uploadedFile
+      ? (() => {
+          const formData = new FormData();
+          formData.append("title", payloadBase.title);
+          formData.append("body", payloadBase.body);
+          formData.append("author_name", payloadBase.author_name);
+          formData.append("is_pinned", String(payloadBase.is_pinned));
+          formData.append("tags", JSON.stringify(payloadBase.tags));
+          formData.append("procedure_steps", JSON.stringify(payloadBase.procedure_steps));
+          if (payloadBase.category) {
+            formData.append("category", payloadBase.category);
+          }
+          formData.append("image", uploadedFile, uploadedFile.name);
+          return formData;
+        })()
+      : payloadBase;
 
     try {
       if (mode === "create") {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync(payload);
         toast.success("Announcement published successfully");
       } else if (announcementId) {
-        await updateMutation.mutateAsync({ id: announcementId, data: formData });
+        await updateMutation.mutateAsync({ id: announcementId, data: payload });
         toast.success("Announcement updated successfully");
       }
       router.push("/announcements");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Submission error:", error);
-      toast.error(error.message || "Something went wrong");
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      toast.error(message);
     }
   }
 
@@ -599,6 +612,7 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
               value={values.category}
               options={categoryOptions}
               onValueChange={(value) => updateField("category", value)}
+              placeholder="Select a category..."
               className="mt-5"
             />
 
@@ -606,9 +620,10 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Cover Image</p>
               <FileUpload
                 label=""
+                file={uploadedFile}
                 previewUrl={values.coverImageUrl || undefined}
                 fileName={uploadedFile?.name || values.coverImageName}
-                onChange={setUploadedFile}
+                onChange={handleCoverImageChange}
                 onClear={() => {
                   setUploadedFile(null);
                   updateField("coverImageUrl", "");

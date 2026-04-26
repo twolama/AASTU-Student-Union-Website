@@ -6,6 +6,22 @@ import { useAnnouncement } from "@/hooks/useAnnouncements";
 import { Loader2 } from "lucide-react";
 import { notFound } from "next/navigation";
 
+const originatingBodies = [
+  "Office of the Registrar",
+  "Student Affairs Office",
+  "AASTU Student Union",
+  "Academic Affairs Office",
+];
+
+function resolveOriginatingBody(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return originatingBodies.find((body) => body.toLowerCase() === normalized) ?? "";
+}
+
 interface EditAnnouncementPageProps {
   params: Promise<{ announcementId: string }>;
 }
@@ -32,7 +48,7 @@ export default function EditAnnouncementPage({ params }: EditAnnouncementPagePro
     summary: announcement.bodyExcerpt,
     body: announcement.body || announcement.bodyExcerpt,
     category: announcement.category || "",
-    originatingBody: announcement.authorRoleName || announcement.authorName || "AASTU Student Union",
+    originatingBody: resolveOriginatingBody(announcement.authorName || announcement.authorRoleName),
     pinned: announcement.isPinned,
     coverImageUrl: announcement.image || "",
     coverImageName: undefined,

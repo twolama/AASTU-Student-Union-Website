@@ -11,12 +11,13 @@ export interface DropdownOption<T extends string = string> {
 
 interface DropdownSelectProps<T extends string = string> {
   label: string;
-  value: T;
+  value: T | "";
   options: DropdownOption<T>[];
   onValueChange: (value: T) => void;
   className?: string;
   error?: string;
   disabled?: boolean;
+  placeholder?: string;
 }
 
 export function DropdownSelect<T extends string = string>({
@@ -27,12 +28,12 @@ export function DropdownSelect<T extends string = string>({
   className,
   error,
   disabled,
+  placeholder = "Select...",
 }: DropdownSelectProps<T>) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
-
-  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const selectedOption = options.find((option) => option.value === value);
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
@@ -67,7 +68,7 @@ export function DropdownSelect<T extends string = string>({
             disabled && "cursor-not-allowed bg-gray-50 text-gray-400 opacity-60"
           )}
         >
-          <span className="truncate">{selectedOption?.label || "Select an option..."}</span>
+          <span className={cn("truncate", !selectedOption && "text-gray-400")}>{selectedOption?.label || placeholder}</span>
           <ChevronDown size={16} className={cn("shrink-0 text-gray-400 transition-transform", open && "rotate-180")} />
         </button>
 

@@ -15,6 +15,10 @@ function categoryLabel(category: AnnouncementCategory) {
   return getPublicAnnouncementCategoryLabel(category);
 }
 
+function getPublicAnnouncementSourceLabel(announcement: AnnouncementItem) {
+  return announcement.authorName || "Official Notice";
+}
+
 function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) {
   return (
     <article className="group overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]">
@@ -44,7 +48,10 @@ function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) 
         </p>
 
         <div className="mt-5 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
-          <span>{announcement.authorName}</span>
+          <span className="flex flex-col gap-0.5">
+            <span>Originating Body: {getPublicAnnouncementSourceLabel(announcement)}</span>
+            <span>Category: {categoryLabel(announcement.category)}</span>
+          </span>
           <Link
             href={`/public/announcements/${announcement.id}`}
             className="inline-flex items-center gap-1.5 font-semibold text-[#0f1d49] transition-colors hover:text-[#b6861f]"
@@ -99,7 +106,7 @@ export function PublicAnnouncementsContent() {
         normalized.length === 0 ||
         announcement.title.toLowerCase().includes(normalized) ||
         announcement.body_excerpt.toLowerCase().includes(normalized) ||
-        announcement.authorName.toLowerCase().includes(normalized);
+        getPublicAnnouncementSourceLabel(announcement).toLowerCase().includes(normalized);
 
       return matchesTab && matchesQuery;
     });

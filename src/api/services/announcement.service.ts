@@ -8,10 +8,12 @@ import {
   type AnnouncementCategory
 } from "@/schemas/announcement.schema";
 
+type AnnouncementMutationPayload = FormData | Record<string, unknown>;
+
 export const announcementService = {
   // Announcements
   getAnnouncements: async (page = 1, limit = 20, category?: string) => {
-    const params: Record<string, any> = { page, limit };
+    const params: Record<string, string | number> = { page, limit };
     if (category && category !== "all") params["category__slug"] = category;
     
     const response = await apiClient.get<AnnouncementListResponse>(ANNOUNCEMENT_ENDPOINTS.LIST, { params });
@@ -23,12 +25,12 @@ export const announcementService = {
     return AnnouncementSchema.parse(response.data.data);
   },
 
-  createAnnouncement: async (data: any) => {
+  createAnnouncement: async (data: AnnouncementMutationPayload) => {
     const response = await apiClient.post<{ success: boolean; data: Announcement }>(ANNOUNCEMENT_ENDPOINTS.CREATE, data);
     return AnnouncementSchema.parse(response.data.data);
   },
 
-  updateAnnouncement: async (id: string, data: any) => {
+  updateAnnouncement: async (id: string, data: AnnouncementMutationPayload) => {
     const response = await apiClient.patch<{ success: boolean; data: Announcement }>(ANNOUNCEMENT_ENDPOINTS.PATCH(id), data);
     return AnnouncementSchema.parse(response.data.data);
   },

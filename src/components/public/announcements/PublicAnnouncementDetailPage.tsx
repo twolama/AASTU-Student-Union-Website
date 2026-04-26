@@ -17,6 +17,10 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
+function getPublicAnnouncementSourceLabel(announcement: Announcement) {
+  return announcement.authorRoleName || "Official Notice";
+}
+
 interface PublicAnnouncementDetailPageProps {
   announcement: Announcement;
   relatedAnnouncements?: Announcement[];
@@ -91,7 +95,17 @@ export function PublicAnnouncementDetailPage({ announcement, relatedAnnouncement
                   </span>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Originating Body</p>
-                    <p className="font-semibold text-[#0f1d49]">{announcement.authorName || announcement.author.name}</p>
+                    <p className="font-semibold text-[#0f1d49]">{getPublicAnnouncementSourceLabel(announcement)}</p>
+                  </div>
+                </div>
+
+                <div className="inline-flex items-center gap-2">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#fdf4d5] text-[#c49a22]">
+                    <Tag size={15} />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Category</p>
+                    <p className="font-semibold text-[#c49a22]">{announcement.categoryDetails?.name || "General"}</p>
                   </div>
                 </div>
 
@@ -146,7 +160,7 @@ export function PublicAnnouncementDetailPage({ announcement, relatedAnnouncement
                     <span className="font-bold text-white uppercase tracking-wider text-[11px]">Contact Support</span>
                   </div>
                   <p>
-                    If you have questions regarding this announcement, please contact the {announcement.authorName || "relevant office"} through the official student portal or visit their desk.
+                    If you have questions regarding this announcement, please contact the {getPublicAnnouncementSourceLabel(announcement)} through the official student portal or visit their desk.
                   </p>
                 </div>
 

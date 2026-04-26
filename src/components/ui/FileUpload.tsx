@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ChangeEvent } from "react";
+import { useEffect, useId, useMemo, type ChangeEvent } from "react";
 import Image from "next/image";
 import { UploadCloud, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface FileUploadProps {
   label?: string;
   helperText?: string;
+  file?: File | null;
   previewUrl?: string;
   fileName?: string;
   accept?: string;
@@ -19,6 +20,7 @@ interface FileUploadProps {
 export function FileUpload({
   label = "Cover Image",
   helperText = "Click to upload or drag & drop",
+  file,
   previewUrl,
   fileName,
   accept = "image/png,image/jpeg,image/jpg,image/webp",
@@ -27,6 +29,26 @@ export function FileUpload({
   className,
 }: FileUploadProps) {
   const id = useId();
+  const objectPreviewUrl = useMemo(() => {
+    if (!file) {
+      return undefined;
+    }
+
+    return URL.createObjectURL(file);
+  }, [file]);
+
+  useEffect(() => {
+    return () => {
+      if (objectPreviewUrl) {
+        URL.revokeObjectURL(objectPreviewUrl);
+      }
+    };
+  }, [objectPreviewUrl]);
+
+  const resolvedPreviewUrl = objectPreviewUrl ?? previewUrl;
+  const isLocalPreview = Boolean(
+    resolvedPreviewUrl && (resolvedPreviewUrl.startsWith("blob:") || resolvedPreviewUrl.startsWith("data:"))
+  );
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     onChange(event.target.files?.[0] ?? null);
@@ -47,10 +69,14 @@ export function FileUpload({
       >
         <input id={id} type="file" accept={accept} className="sr-only" onChange={handleChange} />
 
-        {previewUrl ? (
+        {resolvedPreviewUrl ? (
           <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div className="relative h-28 w-full">
-              <Image src={previewUrl} alt="Selected cover image preview" fill className="object-cover" />
+              {isLocalPreview ? (
+                <img src={resolvedPreviewUrl} alt="Selected cover image preview" className="h-full w-full object-cover" />
+              ) : (
+                <Image src={resolvedPreviewUrl} alt="Selected cover image preview" fill className="object-cover" />
+              )}
             </div>
             <div className="flex items-center justify-between gap-3 px-3 py-2 text-left">
               <div className="min-w-0">

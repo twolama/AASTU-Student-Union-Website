@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Pin, User, Clock, Edit3, Trash2, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { type Announcement } from "@/schemas/announcement.schema";
 import { useDeleteAnnouncement } from "@/hooks/useAnnouncements";
 import { toast } from "sonner";
@@ -19,15 +21,15 @@ interface AnnouncementCardProps {
 export function AnnouncementCard({ item }: AnnouncementCardProps) {
   const publishedAt = item.publishedDate || dayjs(item.createdAt).fromNow();
   const deleteMutation = useDeleteAnnouncement();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this announcement?")) {
-      try {
-        await deleteMutation.mutateAsync(item.id);
-        toast.success("Announcement deleted successfully");
-      } catch (error) {
-        toast.error("Failed to delete announcement");
-      }
+    try {
+      await deleteMutation.mutateAsync(item.id);
+      toast.success("Announcement deleted successfully");
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to delete announcement");
     }
   };
 
@@ -116,7 +118,7 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
               <Edit3 size={16} />
             </Link>
             <button
-              onClick={handleDelete}
+              onClick={() => setIsDeleteDialogOpen(true)}
               disabled={deleteMutation.isPending}
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
               title="Delete Announcement"
@@ -126,6 +128,17 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
           </div>
         </div>
       </div>
+
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        title="Delete Announcement"
+        message="Are you sure you want to delete this announcement? This action cannot be undone."
+        confirmLabel="Delete Announcement"
+        cancelLabel="Cancel"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+      />
     </article>
   );
 }

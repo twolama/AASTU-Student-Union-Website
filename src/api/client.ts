@@ -25,10 +25,18 @@ export const apiClient = axios.create({
   timeout: 15000,
   withCredentials: true,
   headers: {
-    "Content-Type": "application/json",
     Accept: "application/json",
   },
 });
+
+function getNestedErrorMessage(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+
+  const message = (value as { message?: unknown }).message;
+  return typeof message === "string" ? message : undefined;
+}
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -38,7 +46,7 @@ apiClient.interceptors.response.use(
     // Prioritize descriptive error messages from the payload
     const message =
       (typeof payload?.error === "string" ? payload.error : undefined) ||
-      (typeof (payload?.error as any)?.message === "string" ? (payload?.error as any).message : undefined) ||
+      getNestedErrorMessage(payload?.error) ||
       payload?.message ||
       error.message ||
       "Request failed";

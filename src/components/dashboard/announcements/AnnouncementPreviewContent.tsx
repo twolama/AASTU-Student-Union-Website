@@ -13,6 +13,10 @@ interface AnnouncementPreviewContentProps {
   item: Announcement;
 }
 
+function getAnnouncementSourceLabel(item: Announcement) {
+  return item.authorRoleName || item.categoryDetails?.name || "Official Notice";
+}
+
 export function AnnouncementPreviewContent({ item }: AnnouncementPreviewContentProps) {
   const publishedAt = dayjs(item.createdAt).format("MMMM D, YYYY");
 
@@ -67,9 +71,9 @@ export function AnnouncementPreviewContent({ item }: AnnouncementPreviewContentP
                 <User size={14} />
               </span>
               <div>
-                <p className="text-sm font-bold text-[#1f2a44]">{item.authorName || item.author.name}</p>
+                <p className="text-sm font-bold text-[#1f2a44]">{getAnnouncementSourceLabel(item)}</p>
                 <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                  {item.authorRoleName || "Official"}
+                  {item.categoryDetails?.name || "Official Notice"}
                 </p>
               </div>
             </div>

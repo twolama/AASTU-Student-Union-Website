@@ -14,7 +14,7 @@ export default function CreateAnnouncementPage() {
         summary: "",
         body: "",
         category: "",
-        originatingBody: "Office of the Registrar",
+        originatingBody: "",
         pinned: false,
         coverImageUrl: "",
         coverImageName: undefined,

@@ -66,7 +66,7 @@ function buildProxyUrl(baseUrl: string, pathSegments: string[], requestUrl: URL)
 async function normalizeErrorResponse(upstreamResponse: Response) {
   const fallbackMessage = "Request failed";
   let message = fallbackMessage;
-  let upstreamError = null;
+  let upstreamError: unknown = null;
 
   const contentType = upstreamResponse.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
@@ -80,6 +80,17 @@ async function normalizeErrorResponse(upstreamResponse: Response) {
       } else if (typeof payload === "object") {
         // Fallback for DRF field-level errors: {"field": ["error"]}
         message = "Validation Error: " + JSON.stringify(payload);
+      }
+    } catch {
+      message = fallbackMessage;
+    }
+  } else {
+    try {
+      const textPayload = await upstreamResponse.text();
+      if (textPayload && textPayload.trim().length > 0) {
+        const trimmed = textPayload.trim();
+        upstreamError = trimmed.slice(0, 4000);
+        message = `Upstream ${upstreamResponse.status} error`;
       }
     } catch {
       message = fallbackMessage;
