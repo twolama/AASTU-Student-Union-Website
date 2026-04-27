@@ -4,7 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarClock, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Badge } from "@/components/ui/Badge";
+import { announcementService } from "@/api/services/announcement.service";
 import { getPublicAnnouncementCategoryLabel, getPublicAnnouncements, publicAnnouncementTabs } from "@/lib/public/announcements";
 import type { AnnouncementItem, AnnouncementCategory } from "@/types/dashboard";
 import { announcementPreviewData } from "@/data/dummy";
@@ -95,7 +98,29 @@ export function PublicAnnouncementsContent() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
 
-  const announcements = useMemo(() => getPublicAnnouncements(), []);
+  const { data: announcementsResponse } = useQuery({
+    queryKey: ["public-announcements"],
+    queryFn: () => announcementService.getAnnouncements(1, 100),
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const announcements = useMemo(() => {
+    if (announcementsResponse?.data) {
+      return announcementsResponse.data.map((item) => ({
+        id: item.id,
+        title: item.title,
+        body_excerpt: item.bodyExcerpt,
+        imageUrl:
+          item.image ||
+          "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&auto=format&fit=crop",
+        category: item.categoryDetails?.slug || "all",
+        publishedAgo: dayjs(item.createdAt).fromNow(),
+        authorName: item.authorName || item.authorRoleName || "Official Notice",
+      }));
+    }
+
+    return getPublicAnnouncements();
+  }, [announcementsResponse]);
 
   const filteredAnnouncements = useMemo(() => {
     const normalized = query.trim().toLowerCase();

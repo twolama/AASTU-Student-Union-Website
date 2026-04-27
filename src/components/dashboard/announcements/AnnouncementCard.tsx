@@ -19,6 +19,8 @@ interface AnnouncementCardProps {
 }
 
 export function AnnouncementCard({ item }: AnnouncementCardProps) {
+  const normalizedItem = item as { isPublished?: boolean; is_published?: boolean };
+  const isPublished = normalizedItem.isPublished ?? normalizedItem.is_published ?? false;
   const publishedAt = item.publishedDate || dayjs(item.createdAt).fromNow();
   const deleteMutation = useDeleteAnnouncement();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -28,7 +30,7 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
       await deleteMutation.mutateAsync(item.id);
       toast.success("Announcement deleted successfully");
       setIsDeleteDialogOpen(false);
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete announcement");
     }
   };
@@ -74,6 +76,11 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
               {publishedAt}
             </div>
           </div>
+          <Badge
+            className={isPublished ? "border-green-200 bg-green-50 text-green-700" : "border-amber-200 bg-amber-50 text-amber-700"}
+          >
+            {isPublished ? "Published" : "Draft"}
+          </Badge>
         </div>
 
         <Link

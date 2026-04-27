@@ -16,6 +16,7 @@ export default function CreateAnnouncementPage() {
         category: "",
         originatingBody: "",
         pinned: false,
+        isPublished: false,
         coverImageUrl: "",
         coverImageName: undefined,
         tags: ["Announcement", "AASTU"],

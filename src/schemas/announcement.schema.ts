@@ -17,6 +17,8 @@ export const AnnouncementSchema = z.object({
   category: z.string().uuid().nullable(),
   categoryDetails: AnnouncementCategorySchema.nullable(),
   isPinned: z.boolean().default(false),
+  is_published: z.boolean().optional(),
+  isPublished: z.boolean().optional(),
   author: z.object({
     id: z.string().uuid(),
     name: z.string(),

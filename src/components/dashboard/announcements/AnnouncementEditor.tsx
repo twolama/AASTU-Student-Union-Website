@@ -32,6 +32,7 @@ import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Switch } from "@/components/ui/Switch";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { TagInput } from "@/components/ui/TagInput";
 import type { AnnouncementCategory as ApiAnnouncementCategory } from "@/schemas/announcement.schema";
@@ -50,6 +51,7 @@ export interface AnnouncementEditorValues {
   coverImageName?: string;
   tags: string[];
   procedureSteps: string[];
+  isPublished: boolean;
 }
 
 interface AnnouncementEditorProps {
@@ -136,6 +138,7 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
   const [selectionToolbar, setSelectionToolbar] = useState({ visible: false, top: 0, left: 0 });
   const [linkInputOpen, setLinkInputOpen] = useState(false);
   const [linkValue, setLinkValue] = useState("");
+  const [currentLinkHref, setCurrentLinkHref] = useState("");
   const titleRef = useRef<HTMLTextAreaElement | null>(null);
   const editorCanvasRef = useRef<HTMLDivElement | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
@@ -182,7 +185,8 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     [uploadedFile, values.originatingBody, values.summary, values.title, values.coverImageUrl]
   );
 
-  const actionLabel = mode === "create" ? "Publish" : "Update";
+  const actionLabel = mode === "create" ? "Publish" : values.isPublished ? "Update" : "Publish";
+  const statusLabel = values.isPublished ? "Published" : "Draft";
   const breadcrumbLabel = mode === "create" ? "Create New Announcement" : "Edit Announcement";
 
   function updateField<K extends keyof AnnouncementEditorValues>(key: K, value: AnnouncementEditorValues[K]) {
@@ -222,16 +226,23 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     const canvas = editorCanvasRef.current;
 
     let isLink = false;
+    let currentHref = "";
+
     if (range) {
       const node = range.commonAncestorContainer;
       const element = node.nodeType === 3 ? node.parentElement : (node as HTMLElement);
-      isLink = Boolean(element?.closest("a"));
+      const anchor = element?.closest("a");
+      isLink = Boolean(anchor);
+      currentHref = anchor?.getAttribute("href") ?? "";
     }
 
     if (!range || (!isLink && range.collapsed) || !canvas) {
       setSelectionToolbar((current) => ({ ...current, visible: false }));
+      setCurrentLinkHref("");
       return;
     }
+
+    setCurrentLinkHref(currentHref);
 
     selectionRef.current = range.cloneRange();
     const rect = range.getBoundingClientRect();
@@ -394,9 +405,12 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     });
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>,
+    publish = true,
+  ) {
     event.preventDefault();
-    
+
     if (!values.title.trim()) {
       toast.error("Title is required");
       return;
@@ -407,20 +421,33 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
       return;
     }
 
-    if (!values.category) {
+    if (publish && !values.category) {
       toast.error("Please select a category before publishing");
       return;
     }
 
-    const payloadBase = {
+    const payloadBase: {
+      title: string;
+      body: string;
+      author_name: string;
+      is_pinned: boolean;
+      is_published: boolean;
+      tags: string[];
+      procedure_steps: string[];
+      category?: string;
+    } = {
       title: values.title,
       body: values.body || bodyHtml,
       author_name: values.originatingBody,
       is_pinned: values.pinned,
+      is_published: publish,
       tags: values.tags,
       procedure_steps: values.procedureSteps,
-      category: values.category,
     };
+
+    if (values.category) {
+      payloadBase.category = values.category;
+    }
 
     const payload = uploadedFile
       ? (() => {
@@ -442,11 +469,18 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     try {
       if (mode === "create") {
         await createMutation.mutateAsync(payload);
-        toast.success("Announcement published successfully");
       } else if (announcementId) {
         await updateMutation.mutateAsync({ id: announcementId, data: payload });
-        toast.success("Announcement updated successfully");
       }
+
+      updateField("isPublished", publish);
+
+      if (publish) {
+        toast.success("Announcement published successfully");
+      } else {
+        toast.success("Draft saved successfully");
+      }
+
       router.push("/announcements");
     } catch (error: unknown) {
       console.error("Submission error:", error);
@@ -456,7 +490,7 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={(event) => handleSubmit(event, true)} className="space-y-6">
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400">
         <Link href="/dashboard" className="font-medium text-[#c49a22] hover:underline">
           Dashboard
@@ -472,9 +506,17 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <section className="min-w-0 rounded-[10px] border border-gray-200 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.05)] sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-400">
-              <FileText size={14} className="text-[#c49a22]" />
-              <span>{mode === "create" ? "Drafting Announcement" : "Editing Announcement"}</span>
+            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-400">
+              <div className="flex items-center gap-2">
+                <FileText size={14} className="text-[#c49a22]" />
+                <span>{mode === "create" ? "Drafting Announcement" : "Editing Announcement"}</span>
+              </div>
+              <Badge
+                variant="outline"
+                className={values.isPublished ? "border-green-200 text-green-700 bg-green-50" : "border-slate-200 text-slate-700 bg-slate-100"}
+              >
+                {statusLabel}
+              </Badge>
             </div>
 
             <div className="flex items-center gap-4 text-sm">
@@ -545,22 +587,30 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
                     </button>
                   </div>
                 ) : (
-                  toolbarActions.map((action) => {
-                    const Icon = action.icon;
+                  <>
+                    {currentLinkHref ? (
+                      <div className="max-w-[12rem] truncate rounded-full bg-white/10 px-3 py-1 text-[11px] text-slate-100">
+                        <LinkIcon size={12} className="inline-block mr-1" />
+                        <span className="truncate">{currentLinkHref}</span>
+                      </div>
+                    ) : null}
+                    {toolbarActions.map((action) => {
+                      const Icon = action.icon;
 
-                    return (
-                      <button
-                        key={action.id}
-                        type="button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => applyCommand(action.id)}
-                        className="inline-flex h-8 w-8 items-center justify-center text-white/90 transition-colors hover:bg-white/10 hover:text-white"
-                        aria-label={action.label}
-                      >
-                        <Icon size={14} />
-                      </button>
-                    );
-                  })
+                      return (
+                        <button
+                          key={action.id}
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => applyCommand(action.id)}
+                          className="inline-flex h-8 w-8 items-center justify-center text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+                          aria-label={action.label}
+                        >
+                          <Icon size={14} />
+                        </button>
+                      );
+                    })}
+                  </>
                 )}
               </div>
 
@@ -596,7 +646,7 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
                     "text-left text-[18px] leading-[1.95] text-gray-700",
                     "[&:empty:before]:pointer-events-none [&:empty:before]:block [&:empty:before]:px-4 [&:empty:before]:text-left [&:empty:before]:text-gray-300 [&:empty:before]:content-[attr(data-placeholder)]",
                     "[&_h1]:mb-4 [&_h1]:text-4xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-[#c49a22] [&_blockquote]:pl-4 [&_blockquote]:italic [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-2 [&_p]:mb-5 [&_p]:text-left",
-                    "[&_a]:text-blue-600 [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-blue-800 [&_a]:cursor-pointer"
+                    "[&_a]:rounded-sm [&_a]:bg-[#eff6ff] [&_a]:px-1 [&_a]:text-blue-600 [&_a]:underline [&_a]:underline-offset-4 [&_a]:decoration-blue-300 hover:[&_a]:text-blue-800 [&_a]:cursor-pointer"
                   )}
                 />
               </div>
@@ -685,7 +735,7 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
             <div className="mt-5 border-t border-gray-100 pt-5">
               <div className="flex items-center justify-between text-xs uppercase tracking-[0.16em] text-gray-400">
                 <span>Schema: TEXT_4.1</span>
-                <span>Status: Draft</span>
+                <span>Status: {statusLabel}</span>
               </div>
               <div className="mt-3 text-xs text-gray-400">Last autosaved: 2 mins ago</div>
             </div>
@@ -720,15 +770,22 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
           ) : null}
 
           <div className="flex gap-3">
-            <Button type="button" variant="outline" size="md" className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              className="flex-1"
+              onClick={(event) => handleSubmit(event, false)}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               Save Draft
             </Button>
-            <Button 
-               type="submit" 
-               variant="goldSolid" 
-               size="md" 
-               className="flex-1"
-               disabled={createMutation.isPending || updateMutation.isPending}
+            <Button
+              type="submit"
+              variant="goldSolid"
+              size="md"
+              className="flex-1"
+              disabled={createMutation.isPending || updateMutation.isPending}
             >
               {createMutation.isPending || updateMutation.isPending ? "Processing..." : actionLabel}
             </Button>

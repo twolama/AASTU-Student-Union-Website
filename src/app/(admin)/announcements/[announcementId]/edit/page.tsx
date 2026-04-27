@@ -50,10 +50,11 @@ export default function EditAnnouncementPage({ params }: EditAnnouncementPagePro
     category: announcement.category || "",
     originatingBody: resolveOriginatingBody(announcement.authorName || announcement.authorRoleName),
     pinned: announcement.isPinned,
+    isPublished: announcement.isPublished ?? false,
     coverImageUrl: announcement.image || "",
     coverImageName: undefined,
     tags: announcement.tags || [],
-    procedureSteps: announcement.procedure_steps || [],
+    procedureSteps: announcement.procedureSteps || [],
   };
 
   return (
