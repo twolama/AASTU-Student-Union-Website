@@ -10,18 +10,8 @@ interface VenuesFiltersProps {
   onSelectedStatusChange: (value: string) => void;
   viewMode: "list" | "grid";
   onViewModeChange: (mode: "list" | "grid") => void;
+  typeOptions: { value: string; label: string }[];
 }
-
-const venueTypeOptions = [
-  { value: "all", label: "All Types" },
-  { value: "auditorium", label: "Auditorium" },
-  { value: "meeting-room", label: "Meeting Room" },
-  { value: "outdoor-space", label: "Outdoor Space" },
-  { value: "indoor-space", label: "Indoor Space" },
-  { value: "laboratory", label: "Laboratory" },
-  { value: "seminar-hall", label: "Seminar Hall" },
-  { value: "debate-room", label: "Debate Room" },
-];
 
 const venueStatusOptions = [
   { value: "all", label: "All Statuses" },
@@ -37,6 +27,7 @@ export function VenuesFilters({
   onSelectedStatusChange,
   viewMode,
   onViewModeChange,
+  typeOptions,
 }: VenuesFiltersProps) {
   return (
     <section className="rounded-[10px] border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
@@ -47,7 +38,7 @@ export function VenuesFilters({
           <DropdownSelect
             label=""
             value={selectedType}
-            options={venueTypeOptions}
+            options={typeOptions}
             onValueChange={onSelectedTypeChange}
             className="min-w-[170px] [&>p]:hidden [&>div>button]:h-10 [&>div>button]:rounded-[10px]"
           />

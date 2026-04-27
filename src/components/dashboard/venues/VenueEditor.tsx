@@ -1,17 +1,30 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  Bold,
   Camera,
+  Check,
   ChevronRight,
+  Heading1,
+  Heading2,
   ImagePlus,
   Info,
+  Italic,
+  Link as LinkIcon,
+  List,
+  ListOrdered,
   MapPinned,
+  Pilcrow,
   Plus,
+  Quote,
+  Search,
   SquarePen,
   Trash2,
+  Unlink,
+  X,
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -19,6 +32,12 @@ import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
+import { useVenueCategories, useCreateVenue, useUpdateVenue, useUploadVenueGalleryImage, useDeleteVenueGalleryImage } from "@/hooks/useVenues";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { VenueFormSchema } from "@/schemas/venue.schema";
+import { cn } from "@/lib/utils";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 
 type EditorMode = "create" | "edit";
 
@@ -35,7 +54,7 @@ export interface VenueEditorValues {
   mapCoordinates: string;
   heroImageUrl: string;
   heroImageName?: string;
-  galleryImages: string[];
+  gallery: { id: string; url: string }[];
   thumbnailUrl: string;
   thumbnailName?: string;
   amenities: string[];
@@ -50,22 +69,102 @@ interface VenueEditorProps {
   initialValues: VenueEditorValues;
 }
 
-const categoryOptions = [
-  { value: "auditorium", label: "Auditorium" },
-  { value: "meeting-room", label: "Meeting Room" },
-  { value: "outdoor-space", label: "Outdoor Space" },
-  { value: "indoor-space", label: "Indoor Space" },
-  { value: "seminar-hall", label: "Seminar Hall" },
-  { value: "laboratory", label: "Laboratory" },
-  { value: "debate-room", label: "Debate Room" },
+const DEFAULT_MAP_COORDINATES = { lat: 9.0182, lng: 38.7525 };
+
+type SelectionToolbarAction =
+  | "bold"
+  | "italic"
+  | "link"
+  | "unlink"
+  | "bulletList"
+  | "orderedList"
+  | "quote"
+  | "heading1"
+  | "heading2"
+  | "paragraph";
+
+const toolbarActions: Array<{ id: SelectionToolbarAction; icon: any; label: string }> = [
+  { id: "bold", icon: Bold, label: "Bold" },
+  { id: "italic", icon: Italic, label: "Italic" },
+  { id: "link", icon: LinkIcon, label: "Link" },
+  { id: "unlink", icon: Unlink, label: "Unlink" },
+  { id: "bulletList", icon: List, label: "Bullet list" },
+  { id: "orderedList", icon: ListOrdered, label: "Numbered list" },
+  { id: "quote", icon: Quote, label: "Quote" },
+  { id: "heading1", icon: Heading1, label: "Heading 1" },
+  { id: "heading2", icon: Heading2, label: "Heading 2" },
+  { id: "paragraph", icon: Pilcrow, label: "Paragraph" },
 ];
+
+function normalizeBodyHtml(body: string) {
+  const trimmed = body.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("<")) return trimmed;
+  return `<p>${trimmed.replace(/\n/g, "<br />")}</p>`;
+}
+
+function extractCoordinates(input: string): { lat: number; lng: number } {
+  // Case 1: Simple coordinates "lat, lng"
+  if (!input.startsWith("http") && input.includes(",")) {
+    const parts = input.split(",").map(s => parseFloat(s.trim()));
+    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return { lat: parts[0], lng: parts[1] };
+    }
+  }
+
+  // Case 2: Google Maps URL
+  // Matches /@lat,lng or /dir/lat,lng or /search/lat,lng
+  const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+  const match = input.match(regex);
+  if (match) {
+    return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+  }
+
+  // Case 3: URL with query parameters !2d<lng>!3d<lat>
+  const latMatch = input.match(/!3d(-?\d+\.\d+)/);
+  const lngMatch = input.match(/!2d(-?\d+\.\d+)/);
+  if (latMatch && lngMatch) {
+    return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[2]) };
+  }
+
+  // Fallback
+  return { lat: 9.0182, lng: 38.7525 };
+}
 
 export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) {
   const [values, setValues] = useState<VenueEditorValues>(initialValues);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [newAmenity, setNewAmenity] = useState("");
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [pendingGalleryFile, setPendingGalleryFile] = useState<File | null>(null);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const [deleteImageConfirm, setDeleteImageConfirm] = useState<string | null>(null);
+
+  // Rich Text State
+  const [bodyHtml, setBodyHtml] = useState(() => normalizeBodyHtml(initialValues.fullDescription));
+  const [selectionToolbar, setSelectionToolbar] = useState({ visible: false, top: 0, left: 0 });
+  const [linkInputOpen, setLinkInputOpen] = useState(false);
+  const [linkValue, setLinkValue] = useState("");
+  const [currentLinkHref, setCurrentLinkHref] = useState("");
+  const editorCanvasRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const selectionRef = useRef<Range | null>(null);
+  const bodyHtmlRef = useRef(bodyHtml);
+  const initialBodySyncedRef = useRef(false);
+
+  const router = useRouter();
+  const { data: categoriesData } = useVenueCategories();
+  const createVenue = useCreateVenue();
+  const updateVenue = useUpdateVenue();
+  const uploadGalleryImage = useUploadVenueGalleryImage();
+  const deleteGalleryImage = useDeleteVenueGalleryImage();
+
+  const categoryOptions = useMemo(() => {
+    if (!categoriesData) return [];
+    return categoriesData.map(cat => ({ value: cat.id, label: cat.name }));
+  }, [categoriesData]);
 
   const title = mode === "create" ? "Create New Venue" : "Edit Venue";
   const subtitle =
@@ -86,8 +185,127 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [values]);
 
+  // Rich Text Initialization and Sync
+  useEffect(() => {
+    if (initialValues.fullDescription && !initialBodySyncedRef.current) {
+      const normalized = normalizeBodyHtml(initialValues.fullDescription);
+      setBodyHtml(normalized);
+      bodyHtmlRef.current = normalized;
+      if (editorRef.current) {
+        editorRef.current.innerHTML = normalized;
+        initialBodySyncedRef.current = true;
+      }
+    }
+  }, [initialValues.fullDescription]);
+
+  useEffect(() => {
+    bodyHtmlRef.current = bodyHtml;
+  }, [bodyHtml]);
+
   function updateField<K extends keyof VenueEditorValues>(key: K, value: VenueEditorValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
+  }
+
+  // Rich Text Helpers
+  function syncEditorValue() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const nextHtml = editor.innerHTML;
+    bodyHtmlRef.current = nextHtml;
+    setBodyHtml(nextHtml);
+    updateField("fullDescription", nextHtml);
+  }
+
+  function getSelectionRange() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+    const editor = editorRef.current;
+    if (!editor || !editor.contains(range.commonAncestorContainer)) return null;
+    return range;
+  }
+
+  function updateSelectionToolbar() {
+    const range = getSelectionRange();
+    const canvas = editorCanvasRef.current;
+    let isLink = false;
+    let currentHref = "";
+
+    if (range) {
+      const node = range.commonAncestorContainer;
+      const element = node.nodeType === 3 ? node.parentElement : (node as HTMLElement);
+      const anchor = element?.closest("a");
+      isLink = Boolean(anchor);
+      currentHref = anchor?.getAttribute("href") ?? "";
+    }
+
+    if (!range || (!isLink && range.collapsed) || !canvas) {
+      setSelectionToolbar((prev) => ({ ...prev, visible: false }));
+      setCurrentLinkHref("");
+      return;
+    }
+
+    setCurrentLinkHref(currentHref);
+    selectionRef.current = range.cloneRange();
+    const rect = range.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const toolbarWidth = 320;
+    const left = Math.min(canvasRect.width - toolbarWidth - 12, Math.max(12, rect.left - canvasRect.left + rect.width / 2 - toolbarWidth / 2));
+    const top = rect.top - canvasRect.top - 52 < 8 ? rect.bottom - canvasRect.top + 8 : rect.top - canvasRect.top - 52;
+
+    setSelectionToolbar({ visible: true, top, left });
+  }
+
+  function applyCommand(command: SelectionToolbarAction) {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+    
+    const selection = window.getSelection();
+    if (selectionRef.current && selection) {
+      selection.removeAllRanges();
+      selection.addRange(selectionRef.current);
+    }
+
+    if (command === "link") {
+      setLinkInputOpen(true);
+      return;
+    }
+
+    if (command === "unlink") {
+      document.execCommand("unlink");
+    } else {
+      const cmdMap: Record<string, [string, boolean, string?]> = {
+        bold: ["bold", false],
+        italic: ["italic", false],
+        bulletList: ["insertUnorderedList", false],
+        orderedList: ["insertOrderedList", false],
+        quote: ["formatBlock", false, "blockquote"],
+        heading1: ["formatBlock", false, "h1"],
+        heading2: ["formatBlock", false, "h2"],
+        paragraph: ["formatBlock", false, "p"]
+      };
+      const [cmd, ui, val] = cmdMap[command];
+      document.execCommand(cmd, ui, val);
+    }
+
+    syncEditorValue();
+    setSelectionToolbar((prev) => ({ ...prev, visible: false }));
+  }
+
+  function applyLink() {
+    if (!editorRef.current || !linkValue) return;
+    editorRef.current.focus();
+    const selection = window.getSelection();
+    if (selectionRef.current && selection) {
+      selection.removeAllRanges();
+      selection.addRange(selectionRef.current);
+    }
+    const url = linkValue.startsWith("http") ? linkValue : `https://${linkValue}`;
+    document.execCommand("createLink", false, url);
+    syncEditorValue();
+    setLinkInputOpen(false);
+    setLinkValue("");
+    setSelectionToolbar((prev) => ({ ...prev, visible: false }));
   }
 
   function addAmenity() {
@@ -112,15 +330,251 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
     );
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setIsSubmitting(true);
+    setFieldErrors({});
 
-    setStatusMessage(
-      mode === "create"
-        ? "Venue draft is ready to save."
-        : `Venue ${venueId ?? "record"} updates were saved locally.`
-    );
+    // 1. Frontend Validation using Zod
+    const validation = VenueFormSchema.safeParse(values);
+    if (!validation.success) {
+      const fieldErrors = validation.error.flatten().fieldErrors;
+      const errors: Record<string, string[]> = {};
+      
+      // Map Zod schema keys to our Record<string, string[]> format and UI field names
+      Object.entries(fieldErrors).forEach(([key, messages]) => {
+        if (!messages) return;
+        
+        // Direct mapping
+        errors[key] = messages;
+        
+        // CamelCase to snake_case / UI mapping
+        if (key === "phoneNumber") errors.manager_phone = messages;
+        if (key === "officialEmail") errors.manager_email = messages;
+        if (key === "managerName") errors.manager_name = messages;
+        if (key === "mapCoordinates") errors.map_coordinates = messages;
+        if (key === "maxCapacity") errors.max_capacity = messages;
+        if (key === "category") errors.category_id = messages;
+        if (key === "shortDescription") errors.short_description = messages;
+      });
+
+      setFieldErrors(errors);
+      toast.error("Please fix the validation errors");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("category_id", values.category);
+      formData.append("max_capacity", values.maxCapacity);
+      formData.append("floor_level", values.floorLevel);
+      formData.append("campus_block", values.campusBlock);
+      formData.append("nearby_landmarks", values.nearbyLandmarks);
+      formData.append("short_description", values.shortDescription);
+      formData.append("full_description", values.fullDescription);
+      formData.append("is_publicly_available", String(values.publicAvailability));
+      formData.append("manager_name", values.managerName);
+      formData.append("manager_phone", values.phoneNumber);
+      formData.append("manager_email", values.officialEmail);
+      
+      // Parse coordinates or URL
+      const coords = extractCoordinates(values.mapCoordinates);
+      
+      formData.append("map_coordinates", JSON.stringify(coords));
+      formData.append("mapCoordinates", JSON.stringify(coords));
+      
+      if (values.mapCoordinates.startsWith("http")) {
+        formData.append("google_maps_url", values.mapCoordinates);
+      }
+
+      // Contact object
+      formData.append("contact", JSON.stringify({
+        name: values.managerName,
+        role: "Manager",
+        phone: values.phoneNumber,
+        email: values.officialEmail
+      }));
+
+      // Amenities
+      formData.append("amenities", JSON.stringify(values.amenities));
+
+      // Files
+      if (heroImageFile) formData.append("hero_image", heroImageFile);
+      if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
+
+      if (mode === "create") {
+        await createVenue.mutateAsync(formData);
+        toast.success("Venue created successfully");
+        router.push("/venues");
+      } else if (venueId) {
+        await updateVenue.mutateAsync({ id: venueId, data: formData });
+        toast.success("Venue updated successfully");
+        router.push("/venues");
+      }
+    } catch (error: any) {
+      console.error("[VenueEditor] Submission error:", error);
+      
+      let details: any = null;
+      let message = error.message;
+
+      // 1. Try to extract details from payload
+      const payload = error.payload || error.response?.data;
+      if (payload) {
+        details = payload.details || payload.error?.details || (payload.code === "VALIDATION_ERROR" ? payload.details || payload : null);
+      }
+
+      // 2. Try to parse message if it looks like JSON
+      if (!details && typeof message === "string" && message.includes("{")) {
+        try {
+          const startIdx = message.indexOf("{");
+          const jsonStr = message.substring(startIdx);
+          const parsed = JSON.parse(jsonStr);
+          details = parsed.details || parsed.error?.details || (parsed.code === "VALIDATION_ERROR" ? parsed.details || parsed : parsed);
+        } catch (e) {}
+      }
+
+      if (details) {
+        console.log("[VenueEditor] Found validation details:", details);
+        const mappedErrors: Record<string, string[]> = {};
+        
+        // Helper to safely add errors
+        const addError = (key: string, val: any) => {
+          if (!val) return;
+          mappedErrors[key] = Array.isArray(val) ? val : [String(val)];
+        };
+
+        // Map everything we can find
+        Object.keys(details).forEach(key => {
+          // Direct mapping for common fields
+          if (["name", "status", "amenities"].includes(key)) addError(key, details[key]);
+          
+          // CamelCase to snake_case mappings
+          if (key === "maxCapacity" || key === "max_capacity") addError("max_capacity", details[key]);
+          if (key === "categoryId" || key === "category_id" || key === "category") addError("category_id", details[key]);
+          if (key === "floorLevel" || key === "floor_level") addError("floor_level", details[key]);
+          if (key === "campusBlock" || key === "campus_block") addError("campus_block", details[key]);
+          if (key === "nearbyLandmarks" || key === "nearby_landmarks") addError("nearby_landmarks", details[key]);
+          if (key === "shortDescription" || key === "short_description") addError("short_description", details[key]);
+          if (key === "fullDescription" || key === "full_description") addError("full_description", details[key]);
+          
+          // Contact mappings
+          if (key === "managerName" || key === "manager_name") addError("manager_name", details[key]);
+          if (key === "managerPhone" || key === "manager_phone" || key === "phoneNumber") addError("manager_phone", details[key]);
+          if (key === "managerEmail" || key === "manager_email" || key === "officialEmail") addError("manager_email", details[key]);
+          
+          // Map coordinates
+          if (key === "mapCoordinates" || key === "map_coordinates") {
+            const val = details[key];
+            if (Array.isArray(val)) {
+              addError("map_coordinates", val);
+            } else if (typeof val === "object" && val !== null) {
+              const coords = val as any;
+              if (coords.lat) addError("map_coordinates", [coords.lat]);
+              else if (coords.lng) addError("map_coordinates", [coords.lng]);
+            }
+          }
+          
+          // Nested contact object mapping (as seen in user log)
+          if (key === "contact") {
+            const cErrs = Array.isArray(details[key]) ? details[key] : [String(details[key])];
+            cErrs.forEach((err: string) => {
+              const low = err.toLowerCase();
+              if (low.includes("name")) addError("manager_name", [err]);
+              else if (low.includes("phone")) addError("manager_phone", [err]);
+              else if (low.includes("email")) addError("manager_email", [err]);
+              else addError("manager_name", [err]); // Default
+            });
+          }
+
+          // Venue ID association errors
+          if (key === "venue_id" || key === "venueId") {
+            toast.error("Venue association error: " + (Array.isArray(details[key]) ? details[key][0] : details[key]));
+          }
+
+          // Fallback: If not explicitly mapped above, add it directly
+          if (!mappedErrors[key]) addError(key, details[key]);
+        });
+
+        // Debug unmapped errors
+        const unmapped = Object.keys(mappedErrors).filter(k => 
+          !["name", "category_id", "max_capacity", "floor_level", "campus_block", "nearby_landmarks", 
+            "short_description", "full_description", "manager_name", "manager_phone", 
+            "manager_email", "map_coordinates", "hero_image", "thumbnail", "location"].includes(k)
+        );
+        if (unmapped.length > 0) {
+          unmapped.forEach(k => toast.error(`${k}: ${mappedErrors[k][0]}`));
+        }
+
+        console.log("[VenueEditor] Final mapped errors:", mappedErrors);
+        setFieldErrors(mappedErrors);
+        toast.error("Please correct the validation errors");
+      } else {
+        toast.error(message || "Failed to save venue");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
+
+  const getFieldError = (backendKey: string) => {
+    return fieldErrors[backendKey]?.[0];
+  };
+
+  const renderError = (backendKey: string) => {
+    const error = getFieldError(backendKey);
+    if (!error) return null;
+    return <p className="mt-1 text-xs font-medium text-red-500">{error}</p>;
+  };
+
+  const handleGalleryUpload = (file: File) => {
+    if (!venueId && mode === "edit") return;
+    setPendingGalleryFile(file);
+  };
+
+  const confirmGalleryUpload = async () => {
+    if (!pendingGalleryFile) return;
+    
+    setIsUploadingGallery(true);
+    const formData = new FormData();
+    formData.append("image", pendingGalleryFile);
+    if (venueId) formData.append("venue_id", venueId);
+    
+    try {
+      const newImage = await uploadGalleryImage.mutateAsync(formData);
+      toast.success("Gallery image uploaded");
+      
+      // Update local state to reflect new image instantly
+      updateField("gallery", [...values.gallery, { id: newImage.id, url: newImage.image }]);
+      
+      setPendingGalleryFile(null);
+    } catch (error: any) {
+      toast.error(error.message || "Upload failed");
+    } finally {
+      setIsUploadingGallery(false);
+    }
+  };
+
+  const cancelGalleryUpload = () => {
+    setPendingGalleryFile(null);
+  };
+
+  const handleGalleryDelete = async () => {
+    if (!deleteImageConfirm) return;
+    
+    try {
+      await deleteGalleryImage.mutateAsync(deleteImageConfirm);
+      toast.success("Image removed from gallery");
+      
+      // Update local state to reflect removal instantly
+      updateField("gallery", values.gallery.filter(img => img.id !== deleteImageConfirm));
+    } catch (error: any) {
+      toast.error(error.message || "Delete failed");
+    } finally {
+      setDeleteImageConfirm(null);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -169,17 +623,21 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.name}
                   onChange={(event) => updateField("name", event.target.value)}
                   placeholder="e.g. Blue Hall, Main Auditorium"
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("name") ? "border-red-500" : ""}`}
                 />
+                {renderError("name")}
               </div>
 
-              <DropdownSelect
-                label="Venue Category"
-                value={values.category}
-                options={[{ value: "", label: "Select Category" }, ...categoryOptions]}
-                onValueChange={(value) => updateField("category", value)}
-                className="[&>div>button]:h-10 [&>div>button]:rounded-[8px]"
-              />
+              <div className="space-y-1.5">
+                <DropdownSelect
+                  label="Venue Category"
+                  value={values.category}
+                  options={[{ value: "", label: "Select Category" }, ...categoryOptions]}
+                  onValueChange={(value) => updateField("category", value)}
+                  className={`[&>div>button]:h-10 [&>div>button]:rounded-[8px] ${getFieldError("category_id") ? "border-red-500" : ""}`}
+                />
+                {renderError("category_id")}
+              </div>
 
               <div>
                 <label htmlFor="venue-capacity" className="mb-1.5 block text-xs font-semibold text-gray-700">
@@ -192,8 +650,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.maxCapacity}
                   onChange={(event) => updateField("maxCapacity", event.target.value)}
                   placeholder="0"
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("max_capacity") ? "border-red-500" : ""}`}
                 />
+                {renderError("max_capacity")}
               </div>
 
               <div>
@@ -205,8 +664,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.floorLevel}
                   onChange={(event) => updateField("floorLevel", event.target.value)}
                   placeholder="e.g. 2nd Floor"
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("floor_level") ? "border-red-500" : ""}`}
                 />
+                {renderError("floor_level")}
               </div>
 
               <div>
@@ -218,8 +678,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.campusBlock}
                   onChange={(event) => updateField("campusBlock", event.target.value)}
                   placeholder="e.g. Block B"
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("campus_block") ? "border-red-500" : ""}`}
                 />
+                {renderError("campus_block")}
               </div>
 
               <div>
@@ -231,8 +692,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.nearbyLandmarks}
                   onChange={(event) => updateField("nearbyLandmarks", event.target.value)}
                   placeholder="e.g. Near East Gate"
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("nearby_landmarks") ? "border-red-500" : ""}`}
                 />
+                {renderError("nearby_landmarks")}
               </div>
 
               <div className="md:col-span-2">
@@ -244,21 +706,77 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.shortDescription}
                   onChange={(event) => updateField("shortDescription", event.target.value)}
                   placeholder="A brief summary of the venue for card previews..."
-                  className="min-h-[86px] rounded-[8px]"
+                  className={`min-h-[86px] rounded-[8px] ${getFieldError("short_description") ? "border-red-500" : ""}`}
                 />
+                {renderError("short_description")}
               </div>
 
               <div className="md:col-span-2">
                 <label htmlFor="venue-full-description" className="mb-1.5 block text-xs font-semibold text-gray-700">
                   Full Description
                 </label>
-                <Textarea
-                  id="venue-full-description"
-                  value={values.fullDescription}
-                  onChange={(event) => updateField("fullDescription", event.target.value)}
-                  placeholder="Detailed information about the venue, rules, and specific details..."
-                  className="min-h-[140px] rounded-[8px]"
-                />
+                
+                <div ref={editorCanvasRef} className="relative mt-2 min-h-[300px] w-full rounded-[10px] border border-gray-200 bg-white p-1">
+                  {/* Floating Toolbar */}
+                  <div
+                    role="toolbar"
+                    className={cn(
+                      "absolute z-50 flex items-center gap-1 rounded-lg border border-[#1f2844] bg-[#1a2238] px-1.5 py-1 shadow-xl transition-opacity",
+                      selectionToolbar.visible ? "opacity-100" : "pointer-events-none opacity-0"
+                    )}
+                    style={{ top: selectionToolbar.top, left: selectionToolbar.left }}
+                  >
+                    {linkInputOpen ? (
+                      <div className="flex items-center gap-1.5 px-1">
+                        <input
+                          autoFocus
+                          placeholder="Paste link..."
+                          value={linkValue}
+                          onChange={(e) => setLinkValue(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && applyLink()}
+                          className="h-7 w-32 rounded border border-white/20 bg-white/10 px-2 text-[10px] text-white outline-none"
+                        />
+                        <button onClick={applyLink} className="text-white hover:text-gold-400"><Check size={14}/></button>
+                        <button onClick={() => setLinkInputOpen(false)} className="text-white hover:text-red-400"><X size={14}/></button>
+                      </div>
+                    ) : (
+                      <>
+                        {toolbarActions.map((action) => (
+                          <button
+                            key={action.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applyCommand(action.id)}
+                            className="inline-flex h-7 w-7 items-center justify-center text-white/80 hover:bg-white/10 hover:text-white"
+                          >
+                            <action.icon size={13} />
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={syncEditorValue}
+                    onMouseUp={updateSelectionToolbar}
+                    onKeyUp={updateSelectionToolbar}
+                    onFocus={updateSelectionToolbar}
+                    onBlur={() => setTimeout(() => setSelectionToolbar(prev => ({...prev, visible: false})), 200)}
+                    data-placeholder="Enter detailed venue description here..."
+                    className={cn(
+                      "min-h-[290px] w-full px-4 py-3 outline-none",
+                      "text-[15px] leading-relaxed text-gray-700",
+                      "[&:empty:before]:pointer-events-none [&:empty:before]:block [&:empty:before]:text-gray-300 [&:empty:before]:content-[attr(data-placeholder)]",
+                      "[&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-gold-500 [&_blockquote]:pl-4 [&_blockquote]:italic",
+                      "[&_a]:text-blue-600 [&_a]:underline"
+                    )}
+                  />
+                </div>
+                {renderError("full_description")}
+                <p className="mt-2 text-[10px] text-gray-400">Select text to show formatting toolbar.</p>
               </div>
             </div>
 
@@ -284,6 +802,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
               <FileUpload
                 label=""
                 helperText="Click or drag and drop to upload primary hero image"
+                file={heroImageFile}
                 previewUrl={values.heroImageUrl || undefined}
                 fileName={heroImageFile?.name || values.heroImageName}
                 onChange={(file) => setHeroImageFile(file)}
@@ -294,6 +813,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                 }}
                 className="[&>label]:min-h-[120px] [&>label]:rounded-[10px]"
               />
+              {renderError("hero_image")}
             </div>
           </article>
 
@@ -304,17 +824,12 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
             </h2>
 
             <div className="mt-4 flex flex-wrap gap-3">
-              {values.galleryImages.map((item, index) => (
-                <div key={`${item}-${index}`} className="group relative h-20 w-20 overflow-hidden rounded-[8px] border border-gray-200 bg-gray-100">
-                  <Image src={item} alt={`Venue gallery ${index + 1}`} fill className="object-cover" />
+              {values.gallery.map((item) => (
+                <div key={item.id} className="group relative h-20 w-20 overflow-hidden rounded-[8px] border border-gray-200 bg-gray-100">
+                  <Image src={item.url} alt="Venue gallery image" fill className="object-cover" />
                   <button
                     type="button"
-                    onClick={() => {
-                      updateField(
-                        "galleryImages",
-                        values.galleryImages.filter((_, currentIndex) => currentIndex !== index)
-                      );
-                    }}
+                    onClick={() => setDeleteImageConfirm(item.id)}
                     className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
                     aria-label="Remove gallery image"
                   >
@@ -323,19 +838,55 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                 </div>
               ))}
 
-              <button
-                type="button"
-                onClick={() =>
-                  updateField("galleryImages", [
-                    ...values.galleryImages,
-                    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=500&auto=format&fit=crop",
-                  ])
-                }
-                className="inline-flex h-20 w-20 flex-col items-center justify-center rounded-[8px] border border-dashed border-gray-300 bg-[#fafcff] text-xs text-gray-500 transition-colors hover:border-[#c49a22]/50 hover:text-[#c49a22]"
-              >
-                <Plus size={15} />
-                Add More
-              </button>
+              {pendingGalleryFile && (
+                <div className="relative h-20 w-20 overflow-hidden rounded-[8px] border-2 border-[#c49a22] bg-gray-100">
+                  <Image 
+                    src={URL.createObjectURL(pendingGalleryFile)} 
+                    alt="Pending upload" 
+                    fill 
+                    className="object-cover opacity-60" 
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/20 p-1">
+                    <button
+                      type="button"
+                      onClick={confirmGalleryUpload}
+                      disabled={isUploadingGallery}
+                      className="inline-flex h-6 w-full items-center justify-center rounded bg-[#c49a22] text-[10px] font-bold text-white hover:bg-[#b38f2b] disabled:opacity-50"
+                    >
+                      {isUploadingGallery ? "..." : "UPLOAD"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelGalleryUpload}
+                      disabled={isUploadingGallery}
+                      className="inline-flex h-5 w-full items-center justify-center rounded bg-white/90 text-[10px] font-bold text-red-600 hover:bg-white"
+                    >
+                      CANCEL
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {mode === "create" ? (
+                <div className="flex w-full flex-col items-center justify-center rounded-[8px] border border-dashed border-gray-200 bg-gray-50 py-6 text-center">
+                  <Camera size={24} className="mb-2 text-gray-400" />
+                  <p className="text-xs font-medium text-gray-500">Gallery images can be added</p>
+                  <p className="text-[10px] text-gray-400">after the venue is created</p>
+                </div>
+              ) : (
+                <>
+                  {!pendingGalleryFile && (
+                    <FileUpload
+                      label=""
+                      helperText="Add to gallery"
+                      onChange={(file) => {
+                        if (file) handleGalleryUpload(file);
+                      }}
+                      className="inline-flex h-20 w-20 flex-col items-center justify-center rounded-[8px] border border-dashed border-gray-300 bg-[#fafcff] text-xs text-gray-500 transition-colors hover:border-[#c49a22]/50 hover:text-[#c49a22] [&>label]:min-h-0 [&>label]:p-0 [&>label>span]:hidden [&>label>p]:mt-0 [&>label>p]:text-[10px]"
+                    />
+                  )}
+                </>
+              )}
             </div>
           </article>
 
@@ -363,6 +914,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   <FileUpload
                     label=""
                     helperText="Select image"
+                    file={thumbnailFile}
                     previewUrl={values.thumbnailUrl || undefined}
                     fileName={thumbnailFile?.name || values.thumbnailName}
                     onChange={(file) => setThumbnailFile(file)}
@@ -373,6 +925,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                     }}
                     className="[&>label]:min-h-0 [&>label]:w-fit [&>label]:rounded-[8px] [&>label]:px-4 [&>label]:py-2 [&>label>span]:hidden [&>label>p]:mt-0 [&>label>p]:text-xs"
                   />
+                  {renderError("thumbnail")}
                 </div>
               </div>
             </div>
@@ -436,8 +989,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.managerName}
                   onChange={(event) => updateField("managerName", event.target.value)}
                   placeholder="Enter full name"
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("manager_name") ? "border-red-500" : ""}`}
                 />
+                {renderError("manager_name")}
               </div>
 
               <div>
@@ -449,8 +1003,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.phoneNumber}
                   onChange={(event) => updateField("phoneNumber", event.target.value)}
                   placeholder="+251 ..."
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("manager_phone") ? "border-red-500" : ""}`}
                 />
+                {renderError("manager_phone")}
               </div>
 
               <div>
@@ -463,28 +1018,34 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   value={values.officialEmail}
                   onChange={(event) => updateField("officialEmail", event.target.value)}
                   placeholder="venue@aastu.edu.et"
-                  className="h-10 rounded-[8px]"
+                  className={`h-10 rounded-[8px] ${getFieldError("manager_email") ? "border-red-500" : ""}`}
                 />
+                {renderError("manager_email")}
               </div>
             </div>
+            {getFieldError("contact") && !getFieldError("manager_name") && !getFieldError("manager_phone") && !getFieldError("manager_email") && (
+              <div className="mt-3 rounded-md bg-red-50 p-2.5">
+                <p className="text-xs text-red-700 font-medium">{getFieldError("contact")}</p>
+              </div>
+            )}
           </article>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" variant="goldSolid" className="h-10 min-w-[220px] rounded-[10px] px-4">
-              {mode === "create" ? "Save New Venue" : "Save Changes"}
+            <Button 
+              type="submit" 
+              variant="goldSolid" 
+              className="h-10 min-w-[220px] rounded-[10px] px-4"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Saving..." : mode === "create" ? "Save New Venue" : "Save Changes"}
             </Button>
             <Button type="button" variant="outline" className="h-10 rounded-[10px] px-5" onClick={() => window.history.back()}>
               Cancel
             </Button>
           </div>
 
-          {statusMessage ? (
-            <div className="rounded-[10px] border border-[#c49a22]/30 bg-[#fdf8ec] p-4 text-sm text-[#896814]">
-              {statusMessage}
-            </div>
-          ) : null}
-        </div>
-
+          </div>
+        
         <aside className="space-y-4">
           <article className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm">
             <h3 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#1f2a44]">
@@ -496,8 +1057,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
               value={values.mapCoordinates}
               onChange={(event) => updateField("mapCoordinates", event.target.value)}
               placeholder="Paste link or 9.0182, 38.7525"
-              className="mt-2 h-10 rounded-[8px]"
+              className={`mt-2 h-10 rounded-[8px] ${getFieldError("map_coordinates") ? "border-red-500" : ""}`}
             />
+            {renderError("map_coordinates")}
 
             <div className="relative mt-3 h-44 overflow-hidden rounded-[10px] border border-gray-200">
               <Image
@@ -523,6 +1085,16 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
           </article>
         </aside>
       </section>
+
+      <ConfirmationDialog
+        open={deleteImageConfirm !== null}
+        title="Remove Image"
+        message="Are you sure you want to remove this image from the gallery? This action cannot be undone."
+        confirmLabel="Remove Image"
+        onConfirm={handleGalleryDelete}
+        onCancel={() => setDeleteImageConfirm(null)}
+        isLoading={deleteGalleryImage.isPending}
+      />
     </form>
   );
 }

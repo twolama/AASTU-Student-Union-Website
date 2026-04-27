@@ -1,85 +1,66 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useParams } from "next/navigation";
 import { VenueDetailView } from "@/components/dashboard/venues/VenueDetailView";
-import { venueDetailItems, venueItems } from "@/data/dummy";
+import { useVenue } from "@/hooks/useVenues";
+import type { VenueDetailItem } from "@/types/dashboard";
+import type { Venue } from "@/schemas/venue.schema";
 
 interface VenueDetailPageProps {
   params: Promise<{ venueId: string }>;
 }
 
-function buildFallbackVenueDetail(venueId: string) {
-  const venue = venueItems.find((item) => item.id === venueId);
+const mapToVenueDetailItem = (venue: Venue): VenueDetailItem => ({
+  id: venue.id || "",
+  name: venue.name,
+  subtitle: venue.shortDescription || `${venue.name} is a student-managed facility at AASTU.`,
+  status: venue.status,
+  locationLabel: venue.location || (venue.campusBlock && venue.floorLevel ? `Block ${venue.campusBlock}, Floor ${venue.floorLevel}` : venue.campusBlock ? `Block ${venue.campusBlock}` : venue.floorLevel ? `Level ${venue.floorLevel}` : "Main Campus"),
+  capacityLabel: venue.capacityLabel || `${venue.maxCapacity} Seats`,
+  coverImageUrl: venue.heroImage || venue.imageUrl || "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=500&auto=format&fit=crop",
+  logoLabel: venue.name ? venue.name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase() : "V",
+  overview: venue.fullDescription ? [venue.fullDescription] : ["No detailed description provided."],
+  gallery: (venue.gallery || []).map(img => typeof img === 'string' ? img : img.image),
+  amenities: venue.amenities || [],
+  mapImageUrl: "", // Removed placeholder
+  gettingThere: venue.nearbyLandmarks || "AASTU Campus",
+  contact: {
+    name: venue.managerName || venue.contact?.name || "Facilities Office",
+    role: venue.contact?.role || "Venue Manager",
+    phone: venue.managerPhone || venue.contact?.phone || "Not provided",
+    email: venue.managerEmail || venue.contact?.email || "venue@aastu.edu.et",
+  },
+});
 
-  if (!venue) {
-    return null;
+export default function VenueDetailPage() {
+  const { venueId } = useParams() as { venueId: string };
+  const { data: venue, isLoading, error } = useVenue(venueId);
+
+  if (isLoading) {
+    return <div className="flex h-64 items-center justify-center">Loading venue details...</div>;
   }
 
-  return {
-    id: venue.id,
-    name: venue.name,
-    subtitle: `${venue.name} is managed in the campus venues dashboard.`,
-    status: venue.status,
-    locationLabel: venue.location,
-    capacityLabel: venue.capacityLabel,
-    coverImageUrl: venue.imageUrl,
-    logoLabel: venue.name
-      .split(" ")
-      .slice(0, 2)
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase(),
-    overview: [
-      "This venue profile is generated from summary data. Add full venue detail content for richer previews.",
-    ],
-    gallery: [venue.imageUrl],
-    amenities: ["WiFi", "Projector"],
-    upcomingSchedule: [
-      {
-        id: "default-schedule",
-        day: "--",
-        month: "TBD",
-        title: "No scheduled events yet",
-        timeRange: "Set upcoming bookings",
-        organizer: "Student Union",
-        status: "pending" as const,
-      },
-    ],
-    mapImageUrl:
-      "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&auto=format&fit=crop",
-    gettingThere: "Campus navigation details will appear here once configured.",
-    venueStatistics: {
-      monthlyUtilization: "--",
-      eventsThisMonth: "0 Events",
-      averageRating: "--",
-    },
-    contact: {
-      name: "Facilities Office",
-      role: "Venue Manager",
-      phone: "Not provided",
-      email: "venue@aastu.edu.et",
-    },
-  };
-}
-
-export async function generateMetadata({ params }: VenueDetailPageProps): Promise<Metadata> {
-  const { venueId } = await params;
-  const item = venueDetailItems[venueId] ?? buildFallbackVenueDetail(venueId);
-
-  return {
-    title: item ? item.name : "Venue Details",
-  };
-}
-
-export default async function VenueDetailPage({ params }: VenueDetailPageProps) {
-  const { venueId } = await params;
-  const item = venueDetailItems[venueId] ?? buildFallbackVenueDetail(venueId);
-
-  if (!item) {
+  if (error || !venue) {
     return (
-      <div className="rounded-[10px] border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        Venue was not found.
+      <div className="p-10 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+          <span className="text-xl font-bold">!</span>
+        </div>
+        <h2 className="text-lg font-semibold text-gray-900">Venue not found</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          {error instanceof Error ? error.message : "The requested venue could not be loaded."}
+        </p>
+        <button
+          onClick={() => window.history.back()}
+          className="mt-6 text-sm font-medium text-[#c49a22] hover:underline"
+        >
+          Go Back
+        </button>
       </div>
     );
   }
+
+  const item = mapToVenueDetailItem(venue);
 
   return <VenueDetailView item={item} />;
 }

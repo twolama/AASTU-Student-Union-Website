@@ -84,6 +84,30 @@ export const API_ENDPOINTS = {
       DELETE: (id: string) => `${API_V1_PREFIX}/departments/${id}/`,
     },
   },
+  VENUES: {
+    LIST: `${API_V1_PREFIX}/venues/`,
+    CREATE: `${API_V1_PREFIX}/venues/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/venues/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/venues/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/venues/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/venues/${id}/`,
+  },
+  VENUE_CATEGORIES: {
+    LIST: `${API_V1_PREFIX}/venue-categories/`,
+    CREATE: `${API_V1_PREFIX}/venue-categories/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/venue-categories/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/venue-categories/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/venue-categories/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/venue-categories/${id}/`,
+  },
+  VENUE_GALLERY: {
+    LIST: `${API_V1_PREFIX}/venue-gallery/`,
+    CREATE: `${API_V1_PREFIX}/venue-gallery/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/venue-gallery/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/venue-gallery/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/venue-gallery/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/venue-gallery/${id}/`,
+  },
 } as const;
 
 export const AUTH_ENDPOINTS = API_ENDPOINTS.AUTHENTICATION;
@@ -94,3 +118,6 @@ export const ANNOUNCEMENT_ENDPOINTS = API_ENDPOINTS.ANNOUNCEMENTS;
 export const ANNOUNCEMENT_CATEGORY_ENDPOINTS = API_ENDPOINTS.ANNOUNCEMENT_CATEGORIES;
 export const CLUB_ENDPOINTS = API_ENDPOINTS.CLUBS;
 export const CLUB_CATEGORY_ENDPOINTS = API_ENDPOINTS.CLUB_CATEGORIES;
+export const VENUE_ENDPOINTS = API_ENDPOINTS.VENUES;
+export const VENUE_CATEGORY_ENDPOINTS = API_ENDPOINTS.VENUE_CATEGORIES;
+export const VENUE_GALLERY_ENDPOINTS = API_ENDPOINTS.VENUE_GALLERY;

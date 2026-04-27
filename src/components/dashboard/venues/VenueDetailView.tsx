@@ -1,6 +1,7 @@
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarDays, ChevronRight, CircleAlert, MapPinned, Pencil, Phone, Star, User, Wrench } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, MapPinned, Maximize2, Pencil, Phone, Star, User, Wrench, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
@@ -23,6 +24,8 @@ const scheduleStatusStyles = {
 } as const;
 
 export function VenueDetailView({ item }: VenueDetailViewProps) {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   return (
     <div className="space-y-4 sm:space-y-5">
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400">
@@ -42,31 +45,25 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
           className="relative min-h-[200px] bg-cover bg-center sm:min-h-[220px] lg:min-h-[240px]"
           style={{ backgroundImage: `linear-gradient(180deg, rgba(12,22,46,0.35), rgba(12,22,46,0.72)), url(${item.coverImageUrl})` }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-[#132a61]/25 via-[#132a61]/40 to-[#0d1632]/85" />
+          <div className="absolute inset-0 bg-linear-to-b from-[#132a61]/25 via-[#132a61]/40 to-[#0d1632]/85" />
 
           <div className="relative z-10 flex min-h-[200px] items-end p-3 sm:min-h-[220px] sm:p-4 lg:min-h-[240px] lg:p-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] border-2 border-white/80 bg-[#2e2121]/65 text-[10px] font-semibold tracking-[0.16em] text-[#f5e7c4] sm:h-16 sm:w-16 sm:text-xs">
-                  {item.logoLabel}
-                </div>
-
-                <div className="min-w-0">
-                  <h1 className="text-xl font-bold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">{item.name}</h1>
-                  <p className="max-w-2xl text-xs leading-relaxed text-white/90 sm:text-sm">{item.subtitle}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/85">
-                    <span className="inline-flex items-center gap-1">
-                      <User size={12} />
-                      {item.capacityLabel}
-                    </span>
-                    <Badge variant={statusVariantMap[item.status]} className="px-2 py-0.5 text-[10px] uppercase">
-                      {item.status}
-                    </Badge>
-                    <span className="inline-flex items-center gap-1">
-                      <MapPinned size={12} />
-                      {item.locationLabel}
-                    </span>
-                  </div>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl font-bold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">{item.name}</h1>
+                <p className="max-w-2xl text-xs leading-relaxed text-white/90 sm:text-sm">{item.subtitle}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/85">
+                  <span className="inline-flex items-center gap-1">
+                    <User size={12} />
+                    {item.capacityLabel}
+                  </span>
+                  <Badge variant={statusVariantMap[item.status]} className="px-2 py-0.5 text-[10px] uppercase">
+                    {item.status}
+                  </Badge>
+                  <span className="inline-flex items-center gap-1">
+                    <MapPinned size={12} />
+                    {item.locationLabel}
+                  </span>
                 </div>
               </div>
 
@@ -96,9 +93,23 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
               <CircleAlert size={18} className="text-[#1f2a44]" />
               Venue Overview
             </h2>
-            <div className="mt-3 space-y-4 text-sm leading-7 text-gray-600">
+            <div
+              className={cn(
+                "mt-3 text-sm leading-7 text-gray-600",
+                "prose prose-slate max-w-none",
+                "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[#1f2a44] [&_h1]:mb-4",
+                "[&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-[#1f2a44] [&_h2]:mb-3",
+                "[&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
+                "[&_blockquote]:border-l-4 [&_blockquote]:border-[#c49a22] [&_blockquote]:pl-4 [&_blockquote]:italic",
+                "[&_a]:text-[#c49a22] [&_a]:underline"
+              )}
+            >
               {item.overview.map((paragraph, index) => (
-                <p key={`${item.id}-overview-${index}`}>{paragraph}</p>
+                paragraph.startsWith("<") ? (
+                  <div key={index} dangerouslySetInnerHTML={{ __html: paragraph }} />
+                ) : (
+                  <p key={`${item.id}-overview-${index}`}>{paragraph}</p>
+                )
               ))}
             </div>
           </article>
@@ -110,17 +121,18 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
             </h2>
 
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {item.gallery.slice(0, 5).map((image, index) => (
-                <div key={`${item.id}-gallery-${index}`} className="relative h-24 overflow-hidden rounded-[8px] border border-gray-200 bg-gray-100">
-                  <Image src={image} alt={`${item.name} gallery ${index + 1}`} fill className="object-cover" />
+              {item.gallery.map((image, index) => (
+                <div
+                  key={`${item.id}-gallery-${index}`}
+                  className="group relative h-28 cursor-pointer overflow-hidden rounded-[8px] border border-gray-200 bg-gray-100 sm:h-32"
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <Image src={image} alt={`${item.name} gallery ${index + 1}`} fill className="object-cover transition-transform duration-300 group-hover:scale-110" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Maximize2 size={20} className="text-white" />
+                  </div>
                 </div>
               ))}
-              <button
-                type="button"
-                className="inline-flex h-24 items-center justify-center rounded-[8px] border border-dashed border-gray-300 bg-[#f8fafc] text-xs font-semibold text-gray-500 transition-colors hover:border-[#c49a22]/40 hover:text-[#c49a22]"
-              >
-                View More
-              </button>
             </div>
           </article>
 
@@ -130,81 +142,30 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
               Amenities &amp; Specifications
             </h2>
             <div className="mt-3 flex flex-wrap gap-2">
-              {item.amenities.map((entry) => (
-                <span key={entry} className="inline-flex items-center rounded-full bg-[#f5edcc] px-2.5 py-1 text-xs font-medium text-[#8c6c14]">
-                  {entry}
-                </span>
-              ))}
-            </div>
-          </article>
-
-          <article className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#1f2a44] sm:text-2xl">
-                <CalendarDays size={18} className="text-[#1f2a44]" />
-                Upcoming Schedule
-              </h2>
-              <button type="button" className="w-full text-left text-xs font-semibold text-[#c49a22] hover:underline sm:w-auto sm:text-right">
-                View Full Calendar
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              {item.upcomingSchedule.map((schedule) => (
-                <div
-                  key={schedule.id}
-                  className={cn(
-                    "grid grid-cols-[56px_minmax(0,1fr)] items-start gap-3 rounded-[8px] border border-gray-100 bg-[#fbfcff] p-3 sm:flex sm:items-center",
-                    schedule.status === "confirmed" ? "border-l-[3px] border-l-[#c49a22]" : "border-l-[3px] border-l-[#cbd5e1]"
-                  )}
-                >
-                  <div className="flex h-14 w-14 flex-col items-center justify-center rounded-[8px] bg-white">
-                    <span className="text-[10px] uppercase tracking-[0.12em] text-gray-500">{schedule.month}</span>
-                    <span className="text-xl font-bold leading-none text-[#1f2a44]">{schedule.day}</span>
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold leading-snug text-[#1f2a44] sm:truncate">{schedule.title}</p>
-                    <p className="text-xs leading-relaxed text-gray-500">{schedule.timeRange} • Organized by {schedule.organizer}</p>
-                  </div>
-
-                  <span className={cn("col-span-2 inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] sm:col-auto sm:ml-auto", scheduleStatusStyles[schedule.status])}>
-                    {schedule.status}
+              {item.amenities.length > 0 ? (
+                item.amenities.map((entry) => (
+                  <span key={entry} className="inline-flex items-center rounded-full bg-[#f5edcc] px-2.5 py-1 text-xs font-medium text-[#8c6c14]">
+                    {entry}
                   </span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-gray-400">No specific amenities listed.</p>
+              )}
             </div>
           </article>
         </div>
 
         <aside className="space-y-4">
           <article className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm">
-            <h3 className="text-base font-semibold text-[#1f2a44]">Location Map</h3>
-            <div className="relative mt-3 h-40 overflow-hidden rounded-[8px] border border-gray-200 bg-gray-100">
-              <Image src={item.mapImageUrl} alt="Venue location map" fill className="object-cover" />
-            </div>
-            <p className="mt-3 rounded-[8px] bg-[#f8fafc] px-2.5 py-2 text-xs text-gray-600">
-              <span className="font-semibold text-[#8c6c14]">Getting there:</span> {item.gettingThere}
-            </p>
-          </article>
-
-          <article className="rounded-[10px] border border-[#223264] bg-[#1f2a44] p-4 text-white shadow-sm">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[#d0b05b]">Venue Statistics</h3>
-            <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-[8px] bg-white/8 p-3">
-                <p className="text-[11px] text-white/70">Monthly Utilization</p>
-                <p className="mt-1 text-3xl font-bold leading-none sm:text-[34px]">{item.venueStatistics.monthlyUtilization}</p>
+            <h3 className="text-base font-semibold text-[#1f2a44]">Location Details</h3>
+            <div className="mt-3 space-y-3">
+              <div className="rounded-[8px] bg-[#f8fafc] p-3 text-xs text-gray-600">
+                <p className="font-semibold text-[#8c6c14]">Venue Location:</p>
+                <p className="mt-1">{item.locationLabel}</p>
               </div>
-              <div className="rounded-[8px] bg-white/8 p-3">
-                <p className="text-[11px] text-white/70">Events this month</p>
-                <p className="mt-1 text-2xl font-bold leading-none sm:text-[30px]">{item.venueStatistics.eventsThisMonth}</p>
-              </div>
-              <div className="rounded-[8px] bg-white/8 p-3 sm:col-span-2 xl:col-span-1">
-                <p className="text-[11px] text-white/70">Average rating</p>
-                <p className="mt-1 inline-flex flex-wrap items-center gap-1 text-xl font-bold leading-none sm:text-2xl">
-                  {item.venueStatistics.averageRating}
-                  <Star size={14} className="text-[#d0b05b]" />
-                </p>
+              <div className="rounded-[8px] bg-[#f8fafc] p-3 text-xs text-gray-600">
+                <p className="font-semibold text-[#8c6c14]">Getting there / Landmarks:</p>
+                <p className="mt-1">{item.gettingThere}</p>
               </div>
             </div>
           </article>
@@ -230,6 +191,59 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
       </section>
 
       <DashboardFooter />
+
+      {/* Image Lightbox Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button
+            className="absolute right-4 top-4 z-60 rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+            onClick={() => setSelectedImage(null)}
+          >
+            <X size={28} />
+          </button>
+
+          {/* Navigation Buttons */}
+          <button
+            className="absolute left-4 top-1/2 z-60 -translate-y-1/2 rounded-full bg-white/5 p-3 text-white transition-all hover:bg-white/10 hover:scale-110 active:scale-95"
+            onClick={(e) => {
+              e.stopPropagation();
+              const currentIndex = item.gallery.indexOf(selectedImage);
+              const nextIndex = (currentIndex - 1 + item.gallery.length) % item.gallery.length;
+              setSelectedImage(item.gallery[nextIndex]);
+            }}
+          >
+            <ChevronLeft size={32} />
+          </button>
+
+          <button
+            className="absolute right-4 top-1/2 z-60 -translate-y-1/2 rounded-full bg-white/5 p-3 text-white transition-all hover:bg-white/10 hover:scale-110 active:scale-95"
+            onClick={(e) => {
+              e.stopPropagation();
+              const currentIndex = item.gallery.indexOf(selectedImage);
+              const nextIndex = (currentIndex + 1) % item.gallery.length;
+              setSelectedImage(item.gallery[nextIndex]);
+            }}
+          >
+            <ChevronRight size={32} />
+          </button>
+
+          <div className="relative flex max-h-[80vh] max-w-[85vw] items-center justify-center overflow-hidden rounded-xl bg-black/40 shadow-2xl animate-in zoom-in-95 duration-300 sm:max-h-[75vh] sm:max-w-[70vw]">
+            <img
+              src={selectedImage}
+              alt="Venue gallery expanded"
+              className="h-full w-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            {/* Image Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-medium text-white backdrop-blur-md">
+              {item.gallery.indexOf(selectedImage) + 1} / {item.gallery.length}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

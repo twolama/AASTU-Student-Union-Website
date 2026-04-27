@@ -22,10 +22,7 @@ export default function AddVenuePage() {
         mapCoordinates: "",
         heroImageUrl: "",
         heroImageName: undefined,
-        galleryImages: [
-          "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=500&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=500&auto=format&fit=crop",
-        ],
+        gallery: [],
         thumbnailUrl: "",
         thumbnailName: undefined,
         amenities: ["Audio System", "WiFi", "Projector"],

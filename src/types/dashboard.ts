@@ -181,14 +181,9 @@ export interface VenueDetailItem {
   overview: string[];
   gallery: string[];
   amenities: string[];
-  upcomingSchedule: VenueScheduleItem[];
+  upcomingSchedule?: VenueScheduleItem[];
   mapImageUrl: string;
   gettingThere: string;
-  venueStatistics: {
-    monthlyUtilization: string;
-    eventsThisMonth: string;
-    averageRating: string;
-  };
   contact: {
     name: string;
     role: string;

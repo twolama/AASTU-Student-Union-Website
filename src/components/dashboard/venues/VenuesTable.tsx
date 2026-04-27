@@ -1,9 +1,13 @@
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Eye, MapPin, Pencil, Trash2, User } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import type { VenueItem, VenueStatus } from "@/types/dashboard";
+import { useDeleteVenue } from "@/hooks/useVenues";
+import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 
 interface VenuesTableProps {
   items: VenueItem[];
@@ -34,6 +38,22 @@ export function VenuesTable({
   totalCount,
   viewMode,
 }: VenuesTableProps) {
+  const deleteVenue = useDeleteVenue();
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    
+    try {
+      await deleteVenue.mutateAsync(deleteConfirm.id);
+      toast.success("Venue deleted successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete venue");
+    } finally {
+      setDeleteConfirm(null);
+    }
+  };
+
   return (
     <section className="overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm">
       <div className="hidden md:block">
@@ -98,7 +118,12 @@ export function VenuesTable({
                         <Link href={`/venues/${item.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" aria-label={`Edit ${item.name}`}>
                           <Pencil size={15} />
                         </Link>
-                        <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" aria-label={`Delete ${item.name}`}>
+                        <button 
+                          type="button" 
+                          onClick={() => setDeleteConfirm({ id: item.id, name: item.name })}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" 
+                          aria-label={`Delete ${item.name}`}
+                        >
                           <Trash2 size={15} />
                         </button>
                       </div>
@@ -222,6 +247,16 @@ export function VenuesTable({
           </button>
         </nav>
       </div>
+
+      <ConfirmationDialog
+        open={deleteConfirm !== null}
+        title="Delete Venue"
+        message={`Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone and will remove all associated data.`}
+        confirmLabel="Delete Venue"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        isLoading={deleteVenue.isPending}
+      />
     </section>
   );
 }
