@@ -224,6 +224,7 @@ export interface AnnouncementItem {
   category: AnnouncementCategory;
   publishedAgo: string;
   authorName: string;
+  isPinned?: boolean;
 }
 
 export interface EventItem {

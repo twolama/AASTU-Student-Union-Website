@@ -36,7 +36,7 @@ export function PublicAnnouncementDetailPage({ announcement, relatedAnnouncement
 
       <section className="w-full bg-[#071741]">
         <article className="relative overflow-hidden text-white">
-          <div className="relative h-[250px] sm:h-[290px] lg:h-[330px]">
+          <div className="relative h-[180px] sm:h-[220px] lg:h-[260px]">
             {announcement.image ? (
               <Image
                 src={announcement.image}
@@ -121,10 +121,16 @@ export function PublicAnnouncementDetailPage({ announcement, relatedAnnouncement
               </div>
 
               {/* Rich Text Body */}
-              <div 
-                className="mt-8 prose prose-slate max-w-none prose-headings:text-[#0f1d49] prose-headings:font-black prose-p:leading-8 prose-p:text-slate-600 prose-a:text-[#c49a22] prose-strong:text-[#0f1d49] prose-ul:list-disc prose-ol:list-decimal"
-                dangerouslySetInnerHTML={{ __html: announcement.body || "" }}
-              />
+              {announcement.body ? (
+                <div
+                  className="mt-8 prose prose-slate max-w-none prose-headings:text-[#0f1d49] prose-headings:font-black prose-p:leading-8 prose-p:text-slate-600 prose-a:text-[#c49a22] prose-strong:text-[#0f1d49] prose-ul:list-disc prose-ol:list-decimal"
+                  dangerouslySetInnerHTML={{ __html: announcement.body }}
+                />
+              ) : (
+                <div className="mt-8 prose prose-slate max-w-none prose-headings:text-[#0f1d49] prose-headings:font-black prose-p:leading-8 prose-p:text-slate-600 prose-a:text-[#c49a22] prose-strong:text-[#0f1d49] prose-ul:list-disc prose-ol:list-decimal">
+                  <p>{announcement.bodyExcerpt || "No announcement details are available."}</p>
+                </div>
+              )}
 
               {announcement.procedureSteps && announcement.procedureSteps.length > 0 && (
                 <div className="mt-10">

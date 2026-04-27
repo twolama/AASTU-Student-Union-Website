@@ -3,14 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarClock, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { Badge } from "@/components/ui/Badge";
 import { announcementService } from "@/api/services/announcement.service";
-import { getPublicAnnouncementCategoryLabel, getPublicAnnouncements, publicAnnouncementTabs } from "@/lib/public/announcements";
+
+dayjs.extend(relativeTime);
+import { getPublicAnnouncementCategoryLabel, publicAnnouncementTabs } from "@/lib/public/announcements";
 import type { AnnouncementItem, AnnouncementCategory } from "@/types/dashboard";
-import { announcementPreviewData } from "@/data/dummy";
 
 const PAGE_SIZE = 5;
 
@@ -24,54 +26,53 @@ function getPublicAnnouncementSourceLabel(announcement: AnnouncementItem) {
 
 function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) {
   return (
-    <article className="group overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]">
-      <div className="relative h-40 bg-[#f2f4f8]">
-        <Image
-          src={announcement.imageUrl}
-          alt={announcement.title}
-          fill
-          sizes="(max-width: 1280px) 100vw, 33vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,63,0.08),rgba(4,18,63,0.18))]" />
-        <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold text-[#0f1d49] shadow-sm">
-          {categoryLabel(announcement.category)}
-        </span>
-        <span className="absolute right-3 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/90 drop-shadow-sm">
-          {announcement.publishedAgo}
-        </span>
-      </div>
-
-      <div className="p-5">
-        <h3 className="text-[1.15rem] font-black leading-[1.12] text-[#0f1d49]">
-          {announcement.title}
-        </h3>
-        <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
-          {announcement.body_excerpt}
-        </p>
-
-        <div className="mt-5 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
-          <span className="flex flex-col gap-0.5">
-            <span>Originating Body: {getPublicAnnouncementSourceLabel(announcement)}</span>
-            <span>Category: {categoryLabel(announcement.category)}</span>
+    <Link href={`/public/announcements/${announcement.id}`}>
+      <article className="group flex h-full flex-col overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)] cursor-pointer">
+        <div className="relative h-40 bg-[#f2f4f8]">
+          <Image
+            src={announcement.imageUrl}
+            alt={announcement.title}
+            fill
+            sizes="(max-width: 1280px) 100vw, 33vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,63,0.08),rgba(4,18,63,0.18))]" />
+          <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold text-[#0f1d49] shadow-sm">
+            {categoryLabel(announcement.category)}
           </span>
-          <Link
-            href={`/public/announcements/${announcement.id}`}
-            className="inline-flex items-center gap-1.5 font-semibold text-[#0f1d49] transition-colors hover:text-[#b6861f]"
-          >
-            Read More
-            <ArrowRight size={14} />
-          </Link>
+          <span className="absolute right-3 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/90 drop-shadow-sm">
+            {announcement.publishedAgo}
+          </span>
         </div>
-      </div>
-    </article>
+
+        <div className="flex flex-1 flex-col p-5">
+          <h3 className="text-[1.15rem] font-black leading-[1.12] text-[#0f1d49]">
+            {announcement.title}
+          </h3>
+          <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
+            {announcement.body_excerpt}
+          </p>
+
+          <div className="mt-5 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
+            <span className="flex flex-col gap-0.5">
+              <span>{getPublicAnnouncementSourceLabel(announcement)}</span>
+              {/* <span>Category: {categoryLabel(announcement.category)}</span> */}
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-[#0f1d49]">
+              Read More
+              <ArrowRight size={14} />
+            </span>
+          </div>
+        </div>
+      </article>
+    </Link>
   );
 }
 
 function AnnouncementCalloutCard() {
   return (
-    <article className="overflow-hidden rounded-[18px] bg-[#08143c] text-white shadow-sm">
-      <div className="relative min-h-full p-5 sm:p-6">
+    <article className="flex h-full flex-col overflow-hidden rounded-[18px] bg-[#08143c] text-white shadow-sm">
+      <div className="relative flex h-full flex-col p-5 sm:p-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#f1c44d]">
           Announcement Desk
         </p>
@@ -84,7 +85,7 @@ function AnnouncementCalloutCard() {
 
         <button
           type="button"
-          className="mt-7 inline-flex h-11 w-full items-center justify-center rounded-[10px] border border-white/20 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          className="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[10px] border border-white/20 text-sm font-semibold text-white transition-colors hover:bg-white/10"
         >
           Submit Request
         </button>
@@ -116,10 +117,11 @@ export function PublicAnnouncementsContent() {
         category: item.categoryDetails?.slug || "all",
         publishedAgo: dayjs(item.createdAt).fromNow(),
         authorName: item.authorName || item.authorRoleName || "Official Notice",
+        isPinned: item.isPinned ?? false,
       }));
     }
 
-    return getPublicAnnouncements();
+    return [];
   }, [announcementsResponse]);
 
   const filteredAnnouncements = useMemo(() => {
@@ -146,8 +148,28 @@ export function PublicAnnouncementsContent() {
     return filteredAnnouncements.slice(start, start + PAGE_SIZE);
   }, [currentPage, filteredAnnouncements]);
 
-  const featuredAnnouncement = announcements[0];
-  const featuredDetail = featuredAnnouncement ? announcementPreviewData[featuredAnnouncement.id] : null;
+  const pinnedAnnouncements = useMemo(
+    () => announcements.filter((item) => item.isPinned),
+    [announcements]
+  );
+
+  const heroAnnouncements = pinnedAnnouncements.length > 0 ? pinnedAnnouncements : null;
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    if (!heroAnnouncements || heroAnnouncements.length <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setHeroIndex((current) => (current + 1) % heroAnnouncements.length);
+    }, 8000);
+
+    return () => window.clearInterval(intervalId);
+  }, [heroAnnouncements]);
+
+  const activeHeroIndex = heroAnnouncements ? heroIndex % heroAnnouncements.length : 0;
+  const featuredAnnouncement = heroAnnouncements ? heroAnnouncements[activeHeroIndex] : null;
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (
@@ -170,7 +192,7 @@ export function PublicAnnouncementsContent() {
 
       {featuredAnnouncement ? (
         <article className="relative overflow-hidden rounded-[24px] bg-[#071741] text-white shadow-[0_22px_44px_rgba(8,20,60,0.24)]">
-          <div className="relative flex min-h-[360px] flex-col justify-end sm:min-h-[400px] lg:h-[360px] lg:min-h-0 xl:h-[400px]">
+          <div className="relative flex min-h-[360px] flex-col justify-end sm:min-h-[400px]">
             <Image
               src={featuredAnnouncement.imageUrl}
               alt={featuredAnnouncement.title}
@@ -184,7 +206,7 @@ export function PublicAnnouncementsContent() {
             <div className="relative z-10 p-5 sm:p-7 lg:p-10">
               <div className="max-w-[720px]">
                 <div className="flex flex-wrap items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white/85">
-                  <Badge variant="gold">Pinned</Badge>
+                  {featuredAnnouncement.isPinned ? <Badge variant="gold">Pinned</Badge> : null}
                   <span>{featuredAnnouncement.publishedAgo}</span>
                 </div>
                 <h2 className="mt-5 text-3xl font-black leading-[1.05] text-white sm:text-4xl lg:text-[3.15rem]">
@@ -201,7 +223,7 @@ export function PublicAnnouncementsContent() {
                     </span>
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.14em] text-white/60">From</p>
-                      <p className="font-semibold">{featuredDetail ? featuredDetail.publishedDate : featuredAnnouncement.publishedAgo}</p>
+                      <p className="font-semibold">{featuredAnnouncement.publishedAgo}</p>
                     </div>
                   </div>
 
