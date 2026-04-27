@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Compass, Users } from "lucide-react";
-import { getPublicActiveClubDetail } from "@/lib/public/clubs";
 import { cn } from "@/lib/utils";
 import type { ClubItem } from "@/types/dashboard";
 
@@ -10,12 +9,9 @@ interface PublicClubCardProps {
 }
 
 export function PublicClubCard({ club }: PublicClubCardProps) {
-  const detail = getPublicActiveClubDetail(club.id);
-  const members = detail?.stats.find((stat) => stat.id === "members")?.value ?? "--";
-  const summary =
-    detail?.about[0] ??
-    "A growing student-led community focused on building skill, leadership, and impact.";
-  const bannerImage = detail?.coverImageUrl;
+  const members = club.memberCount ?? "--";
+  const summary = club.description || "A growing student-led community focused on building skill, leadership, and impact.";
+  const bannerImage = club.coverImage;
 
   return (
     <article className="group overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]">
@@ -35,8 +31,12 @@ export function PublicClubCard({ club }: PublicClubCardProps) {
           {club.categoryLabel}
         </p>
 
-        <div className="absolute -bottom-6 left-5 inline-flex h-12 w-12 items-center justify-center rounded-xl border-4 border-white bg-[#f4f6fb] text-sm font-bold text-[#1f2a44] shadow-sm">
-          {club.logoLabel}
+        <div className="absolute -bottom-6 left-5 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border-4 border-white bg-[#f4f6fb] text-sm font-bold text-[#1f2a44] shadow-sm">
+          {club.logo ? (
+            <img src={club.logo} alt={club.name} className="h-full w-full object-cover" />
+          ) : (
+            club.logoLabel
+          )}
         </div>
       </div>
 

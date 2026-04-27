@@ -1,14 +1,20 @@
-import Link from "next/link";
+"use client";
+
+import { use } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowUpRight,
-  CheckCircle2,
   Globe,
+  Instagram,
   Linkedin,
   Mail,
   MapPin,
   Send,
-  Instagram,
+  Github,
+  Youtube,
+  Phone,
+  CheckCircle2,
 } from "lucide-react";
 import { PublicFooter } from "@/components/public/layout/PublicFooter";
 import { PublicHeader } from "@/components/public/layout/PublicHeader";
@@ -19,25 +25,20 @@ interface PublicClubDetailPageProps {
 }
 
 export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
-  const president =
-    club.contacts.find((contact) =>
-      contact.roleLabel.toLowerCase().includes("president")
-    ) ?? club.contacts[0];
-
-  const missionLead = club.about[0] ?? "";
-  const missionBody = club.about.slice(1);
-
-  const joinRequirements = [
-    "Enrolled student at AASTU (Any Department)",
-    "Maintain a minimum CGPA of 2.75",
-    "Passion for technology and problem solving",
-  ];
+  const president = club.contacts.find((contact) =>
+    contact.roleLabel.toLowerCase().includes("president")
+  );
+  const advisor = club.contacts.find((contact) =>
+    contact.roleLabel.toLowerCase().includes("advisor")
+  );
 
   const connectLinks = [
     { label: "Website", href: club.links.website, icon: Globe },
-    { label: "LinkedIn", href: club.links.externalMembership, icon: Linkedin },
-    { label: "Instagram", href: "#", icon: Instagram },
-    { label: "Telegram", href: "#", icon: Send },
+    { label: "LinkedIn", href: club.links.linkedin || "#", icon: Linkedin },
+    { label: "Telegram", href: club.links.telegram || "#", icon: Send },
+    { label: "GitHub", href: club.links.github || "#", icon: Github },
+    { label: "YouTube", href: club.links.youtube || "#", icon: Youtube },
+    { label: "Registration", href: club.links.membership || "#", icon: Mail },
   ];
 
   return (
@@ -60,8 +61,12 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
             <div className="absolute inset-x-0 bottom-0 px-4 pb-4 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
               <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex items-end gap-3 sm:gap-6">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-white/80 bg-[#1d2b58] text-xl font-black text-[#f1c44d] sm:h-20 sm:w-20 sm:text-2xl">
-                    {club.logoLabel}
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-white/80 bg-[#1d2b58] text-xl font-black text-[#f1c44d] sm:h-20 sm:w-20 sm:text-2xl">
+                    {club.logo ? (
+                      <img src={club.logo} alt={club.name} className="h-full w-full object-cover" />
+                    ) : (
+                      club.logoLabel
+                    )}
                   </div>
 
                   <div className="min-w-0">
@@ -79,7 +84,7 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                 </div>
 
                 <a
-                  href={club.links.externalMembership}
+                  href={club.links.membership}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex h-11 items-center justify-center rounded-[10px] bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
@@ -92,33 +97,25 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
         </article>
       </section>
 
-      <section className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-6 py-8 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-6">
-            <article className="rounded-[16px] bg-white p-6 shadow-sm sm:p-8">
-              <div className="flex items-center gap-3">
-                <span className="h-[2px] w-8 bg-[#d2ab42]" />
-                <h2 className="text-[2rem] font-black leading-none text-[#101f4a] sm:text-[2.2rem]">
-                  Our Mission & Vision
-                </h2>
-              </div>
+      <div className="mx-auto grid w-full max-w-[1280px] gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8 lg:py-12">
+        <div className="space-y-8">
+          <article className="rounded-[16px] bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex items-center gap-3">
+              <span className="h-[2px] w-8 bg-[#d2ab42]" />
+              <h2 className="text-[2rem] font-black leading-none text-[#101f4a] sm:text-[2.2rem]">
+                About the Club
+              </h2>
+            </div>
 
-              <p className="mt-5 text-[15px] leading-8 text-slate-600">{missionLead}</p>
+            <div
+              className="mt-6 prose prose-slate max-w-none text-[15px] leading-8 text-slate-600 
+                [&_p]:mb-5 [&_ul]:mb-5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:mb-5 [&_ol]:list-decimal [&_ol]:pl-6
+                [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3"
+              dangerouslySetInnerHTML={{ __html: club.about[0] }}
+            />
+          </article>
 
-              {missionBody.length > 0 ? (
-                <div className="mt-5 space-y-5 text-[15px] leading-8 text-slate-600">
-                  <blockquote className="rounded-[12px] border-l-4 border-[#d2ab42] bg-[#f5f7fb] px-5 py-4 text-[#1f2b4e]">
-                    &quot;To cultivate a community of visionary engineers who leverage artificial
-                    intelligence and robotics to solve complex societal challenges in
-                    Ethiopia and beyond.&quot;
-                  </blockquote>
-                  {missionBody.map((paragraph, index) => (
-                    <p key={`${club.id}-about-${index}`}>{paragraph}</p>
-                  ))}
-                </div>
-              ) : null}
-            </article>
-
+          {club.upcomingEvents.length > 0 && (
             <article className="rounded-[16px] bg-white p-6 shadow-sm sm:p-8">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -169,41 +166,57 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                 ))}
               </div>
             </article>
-          </div>
+          )}
+        </div>
 
-          <aside className="space-y-5">
-            <article className="rounded-[16px] bg-white p-5 shadow-sm sm:p-6">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Leadership
-              </h3>
+        <aside className="space-y-5">
+          <article className="rounded-[16px] bg-white p-5 shadow-sm sm:p-6">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Club Leadership
+            </h3>
 
-              {president ? (
-                <div className="mt-4">
+            <div className="mt-5 space-y-8">
+              {president && (
+                <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#0f1d49] text-sm font-bold text-white">
-                      {president.initials}
+                    <div className="relative h-12 w-12 overflow-hidden rounded-full bg-[#0f1d49]">
+                      {president.avatarUrl ? (
+                        <Image src={president.avatarUrl} alt={president.name} fill className="object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-sm font-bold text-white">
+                          {president.initials}
+                        </span>
+                      )}
                     </div>
                     <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#b6861f]">President</p>
                       <p className="text-base font-bold text-[#0f1d49]">{president.name}</p>
-                      <p className="text-xs text-slate-500">{president.subtitle}</p>
                     </div>
                   </div>
 
-                  <a
-                    href={`mailto:${president.email}`}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 px-3 py-2.5 text-sm font-semibold text-[#1a2b58] transition-colors hover:bg-slate-50"
-                  >
-                    <Mail size={15} />
-                    Contact President
-                  </a>
+                  <div className="space-y-2 text-xs text-slate-600">
+                    <p className="flex items-center gap-2">
+                      <Mail size={14} className="text-[#b6861f]" />
+                      {president.email}
+                    </p>
+                    {president.phone && (
+                      <p className="flex items-center gap-2">
+                        <Phone size={14} className="text-[#b6861f]" />
+                        {president.phone}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              ) : null}
+              )}
+            </div>
 
-              <h3 className="mt-8 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                Connect
-              </h3>
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                {connectLinks.map((linkItem) => {
+            <h3 className="mt-10 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Connect
+            </h3>
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
+              {connectLinks
+                .filter((link) => link.href && link.href !== "#")
+                .map((linkItem) => {
                   const Icon = linkItem.icon;
                   return (
                     <a
@@ -211,39 +224,36 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                       href={linkItem.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-[10px] bg-[#f1f3f9] px-3 py-2 text-sm font-medium text-[#1a2b58] transition-colors hover:bg-[#e7ecf8]"
+                      className="inline-flex items-center gap-2 rounded-[10px] bg-[#f1f3f9] px-3 py-2.5 text-sm font-medium text-[#1a2b58] transition-colors hover:bg-[#e7ecf8]"
                     >
                       <Icon size={14} />
                       {linkItem.label}
                     </a>
                   );
                 })}
-              </div>
-            </article>
+            </div>
+          </article>
 
-            <article className="rounded-[16px] bg-[#041347] p-5 text-white shadow-sm sm:p-6">
-              <h3 className="text-2xl font-black">Join Us</h3>
-              <ul className="mt-4 space-y-3">
-                {joinRequirements.map((requirement) => (
-                  <li key={requirement} className="inline-flex items-start gap-2 text-sm text-[#d3dcf6]">
-                    <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#f1c44d]" />
-                    {requirement}
-                  </li>
-                ))}
-              </ul>
+          <article className="rounded-[16px] bg-[#041347] p-5 text-white shadow-sm sm:p-6">
+            <h3 className="text-2xl font-black">Join Us</h3>
+            <ul className="mt-4 space-y-3">
+              <li className="inline-flex items-start gap-2 text-sm text-[#d3dcf6]">
+                <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#f1c44d]" />
+                Enrolled student at AASTU (Any Department)
+              </li>
+            </ul>
 
-              <a
-                href={club.links.externalMembership}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-6 inline-flex w-full items-center justify-center rounded-[10px] bg-[#f1c44d] px-4 py-3 text-sm font-bold text-[#0d1a46] transition-colors hover:bg-[#ffd66c]"
-              >
-                REGISTER NOW
-              </a>
-            </article>
-          </aside>
-        </div>
-      </section>
+            <a
+              href={club.links.membership}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-[10px] bg-[#f1c44d] px-4 py-3 text-sm font-bold text-[#0d1a46] transition-colors hover:bg-[#ffd66c]"
+            >
+              REGISTER NOW
+            </a>
+          </article>
+        </aside>
+      </div>
 
       <PublicFooter />
     </main>

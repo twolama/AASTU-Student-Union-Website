@@ -632,6 +632,42 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
               className={controlClassName}
             />
           </div>
+          <div>
+            <label htmlFor="githubUrl" className="mb-1.5 block text-xs font-semibold text-gray-700">
+              GitHub URL
+            </label>
+            <Input
+              id="githubUrl"
+              value={values.githubUrl}
+              onChange={(event) => updateField("githubUrl", event.target.value)}
+              placeholder="https://github.com/..."
+              className={controlClassName}
+            />
+          </div>
+          <div>
+            <label htmlFor="youtubeUrl" className="mb-1.5 block text-xs font-semibold text-gray-700">
+              YouTube Channel
+            </label>
+            <Input
+              id="youtubeUrl"
+              value={values.youtubeUrl}
+              onChange={(event) => updateField("youtubeUrl", event.target.value)}
+              placeholder="https://youtube.com/@..."
+              className={controlClassName}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label htmlFor="externalMembershipUrl" className="mb-1.5 block text-xs font-semibold text-gray-700">
+              External Membership Link (Registration Form)
+            </label>
+            <Input
+              id="externalMembershipUrl"
+              value={values.externalMembershipUrl}
+              onChange={(event) => updateField("externalMembershipUrl", event.target.value)}
+              placeholder="Google Form or Custom Portal link"
+              className={controlClassName}
+            />
+          </div>
         </div>
       </section>
 

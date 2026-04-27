@@ -13,6 +13,7 @@ import {
   MapPin,
   Pencil,
   Phone,
+  Send,
   Share2,
   ShieldAlert,
   Trash2,
@@ -23,8 +24,11 @@ import { Badge } from "@/components/ui/Badge";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
 import type { ClubDetailItem } from "@/types/dashboard";
-import { useDeleteClub } from "@/hooks/useClubs";
+import { useDeleteClub, useUpdateClub } from "@/hooks/useClubs";
 import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { StatusChangeModal, type ClubStatus } from "./StatusChangeModal";
+import { useState } from "react";
 
 interface ClubDetailViewProps {
   item: ClubDetailItem;
@@ -45,18 +49,31 @@ const statusLabelMap = {
 export function ClubDetailView({ item }: ClubDetailViewProps) {
   const router = useRouter();
   const deleteMutation = useDeleteClub();
+  const updateMutation = useUpdateClub();
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this club? This action cannot be undone.")) {
-      return;
-    }
-
     try {
       await deleteMutation.mutateAsync(item.id);
       toast.success("Club deleted successfully");
       router.push("/clubs");
     } catch (error: any) {
       toast.error(error.message || "Failed to delete club");
+    }
+  };
+
+  const handleStatusChange = async (newStatus: ClubStatus) => {
+    try {
+      await updateMutation.mutateAsync({
+        id: item.id,
+        data: { status: newStatus }
+      });
+      toast.success(`Club status updated to ${newStatus}`);
+      setIsStatusModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status");
     }
   };
 
@@ -123,17 +140,23 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
                 </Button>
               </Link>
 
-              <Button type="button" variant="gold" size="md" className="h-9 rounded-[10px] px-4">
+              <Button
+                type="button"
+                variant="gold"
+                size="md"
+                className="h-9 rounded-[10px] px-4"
+                onClick={() => setIsStatusModalOpen(true)}
+              >
                 <ShieldAlert size={14} />
                 Change Status
               </Button>
 
-              <Button 
-                type="button" 
-                variant="primary" 
-                size="md" 
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
                 className="h-9 rounded-[10px] bg-[#dc2626] px-4 hover:bg-[#b91c1c] active:bg-[#991b1b]"
-                onClick={handleDelete}
+                onClick={() => setIsDeleteDialogOpen(true)}
                 disabled={deleteMutation.isPending}
               >
                 {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -143,6 +166,25 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
           </div>
         </div>
       </section>
+
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        title="Delete Club"
+        message={`Are you sure you want to delete "${item.name}"? This action cannot be undone and all club data will be permanently removed.`}
+        confirmLabel="Delete Club"
+        cancelLabel="Cancel"
+        isLoading={deleteMutation.isPending}
+        onCancel={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+      />
+
+      <StatusChangeModal
+        open={isStatusModalOpen}
+        currentStatus={item.status as ClubStatus}
+        isLoading={updateMutation.isPending}
+        onCancel={() => setIsStatusModalOpen(false)}
+        onConfirm={handleStatusChange}
+      />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {item.stats.map((stat) => (
@@ -206,34 +248,83 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
           <article className="rounded-[10px] border border-[#223264] bg-[#1f2a44] p-4 text-white shadow-sm">
             <h2 className="text-base font-semibold">Connect &amp; Resources</h2>
 
-            <a
-              href={item.links.website}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 flex items-center justify-between rounded-[8px] bg-white/8 px-3 py-2 text-sm transition-colors hover:bg-white/14"
-            >
-              <span className="inline-flex items-center gap-2">
-                <LinkIcon size={14} />
-                Official Website
-              </span>
-              <ExternalLink size={14} />
-            </a>
 
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="Open website"
-              >
-                <Globe size={14} />
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-white/10 text-white transition-colors hover:bg-white/20"
-                aria-label="Share resources"
-              >
-                <Share2 size={14} />
-              </button>
+            <div className="mt-3 grid gap-2">
+              {item.links.website && (
+                <a
+                  href={item.links.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between rounded-[8px] bg-white/8 px-3 py-2 text-sm transition-colors hover:bg-white/14"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Globe size={14} />
+                    Official Website
+                  </span>
+                  <ExternalLink size={14} />
+                </a>
+              )}
+              {item.links.membership && (
+                <a
+                  href={item.links.membership}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between rounded-[8px] bg-[#c49a22]/20 px-3 py-2 text-sm transition-colors hover:bg-[#c49a22]/30"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Trophy size={14} />
+                    Membership Form
+                  </span>
+                  <ExternalLink size={14} />
+                </a>
+              )}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {item.links.telegram && (
+                <a
+                  href={item.links.telegram}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-white/10 text-white transition-colors hover:bg-white/20"
+                  title="Telegram"
+                >
+                  <Send size={14} />
+                </a>
+              )}
+              {item.links.linkedin && (
+                <a
+                  href={item.links.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-white/10 text-white transition-colors hover:bg-white/20"
+                  title="LinkedIn"
+                >
+                  <Globe size={14} />
+                </a>
+              )}
+              {item.links.github && (
+                <a
+                  href={item.links.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-white/10 text-white transition-colors hover:bg-white/20"
+                  title="GitHub"
+                >
+                  <Globe size={14} />
+                </a>
+              )}
+              {item.links.youtube && (
+                <a
+                  href={item.links.youtube}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] bg-white/10 text-white transition-colors hover:bg-white/20"
+                  title="YouTube"
+                >
+                  <Globe size={14} />
+                </a>
+              )}
             </div>
 
             <div className="mt-4 border-t border-white/10 pt-3">

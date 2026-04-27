@@ -15,9 +15,10 @@ type ClubMutationPayload = FormData | Record<string, unknown>;
 
 export const clubService = {
   // Clubs
-  getClubs: async (page = 1, limit = 20, category?: string) => {
+  getClubs: async (page = 1, limit = 20, category?: string, status?: string) => {
     const params: Record<string, string | number> = { page, limit };
     if (category && category !== "all") params["category__slug"] = category;
+    if (status) params["status"] = status;
     
     const response = await apiClient.get<ClubListResponse>(CLUB_ENDPOINTS.LIST, { params });
     return ClubListResponseSchema.parse(response.data);

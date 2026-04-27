@@ -6,7 +6,6 @@ import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PublicClubCard } from "@/components/public/clubs/PublicClubCard";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
-import { getPublicActiveClubDetail } from "@/lib/public/clubs";
 import type { ClubItem } from "@/types/dashboard";
 
 interface PublicClubsContentProps {
@@ -54,12 +53,10 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
 
   const featuredClub = filteredClubs[0];
   const supportingClubs = filteredClubs.slice(1);
-  const featuredClubDetail = featuredClub ? getPublicActiveClubDetail(featuredClub.id) : null;
   const featuredSummary =
-    featuredClubDetail?.about[0] ??
+    featuredClub?.description ||
     "Join a vibrant student-led community and build projects, friendships, and campus impact.";
-  const featuredMembers =
-    featuredClubDetail?.stats.find((stat) => stat.id === "members")?.value ?? "--";
+  const featuredMembers = featuredClub?.memberCount ?? "--";
 
   const proposalCategoryOptions: { value: string; label: string }[] = [
     { value: "", label: "Select category" },
@@ -214,65 +211,12 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
       </section>
 
       {filteredClubs.length > 0 ? (
-        <section className="mt-8 space-y-5">
-          {featuredClub ? (
-            <article className="overflow-hidden rounded-[20px] bg-white shadow-sm">
-              <div className="grid gap-0 lg:grid-cols-[1.12fr_1fr]">
-                <div className="relative min-h-[260px] bg-[#071741]">
-                  <Image
-                    src={featuredClubDetail?.coverImageUrl ?? "/hero_image_aastu_su.jpg"}
-                    alt={featuredClub.name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 58vw"
-                    className="object-cover opacity-80"
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(125deg,rgba(6,22,73,0.84),rgba(6,22,73,0.32))]" />
-                  <span className="absolute left-4 top-4 rounded-full bg-[#f4c84b] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#091434]">
-                    Club of the Month
-                  </span>
-                </div>
-
-                <div className="p-6 sm:p-8">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#b6861f]">
-                    {featuredClub.categoryLabel}
-                  </p>
-                  <h2 className="mt-2 text-3xl font-black leading-tight text-[#08143c] sm:text-[2.1rem]">
-                    {featuredClub.name}
-                  </h2>
-                  <p className="mt-4 max-w-[40ch] text-sm leading-7 text-slate-600">
-                    {featuredSummary}
-                  </p>
-
-                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                    {featuredMembers} members
-                  </p>
-
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <Link
-                      href={`/public/clubs/${featuredClub.id}`}
-                      className="inline-flex items-center justify-center rounded-[10px] bg-[#05123a] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1a2e67]"
-                    >
-                      Join Society
-                    </Link>
-                    <Link
-                      href={`/public/clubs/${featuredClub.id}`}
-                      className="inline-flex items-center justify-center rounded-[10px] border border-slate-200 bg-[#f4f6fa] px-5 py-2.5 text-sm font-semibold text-[#1e2b52] transition-colors hover:bg-[#e9edf6]"
-                    >
-                      View Details
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ) : null}
-
-          {supportingClubs.length > 0 ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {supportingClubs.map((club) => (
-                <PublicClubCard key={club.id} club={club} />
-              ))}
-            </div>
-          ) : null}
+        <section className="mt-8 space-y-12">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredClubs.map((club) => (
+              <PublicClubCard key={club.id} club={club} />
+            ))}
+          </div>
 
           <section className="overflow-hidden rounded-[20px] bg-[#14213d] text-white shadow-sm">
             <div className="grid gap-0 lg:grid-cols-[1fr_0.54fr]">

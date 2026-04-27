@@ -290,6 +290,8 @@ export interface ClubItem {
   coverImage?: string | null;
   departmentId?: string;
   departmentName?: string;
+  description?: string;
+  memberCount?: number;
 }
 
 export interface ClubDetailStat {
@@ -339,7 +341,11 @@ export interface ClubDetailItem {
   stats: ClubDetailStat[];
   links: {
     website: string;
-    externalMembership: string;
+    membership: string;
+    telegram?: string;
+    linkedin?: string;
+    github?: string;
+    youtube?: string;
   };
   contacts: ClubMemberProfile[];
   upcomingEvents: ClubUpcomingEventItem[];

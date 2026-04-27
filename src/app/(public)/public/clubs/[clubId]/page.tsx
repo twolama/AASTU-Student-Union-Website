@@ -1,43 +1,87 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useParams, notFound } from "next/navigation";
 import { PublicClubDetailPage } from "@/components/public/clubs/PublicClubDetailPage";
-import { getPublicActiveClubDetail, getPublicActiveClubs } from "@/lib/public/clubs";
+import { useClub, useClubUpcomingEvents } from "@/hooks/useClubs";
+import { Loader2 } from "lucide-react";
+import type { ClubDetailItem, ClubMemberProfile, ClubUpcomingEventItem } from "@/types/dashboard";
+import dayjs from "dayjs";
 
-interface ClubDetailRouteProps {
-  params: Promise<{
-    clubId: string;
-  }>;
-}
+export default function ClubDetailPage() {
+  const params = useParams();
+  const clubId = params.clubId as string;
 
-export async function generateMetadata({
-  params,
-}: ClubDetailRouteProps): Promise<Metadata> {
-  const { clubId } = await params;
-  const club = getPublicActiveClubDetail(clubId);
+  const { data: club, isLoading, isError } = useClub(clubId);
+  const { data: upcomingEventsData } = useClubUpcomingEvents(clubId);
 
-  if (!club) {
-    return {
-      title: "Club Not Found",
-    };
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#f2f2f2]">
+        <Loader2 className="h-10 w-10 animate-spin text-[#c49a22]" />
+      </div>
+    );
   }
 
-  return {
-    title: club.name,
-    description: `Public profile for ${club.name}.`,
-  };
-}
-
-export function generateStaticParams() {
-  return getPublicActiveClubs().map((club) => ({ clubId: club.id }));
-}
-
-export default async function ClubDetailPage({ params }: ClubDetailRouteProps) {
-  const { clubId } = await params;
-  const club = getPublicActiveClubDetail(clubId);
-
-  if (!club) {
+  if (isError || !club || club.status !== "active") {
     notFound();
   }
 
-  return <PublicClubDetailPage club={club} />;
+  // Map API data to ClubDetailItem format
+  const mappedClub: ClubDetailItem = {
+    id: club.id,
+    name: club.name,
+    status: club.status as any,
+    categoryLabel: club.categoryDetails?.name || "General",
+    locationLabel: club.locationLabel,
+    logoLabel: club.logoLabel || club.name.charAt(0),
+    logo: club.logo,
+    coverImageUrl: club.coverImage || "/hero_image_aastu_su.jpg",
+    about: club.description ? [club.description] : ["No description available."],
+    stats: [
+      { id: "members", label: "Active Members", value: "0" }, // Placeholder
+    ],
+    links: {
+      website: (club.links as any)?.website || "#",
+      membership: (club.links as any)?.membership || "#",
+      telegram: (club.links as any)?.telegram || "#",
+      linkedin: (club.links as any)?.linkedin || "#",
+      github: (club.links as any)?.github || "#",
+      youtube: (club.links as any)?.youtube || "#",
+    },
+    contacts: [
+      ...(club.presidentDetails ? [{
+        id: club.presidentDetails.id,
+        name: club.presidentDetails.name,
+        roleLabel: "President",
+        subtitle: club.presidentDetails.departmentName || "Student",
+        email: club.presidentDetails.email,
+        phone: (club.presidentDetails as any).phoneNumber || "",
+        location: `Block ${club.presidentDetails.dormBlock || "--"}, Room ${club.presidentDetails.dormRoom || "--"}`,
+        initials: club.presidentDetails.initials,
+        avatarUrl: club.presidentDetails.avatar,
+      }] : []),
+      ...(club.advisorDetails ? [{
+        id: club.advisorDetails.id,
+        name: club.advisorDetails.name,
+        roleLabel: "Advisor",
+        subtitle: club.advisorDetails.departmentName || "Faculty",
+        email: club.advisorDetails.email,
+        phone: (club.advisorDetails as any).phoneNumber || "",
+        location: "Staff Office",
+        initials: club.advisorDetails.initials,
+        avatarUrl: club.advisorDetails.avatar,
+      }] : []),
+    ],
+    upcomingEvents: (upcomingEventsData || []).map((ev: any) => ({
+      id: ev.id,
+      day: dayjs(ev.schedule_date).format("DD"),
+      month: dayjs(ev.schedule_date).format("MMM"),
+      title: ev.title,
+      timeVenue: `${ev.schedule_time || ""} @ ${ev.venue_name || ev.location || "AASTU"}`,
+    })),
+    recentActivities: [],
+  };
+
+  return <PublicClubDetailPage club={mappedClub} />;
 }
+

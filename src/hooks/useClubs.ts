@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { clubService } from "@/api/services/club.service";
 
-export function useClubs(page = 1, limit = 20, category?: string) {
+export function useClubs(page = 1, limit = 20, category?: string, status?: string) {
   return useQuery({
-    queryKey: ["clubs", page, limit, category],
-    queryFn: () => clubService.getClubs(page, limit, category),
+    queryKey: ["clubs", page, limit, category, status],
+    queryFn: () => clubService.getClubs(page, limit, category, status),
     placeholderData: keepPreviousData,
   });
 }
