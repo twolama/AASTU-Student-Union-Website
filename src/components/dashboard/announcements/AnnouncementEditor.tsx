@@ -16,6 +16,7 @@ import {
   Heading2,
   Italic,
   Link as LinkIcon,
+  Unlink,
   List,
   ListOrdered,
   Pilcrow,
@@ -32,6 +33,7 @@ import { Switch } from "@/components/ui/Switch";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { TagInput } from "@/components/ui/TagInput";
 import type { AnnouncementCategory as ApiAnnouncementCategory } from "@/schemas/announcement.schema";
 import type { AnnouncementCategory } from "@/types/dashboard";
 
@@ -67,6 +69,7 @@ type SelectionToolbarAction =
   | "bold"
   | "italic"
   | "link"
+  | "unlink"
   | "bulletList"
   | "orderedList"
   | "quote"
@@ -82,6 +85,7 @@ const toolbarActions: Array<{ id: SelectionToolbarAction; icon: ElementType; lab
   { id: "bold", icon: Bold, label: "Bold" },
   { id: "italic", icon: Italic, label: "Italic" },
   { id: "link", icon: LinkIcon, label: "Link" },
+  { id: "unlink", icon: Unlink, label: "Unlink" },
   { id: "bulletList", icon: List, label: "Bullet list" },
   { id: "orderedList", icon: ListOrdered, label: "Numbered list" },
   { id: "quote", icon: Quote, label: "Quote" },
@@ -217,7 +221,14 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     const range = getSelectionRange();
     const canvas = editorCanvasRef.current;
 
-    if (!range || range.collapsed || !canvas) {
+    let isLink = false;
+    if (range) {
+      const node = range.commonAncestorContainer;
+      const element = node.nodeType === 3 ? node.parentElement : (node as HTMLElement);
+      isLink = Boolean(element?.closest("a"));
+    }
+
+    if (!range || (!isLink && range.collapsed) || !canvas) {
       setSelectionToolbar((current) => ({ ...current, visible: false }));
       return;
     }
@@ -258,7 +269,24 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
     restoreSelection();
 
     if (command === "link") {
+      let currentHref = "";
+      const node = window.getSelection()?.anchorNode;
+      if (node) {
+        const element = node.nodeType === 3 ? node.parentElement : (node as HTMLElement);
+        const anchor = element?.closest("a");
+        if (anchor) {
+          currentHref = anchor.getAttribute("href") || "";
+        }
+      }
+      setLinkValue(currentHref);
       setLinkInputOpen(true);
+      return;
+    }
+
+    if (command === "unlink") {
+      document.execCommand("unlink");
+      syncEditorValue();
+      setSelectionToolbar((current) => ({ ...current, visible: false }));
       return;
     }
 
@@ -567,7 +595,8 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
                     "min-h-[260px] w-full max-w-[760px] rounded-[10px] outline-none",
                     "text-left text-[18px] leading-[1.95] text-gray-700",
                     "[&:empty:before]:pointer-events-none [&:empty:before]:block [&:empty:before]:px-4 [&:empty:before]:text-left [&:empty:before]:text-gray-300 [&:empty:before]:content-[attr(data-placeholder)]",
-                    "[&_h1]:mb-4 [&_h1]:text-4xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-[#c49a22] [&_blockquote]:pl-4 [&_blockquote]:italic [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-2 [&_p]:mb-5 [&_p]:text-left"
+                    "[&_h1]:mb-4 [&_h1]:text-4xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-[#c49a22] [&_blockquote]:pl-4 [&_blockquote]:italic [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-2 [&_p]:mb-5 [&_p]:text-left",
+                    "[&_a]:text-blue-600 [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-blue-800 [&_a]:cursor-pointer"
                   )}
                 />
               </div>
@@ -630,6 +659,26 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
                   updateField("coverImageName", undefined);
                 }}
                 className="[&>label]:rounded-[10px] [&>div]:rounded-[10px]"
+              />
+            </div>
+
+            <div className="mt-5 border-t border-gray-100 pt-5">
+              <TagInput
+                label="Tags"
+                tags={values.tags || []}
+                onChange={(newTags) => updateField("tags", newTags)}
+                placeholder="Add a tag (e.g. event, news)"
+                helpText="Press Enter or comma to add a tag"
+              />
+            </div>
+
+            <div className="mt-5 border-t border-gray-100 pt-5">
+              <TagInput
+                label="Procedure Steps"
+                tags={values.procedureSteps || []}
+                onChange={(newSteps) => updateField("procedureSteps", newSteps)}
+                placeholder="Add a step"
+                helpText="Press Enter to add a step"
               />
             </div>
 
