@@ -45,6 +45,23 @@ export const API_ENDPOINTS = {
     PATCH: (id: string) => `${API_V1_PREFIX}/announcement-categories/${id}/`,
     DELETE: (id: string) => `${API_V1_PREFIX}/announcement-categories/${id}/`,
   },
+  CLUBS: {
+    LIST: `${API_V1_PREFIX}/clubs/`,
+    CREATE: `${API_V1_PREFIX}/clubs/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/clubs/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/clubs/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/clubs/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/clubs/${id}/`,
+    UPCOMING_EVENTS: (id: string) => `${API_V1_PREFIX}/clubs/${id}/upcoming-events/`,
+  },
+  CLUB_CATEGORIES: {
+    LIST: `${API_V1_PREFIX}/club-categories/`,
+    CREATE: `${API_V1_PREFIX}/club-categories/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/club-categories/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/club-categories/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/club-categories/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/club-categories/${id}/`,
+  },
   CORE: {
     ANALYTICS: {
       DASHBOARD: `${API_V1_PREFIX}/analytics/dashboard/`,
@@ -75,3 +92,5 @@ export const ROLE_ENDPOINTS = API_ENDPOINTS.ROLES;
 export const CORE_ENDPOINTS = API_ENDPOINTS.CORE;
 export const ANNOUNCEMENT_ENDPOINTS = API_ENDPOINTS.ANNOUNCEMENTS;
 export const ANNOUNCEMENT_CATEGORY_ENDPOINTS = API_ENDPOINTS.ANNOUNCEMENT_CATEGORIES;
+export const CLUB_ENDPOINTS = API_ENDPOINTS.CLUBS;
+export const CLUB_CATEGORY_ENDPOINTS = API_ENDPOINTS.CLUB_CATEGORIES;

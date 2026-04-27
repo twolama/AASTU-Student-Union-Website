@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   ChevronRight,
   ExternalLink,
   Globe,
   Link as LinkIcon,
+  Loader2,
   Mail,
   MapPin,
   Pencil,
@@ -19,6 +23,8 @@ import { Badge } from "@/components/ui/Badge";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
 import type { ClubDetailItem } from "@/types/dashboard";
+import { useDeleteClub } from "@/hooks/useClubs";
+import { toast } from "sonner";
 
 interface ClubDetailViewProps {
   item: ClubDetailItem;
@@ -37,6 +43,23 @@ const statusLabelMap = {
 } as const;
 
 export function ClubDetailView({ item }: ClubDetailViewProps) {
+  const router = useRouter();
+  const deleteMutation = useDeleteClub();
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this club? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await deleteMutation.mutateAsync(item.id);
+      toast.success("Club deleted successfully");
+      router.push("/clubs");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete club");
+    }
+  };
+
   return (
     <div className="space-y-5">
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400">
@@ -58,8 +81,12 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
         />
 
         <div className="relative px-4 pb-5 pt-0 sm:px-5 lg:px-6">
-          <div className="absolute -top-7 left-4 flex h-14 w-14 items-center justify-center rounded-xl border-4 border-white bg-[#1d3f39] text-sm font-semibold tracking-[0.25em] text-white shadow-sm sm:left-5 sm:h-16 sm:w-16 lg:left-6">
-            {item.logoLabel}
+          <div className="absolute -top-7 left-4 flex h-14 w-14 overflow-hidden items-center justify-center rounded-xl border-4 border-white bg-[#1d3f39] text-sm font-semibold tracking-[0.25em] text-white shadow-sm sm:left-5 sm:h-16 sm:w-16 lg:left-6">
+            {item.logo ? (
+              <img src={item.logo} alt={item.name} className="h-full w-full object-cover" />
+            ) : (
+              item.logoLabel
+            )}
           </div>
 
           <div className="pt-10 sm:pt-12">
@@ -74,6 +101,13 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
                 <Trophy size={14} className="text-[#c49a22]" />
                 {item.categoryLabel}
               </span>
+
+              {item.departmentLabel && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Globe size={14} className="text-[#c49a22]" />
+                  {item.departmentLabel}
+                </span>
+              )}
 
               <span className="inline-flex items-center gap-1.5">
                 <MapPin size={14} className="text-[#c49a22]" />
@@ -94,9 +128,16 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
                 Change Status
               </Button>
 
-              <Button type="button" variant="primary" size="md" className="h-9 rounded-[10px] bg-[#dc2626] px-4 hover:bg-[#b91c1c] active:bg-[#991b1b]">
-                <Trash2 size={14} />
-                Delete
+              <Button 
+                type="button" 
+                variant="primary" 
+                size="md" 
+                className="h-9 rounded-[10px] bg-[#dc2626] px-4 hover:bg-[#b91c1c] active:bg-[#991b1b]"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </Button>
             </div>
           </div>
@@ -129,8 +170,12 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
                 <h3 className="text-lg font-bold text-[#1f2a44]">{contact.roleLabel}</h3>
 
                 <div className="mt-4 flex items-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f3ead0] text-sm font-semibold text-[#8c6c14]">
-                    {contact.initials}
+                  <span className="inline-flex h-10 w-10 overflow-hidden items-center justify-center rounded-full bg-[#f3ead0] text-sm font-semibold text-[#8c6c14]">
+                    {contact.avatarUrl ? (
+                      <img src={contact.avatarUrl} alt={contact.name} className="h-full w-full object-cover" />
+                    ) : (
+                      contact.initials
+                    )}
                   </span>
                   <div>
                     <p className="font-semibold text-gray-800">{contact.name}</p>

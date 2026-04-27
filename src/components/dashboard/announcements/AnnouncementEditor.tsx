@@ -589,7 +589,7 @@ export function AnnouncementEditor({ mode, initialValues, announcementId }: Anno
                 ) : (
                   <>
                     {currentLinkHref ? (
-                      <div className="max-w-[12rem] truncate rounded-full bg-white/10 px-3 py-1 text-[11px] text-slate-100">
+                      <div className="max-w-48 truncate rounded-full bg-white/10 px-3 py-1 text-[11px] text-slate-100">
                         <LinkIcon size={12} className="inline-block mr-1" />
                         <span className="truncate">{currentLinkHref}</span>
                       </div>

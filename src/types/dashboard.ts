@@ -286,6 +286,10 @@ export interface ClubItem {
   advisorName: string;
   headerGradient: string;
   logoLabel: string;
+  logo?: string | null;
+  coverImage?: string | null;
+  departmentId?: string;
+  departmentName?: string;
 }
 
 export interface ClubDetailStat {
@@ -303,6 +307,7 @@ export interface ClubMemberProfile {
   phone: string;
   location: string;
   initials: string;
+  avatarUrl?: string | null;
 }
 
 export interface ClubUpcomingEventItem {
@@ -325,7 +330,10 @@ export interface ClubDetailItem {
   status: ClubStatus;
   categoryLabel: string;
   locationLabel: string;
+  departmentLabel?: string;
+  departmentId?: string;
   logoLabel: string;
+  logo?: string | null;
   coverImageUrl: string;
   about: string[];
   stats: ClubDetailStat[];

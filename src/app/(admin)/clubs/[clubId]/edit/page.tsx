@@ -1,59 +1,69 @@
-import type { Metadata } from "next";
+"use client";
+
+import { use } from "react";
 import { ClubEditor } from "@/components/dashboard/clubs/ClubEditor";
-import { clubItems } from "@/data/dummy";
+import { useClub } from "@/hooks/useClubs";
+import { Loader2 } from "lucide-react";
+import { notFound } from "next/navigation";
 
 interface EditClubPageProps {
   params: Promise<{ clubId: string }>;
 }
 
-function categoryToValue(categoryLabel: string) {
-  return categoryLabel.toLowerCase().replace(/\s*&\s*/g, "-").replace(/\s+/g, "-");
-}
+export default function EditClubPage({ params }: EditClubPageProps) {
+  const { clubId } = use(params);
+  const { data: club, isLoading, isError } = useClub(clubId);
 
-export async function generateMetadata({ params }: EditClubPageProps): Promise<Metadata> {
-  const { clubId } = await params;
-  const club = clubItems.find((item) => item.id === clubId);
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+      </div>
+    );
+  }
 
-  return {
-    title: club ? `Edit ${club.name}` : "Edit Club",
-  };
-}
+  if (isError || !club) {
+    notFound();
+  }
 
-export default async function EditClubPage({ params }: EditClubPageProps) {
-  const { clubId } = await params;
-  const club = clubItems.find((item) => item.id === clubId);
+  const links = club.links as any || {};
 
   return (
     <ClubEditor
       mode="edit"
       clubId={clubId}
       initialValues={{
-        clubName: club?.name ?? "",
-        description:
-          "This club profile is being updated by the Student Union office. Review leadership, digital presence, and operational status details.",
-        category: club ? categoryToValue(club.categoryLabel) : "",
-        bannerUrl: "",
-        bannerFileName: undefined,
-        logoUrl: "",
-        logoFileName: undefined,
-        presidentFullName: club?.presidentName ?? "",
-        presidentDepartment: "Software Engineering",
-        presidentId: "",
-        presidentEmail: "",
-        presidentPhone: "",
-        presidentDormBlock: "",
-        presidentDormRoom: "",
-        advisorName: club?.advisorName ?? "",
-        advisorDepartment: "Software Engineering",
-        advisorPhone: "",
-        advisorEmail: "",
-        telegramUrl: "",
-        linkedinUrl: "",
-        githubUrl: "",
-        youtubeUrl: "",
-        websiteUrl: "",
-        externalMembershipUrl: "",
-        status: club?.status ?? "pending",
+        clubName: club.name,
+        description: club.description || "",
+        category: club.category || "",
+        locationLabel: club.locationLabel || "",
+        logoLabel: club.logoLabel || "",
+        bannerUrl: club.coverImage || "",
+        logoUrl: club.logo || "",
+        presidentFullName: (club.presidentDetails as any)?.name || "",
+        presidentDepartment: (club.presidentDetails as any)?.departmentName || (club.presidentDetails as any)?.department || "",
+        presidentId: (club.presidentDetails as any)?.studentId || "",
+        presidentEmail: (club.presidentDetails as any)?.email || "",
+        presidentPhone: (club.presidentDetails as any)?.phoneNumber || "",
+        presidentDormBlock: (club.presidentDetails as any)?.dormBlock || "",
+        presidentDormRoom: (club.presidentDetails as any)?.dormRoom || "",
+        advisorName: (club.advisorDetails as any)?.name || "",
+        advisorDepartment: (club.advisorDetails as any)?.departmentName || (club.advisorDetails as any)?.department || "",
+        advisorPhone: (club.advisorDetails as any)?.phoneNumber || "",
+        advisorEmail: (club.advisorDetails as any)?.email || "",
+        advisorStudentId: (club.advisorDetails as any)?.studentId || "",
+        advisorDormBlock: (club.advisorDetails as any)?.dormBlock || "",
+        advisorDormRoom: (club.advisorDetails as any)?.dormRoom || "",
+        telegramUrl: links.telegram || "",
+        linkedinUrl: links.linkedin || "",
+        githubUrl: links.github || "",
+        youtubeUrl: links.youtube || "",
+        websiteUrl: links.website || "",
+        externalMembershipUrl: links.membership || "",
+        status: (club.status as any) || "pending",
+        president: club.president || "",
+        advisor: club.advisor || "",
+        department: club.department || "",
       }}
     />
   );

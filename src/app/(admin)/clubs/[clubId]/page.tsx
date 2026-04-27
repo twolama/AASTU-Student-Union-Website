@@ -1,100 +1,84 @@
-import type { Metadata } from "next";
+"use client";
+
+import { use } from "react";
+import { notFound } from "next/navigation";
 import { ClubDetailView } from "@/components/dashboard/clubs/ClubDetailView";
-import { clubDetailItems, clubItems } from "@/data/dummy";
+import { useClub, useClubUpcomingEvents } from "@/hooks/useClubs";
+import { Loader2 } from "lucide-react";
 
 interface ClubDetailPageProps {
   params: Promise<{ clubId: string }>;
 }
 
-function getFallbackClubDetail(clubId: string) {
-  const fallbackItem = clubItems.find((item) => item.id === clubId);
+export default function ClubDetailPage({ params }: ClubDetailPageProps) {
+  const { clubId } = use(params);
+  const { data: club, isLoading, isError } = useClub(clubId);
+  const { data: upcomingEvents, isLoading: isLoadingEvents } = useClubUpcomingEvents(clubId);
 
-  if (!fallbackItem) {
-    return null;
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+      </div>
+    );
   }
 
-  return {
-    id: fallbackItem.id,
-    name: fallbackItem.name,
-    status: fallbackItem.status,
-    categoryLabel: fallbackItem.categoryLabel,
-    locationLabel: "AASTU Main Campus",
-    logoLabel: fallbackItem.logoLabel,
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1600&auto=format&fit=crop",
-    about: [
-      `${fallbackItem.name} is part of the AASTU Student Union club ecosystem. This profile can be expanded with full background information, achievements, and strategic goals.`,
-    ],
+  if (isError || !club) {
+    notFound();
+  }
+
+  // Map backend club data to the UI structure expected by ClubDetailView
+  const mappedItem = {
+    ...club,
+    categoryLabel: club.categoryDetails?.name || club.categoryName || "Uncategorized",
+    departmentLabel: (club.departmentDetails as any)?.name || club.departmentName || undefined,
+    departmentId: club.department || undefined,
+    logo: club.logo,
+    coverImageUrl: club.coverImage || "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1600&auto=format&fit=crop",
+    logoLabel: club.logoLabel || club.name.charAt(0),
+    about: club.description ? [club.description] : ["No description provided."],
     stats: [
-      { id: "members", label: "Total Members", value: "--" },
-      { id: "events", label: "Events Hosted", value: "--" },
-      { id: "rank", label: "Campus Ranking", value: "--" },
+      { id: "members", label: "Total Members", value: "0" },
+      { id: "events", label: "Events Hosted", value: "0" },
+      { id: "rank", label: "Campus Ranking", value: "N/A" },
     ],
     links: {
-      website: "https://aastu.edu.et",
-      externalMembership: "https://aastu.edu.et",
+      website: (club.links as any)?.website || "#",
+      externalMembership: (club.links as any)?.membership || "#",
     },
     contacts: [
       {
         id: "president",
         roleLabel: "Club President",
-        name: fallbackItem.presidentName,
-        subtitle: "Student Leader",
-        email: "not-provided@aastu.edu.et",
-        phone: "Not provided",
-        location: "AASTU Campus",
-        initials: fallbackItem.logoLabel,
+        name: (club.presidentDetails as any)?.name || "Not assigned",
+        subtitle: (club.presidentDetails as any)?.departmentName || (club.presidentDetails as any)?.department || "Student Leader",
+        email: (club.presidentDetails as any)?.email || "N/A",
+        phone: (club.presidentDetails as any)?.phoneNumber || (club.presidentDetails as any)?.phone || "N/A",
+        location: (club.presidentDetails as any)?.dormBlock ? `Block ${(club.presidentDetails as any).dormBlock}, Room ${(club.presidentDetails as any).dormRoom}` : "N/A",
+        initials: (club.presidentDetails as any)?.initials || (club.presidentDetails as any)?.name?.charAt(0) || "P",
+        avatarUrl: (club.presidentDetails as any)?.avatar || null,
       },
       {
         id: "advisor",
         roleLabel: "Club Advisor",
-        name: fallbackItem.advisorName,
-        subtitle: "Academic Advisor",
-        email: "not-provided@aastu.edu.et",
-        phone: "Not provided",
-        location: "AASTU Campus",
-        initials: fallbackItem.logoLabel,
+        name: (club.advisorDetails as any)?.name || "Not assigned",
+        subtitle: (club.advisorDetails as any)?.departmentName || (club.advisorDetails as any)?.department || "Academic Advisor",
+        email: (club.advisorDetails as any)?.email || "N/A",
+        phone: (club.advisorDetails as any)?.phoneNumber || (club.advisorDetails as any)?.phone || "N/A",
+        location: "N/A",
+        initials: (club.advisorDetails as any)?.initials || (club.advisorDetails as any)?.name?.charAt(0) || "A",
+        avatarUrl: (club.advisorDetails as any)?.avatar || null,
       },
     ],
-    upcomingEvents: [
-      {
-        id: "placeholder-event",
-        month: "TBD",
-        day: "--",
-        title: "No scheduled event yet",
-        timeVenue: "Add event schedule",
-      },
-    ],
-    recentActivities: [
-      {
-        id: "placeholder-activity",
-        timestamp: "Recently",
-        description: "Club profile was generated from summary data.",
-      },
-    ],
+    upcomingEvents: (upcomingEvents || []).map((event: any) => ({
+      id: event.id,
+      month: new Date(event.startDate).toLocaleString('default', { month: 'short' }).toUpperCase(),
+      day: new Date(event.startDate).getDate().toString(),
+      title: event.title,
+      timeVenue: `${new Date(event.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${event.venueName}`,
+    })),
+    recentActivities: [], // Not available in the simple API yet
   };
-}
 
-export async function generateMetadata({ params }: ClubDetailPageProps): Promise<Metadata> {
-  const { clubId } = await params;
-  const item = clubDetailItems[clubId] ?? getFallbackClubDetail(clubId);
-
-  return {
-    title: item ? item.name : "Club Details",
-  };
-}
-
-export default async function ClubDetailPage({ params }: ClubDetailPageProps) {
-  const { clubId } = await params;
-  const item = clubDetailItems[clubId] ?? getFallbackClubDetail(clubId);
-
-  if (!item) {
-    return (
-      <div className="rounded-[10px] border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        Club was not found.
-      </div>
-    );
-  }
-
-  return <ClubDetailView item={item} />;
+  return <ClubDetailView item={mappedItem as any} />;
 }

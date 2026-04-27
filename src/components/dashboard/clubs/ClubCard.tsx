@@ -25,14 +25,21 @@ export function ClubCard({ item }: ClubCardProps) {
     item.status === "pending"
       ? "Review Details"
       : item.status === "rejected"
-      ? "View Appeal"
-      : "Manage Club";
+        ? "View Appeal"
+        : "Manage Club";
 
   return (
     <article className="overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm">
-      <div className={cn("relative h-24 bg-gradient-to-r", item.headerGradient)}>
-        <div className="absolute -bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-md border-2 border-white bg-[#f4f6fb] text-sm font-bold text-[#1f2a44] shadow-sm">
-          {item.logoLabel}
+      <div
+        className={cn("relative h-24 bg-linear-to-r bg-cover bg-center", item.headerGradient)}
+        style={item.coverImage ? { backgroundImage: `url(${item.coverImage})` } : {}}
+      >
+        <div className="absolute -bottom-3 left-3 flex h-10 w-10 overflow-hidden items-center justify-center rounded-md border-2 border-white bg-[#f4f6fb] text-sm font-bold text-[#1f2a44] shadow-sm">
+          {item.logo ? (
+            <img src={item.logo} alt={item.name} className="h-full w-full object-cover" />
+          ) : (
+            item.logoLabel
+          )}
         </div>
       </div>
 
@@ -45,6 +52,9 @@ export function ClubCard({ item }: ClubCardProps) {
               </Link>
             </h3>
             <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#c49a22]">{item.categoryLabel}</p>
+            {item.departmentName && (
+              <p className="text-[10px] font-medium text-gray-400 mt-0.5">{item.departmentName}</p>
+            )}
           </div>
           <Badge variant={statusVariantMap[item.status]} className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]">
             {statusLabelMap[item.status]}
@@ -52,15 +62,16 @@ export function ClubCard({ item }: ClubCardProps) {
         </div>
 
         <div className="space-y-1 text-sm text-gray-600">
-          <p className="inline-flex items-center gap-1.5">
+          <p className="flex items-center gap-1.5">
             <User size={13} className="text-gray-400" />
             Pres: {item.presidentName}
           </p>
-          <p className="inline-flex items-center gap-1.5">
+          <p className="flex items-center gap-1.5">
             <UserCog size={13} className="text-gray-400" />
             Advisor: {item.advisorName}
           </p>
         </div>
+
 
         <div className="flex items-center justify-between gap-2 border-t border-gray-100 pt-3">
           <div className="flex items-center gap-2">

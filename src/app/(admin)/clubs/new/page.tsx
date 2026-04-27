@@ -13,6 +13,8 @@ export default function CreateClubPage() {
         clubName: "",
         description: "",
         category: "",
+        locationLabel: "",
+        logoLabel: "",
         bannerUrl: "",
         bannerFileName: undefined,
         logoUrl: "",
@@ -28,6 +30,9 @@ export default function CreateClubPage() {
         advisorDepartment: "",
         advisorPhone: "",
         advisorEmail: "",
+        advisorStudentId: "",
+        advisorDormBlock: "",
+        advisorDormRoom: "",
         telegramUrl: "",
         linkedinUrl: "",
         githubUrl: "",
@@ -35,6 +40,9 @@ export default function CreateClubPage() {
         websiteUrl: "",
         externalMembershipUrl: "",
         status: "pending",
+        president: "",
+        advisor: "",
+        department: "",
       }}
     />
   );

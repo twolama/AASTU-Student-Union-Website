@@ -188,7 +188,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#c49a22] to-[#d3ac44]"
+            className="h-full rounded-full bg-linear-to-r from-[#c49a22] to-[#d3ac44] transition-all"
             style={{ width: `${completionPercent}%` }}
           />
         </div>

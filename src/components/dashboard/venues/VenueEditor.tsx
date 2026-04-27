@@ -147,7 +147,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
           <p className="text-xs font-semibold text-[#c49a22]">{completionPercent}%</p>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#c49a22] to-[#d3ac44]" style={{ width: `${completionPercent}%` }} />
+          <div className="h-full rounded-full bg-linear-to-r from-[#c49a22] to-[#d3ac44]" style={{ width: `${completionPercent}%` }} />
         </div>
       </section>
 
