@@ -1,14 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Bold,
   Check,
   ChevronRight,
   CircleHelp,
   Globe,
   Info,
+  Italic,
+  Link as LinkIcon,
+  List,
   Loader2,
   ShieldCheck,
   Users,
@@ -86,20 +90,29 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
   const [stagedLogo, setStagedLogo] = useState<File | null>(null);
   const [isBannerApproved, setIsBannerApproved] = useState(false);
   const [isLogoApproved, setIsLogoApproved] = useState(false);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+  const isInternalUpdate = useRef(false);
 
   const [presidentSearch, setPresidentSearch] = useState("");
   const [advisorSearch, setAdvisorSearch] = useState("");
-  
+
   const { data: categoriesData } = useClubCategories();
   const { data: presidentUsers } = useUsers(1, 10, presidentSearch);
   const { data: advisorUsers } = useUsers(1, 10, advisorSearch);
   const { data: departmentsData } = useDepartments();
-  
+
   const createMutation = useCreateClub();
   const updateMutation = useUpdateClub();
 
   const isCreate = mode === "create";
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  // Initialize editor content once
+  useEffect(() => {
+    if (descriptionRef.current && initialValues.description) {
+      descriptionRef.current.innerHTML = initialValues.description;
+    }
+  }, []);
 
   const categoryOptions = useMemo(() => {
     if (!categoriesData) return [];
@@ -152,7 +165,7 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
     formData.append("location_label", values.locationLabel);
     formData.append("logo_label", values.logoLabel);
     formData.append("status", values.status);
-    
+
     if (bannerFile) formData.append("cover_image", bannerFile);
     if (logoFile) formData.append("logo", logoFile);
 
@@ -186,15 +199,15 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
       router.push("/clubs");
     } catch (error: any) {
       let errorMessage = "Failed to save club";
-      
+
       // Extract details from various potential error structures
       const details = error.payload?.details || error.details || error.response?.data?.details;
-      
+
       if (details) {
         const firstField = Object.keys(details)[0];
         const fieldErrors = details[firstField];
         const fieldMessage = Array.isArray(fieldErrors) ? fieldErrors[0] : fieldErrors;
-        
+
         const displayField = firstField.charAt(0).toUpperCase() + firstField.slice(1).replace("_", " ");
         errorMessage = `${displayField}: ${fieldMessage}`;
       } else if (error.name === "ZodError" && error.errors?.[0]) {
@@ -203,10 +216,36 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
       } else {
         errorMessage = error.message || errorMessage;
       }
-      
+
       toast.error(errorMessage);
     }
   }
+
+  const formatDescription = (type: "bold" | "italic" | "list" | "link") => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    el.focus();
+    switch (type) {
+      case "bold":
+        document.execCommand("bold");
+        break;
+      case "italic":
+        document.execCommand("italic");
+        break;
+      case "list":
+        document.execCommand("insertUnorderedList");
+        break;
+      case "link": {
+        const url = prompt("Enter URL:", "https://");
+        if (url) {
+          document.execCommand("createLink", false, url);
+        }
+        break;
+      }
+    }
+    // Sync the state after formatting
+    updateField("description", el.innerHTML);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
@@ -225,8 +264,8 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
       <header className="space-y-2">
         <h1 className="text-[26px] font-bold tracking-tight text-[#1f2a44] sm:text-[34px]">{isCreate ? "Add New Club" : "Edit Club"}</h1>
         <p className="text-sm text-gray-500">
-          {isCreate 
-            ? "Populate the official registry for the AASTU Student Union." 
+          {isCreate
+            ? "Populate the official registry for the AASTU Student Union."
             : "Update club information and keep records aligned with current leadership."}
         </p>
       </header>
@@ -291,13 +330,49 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
             <label htmlFor="clubDescription" className="mb-1.5 block text-xs font-semibold text-gray-700">
               Description
             </label>
-            <Textarea
-              id="clubDescription"
-              value={values.description}
-              onChange={(event) => updateField("description", event.target.value)}
-              className={cn("min-h-[120px]", controlClassName)}
-              required
-            />
+            <div className="overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm transition-colors focus-within:border-[#c49a22]">
+              <div className="flex items-center gap-1 border-b border-gray-100 bg-[#fbfcfd] px-2 py-1.5">
+                <button
+                  type="button"
+                  onClick={() => formatDescription("bold")}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  title="Bold"
+                >
+                  <Bold size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => formatDescription("italic")}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  title="Italic"
+                >
+                  <Italic size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => formatDescription("list")}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  title="Bullet List"
+                >
+                  <List size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => formatDescription("link")}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  title="Insert Link"
+                >
+                  <LinkIcon size={14} />
+                </button>
+              </div>
+              <div
+                id="clubDescription"
+                ref={descriptionRef}
+                contentEditable
+                onInput={(e) => updateField("description", (e.target as HTMLDivElement).innerHTML)}
+                className="prose prose-sm max-w-none min-h-[160px] w-full rounded-none border-0 bg-transparent px-3 py-2 text-sm text-slate-700 shadow-none outline-none focus:ring-0"
+              />
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -353,10 +428,10 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
             {stagedBanner && !isBannerApproved && (
               <div className="mt-2 flex items-center justify-between rounded-lg border border-[#c49a22]/20 bg-[#fdfaf0] p-3">
                 <p className="text-xs font-medium text-[#8c6c14]">Confirm this banner image for the club?</p>
-                <Button 
-                  type="button" 
-                  size="sm" 
-                  variant="goldSolid" 
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="goldSolid"
                   onClick={() => {
                     setBannerFile(stagedBanner);
                     setIsBannerApproved(true);
@@ -420,10 +495,10 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
               {stagedLogo && !isLogoApproved && (
                 <div className="mt-2 flex items-center justify-between rounded-lg border border-[#c49a22]/20 bg-[#fdfaf0] p-3">
                   <p className="text-xs font-medium text-[#8c6c14]">Approve this logo?</p>
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    variant="goldSolid" 
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="goldSolid"
                     onClick={() => {
                       setLogoFile(stagedLogo);
                       setIsLogoApproved(true);
@@ -477,7 +552,7 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
                           updateField("presidentFullName", user.name);
                           updateField("presidentId", (user as any).studentId || "");
                           updateField("presidentEmail", user.email || "");
-                          updateField("presidentDepartment", (user as any).departmentName || (user as any).department || "");
+                          updateField("presidentDepartment", user.departmentDetails?.name || (user as any).department || "");
                           updateField("presidentPhone", (user as any).phoneNumber || "");
                           updateField("presidentDormBlock", (user as any).dormBlock || "");
                           updateField("presidentDormRoom", (user as any).dormRoom || "");
@@ -541,7 +616,7 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
                           updateField("advisor", user.id);
                           updateField("advisorName", user.name);
                           updateField("advisorEmail", user.email || "");
-                          updateField("advisorDepartment", user.departmentName || "");
+                          updateField("advisorDepartment", user.departmentDetails?.name || "");
                           updateField("advisorPhone", (user as any).phoneNumber || "");
                           updateField("advisorStudentId", (user as any).studentId || "");
                           updateField("advisorDormBlock", (user as any).dormBlock || "");
@@ -708,9 +783,9 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
           </Button>
 
           <div className="flex w-full items-center gap-2 sm:w-auto">
-            <Button 
-              type="submit" 
-              variant="goldSolid" 
+            <Button
+              type="submit"
+              variant="goldSolid"
               className="flex-1 sm:min-w-[150px] sm:flex-none"
               disabled={isSubmitting}
             >

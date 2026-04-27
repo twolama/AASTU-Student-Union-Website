@@ -51,7 +51,7 @@ export function ClubCard({ item }: ClubCardProps) {
                 {item.name}
               </Link>
             </h3>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#c49a22]">{item.categoryLabel}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#c49a22]">{item.categoryLabel}</p>
             {item.departmentName && (
               <p className="text-[10px] font-medium text-gray-400 mt-0.5">{item.departmentName}</p>
             )}

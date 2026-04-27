@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { PublicFooter } from "@/components/public/layout/PublicFooter";
 import { PublicHeader } from "@/components/public/layout/PublicHeader";
+import { cn } from "@/lib/utils";
 import type { ClubDetailItem } from "@/types/dashboard";
 
 interface PublicClubDetailPageProps {
@@ -83,14 +84,16 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                   </div>
                 </div>
 
-                <a
-                  href={club.links.membership}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-11 items-center justify-center rounded-[10px] bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
-                >
-                  Apply for Membership
-                </a>
+                <div className="glow-border-wrapper rounded-[18px] bg-[#02081d]">
+                  <a
+                    href={club.links.membership}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="glow-border-inner flex h-20 items-center justify-center rounded-[16px] px-10 text-base font-bold text-white transition-colors hover:bg-white/10"
+                  >
+                    Apply for Membership
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -218,17 +221,24 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                 .filter((link) => link.href && link.href !== "#")
                 .map((linkItem) => {
                   const Icon = linkItem.icon;
+                  const isWebsite = linkItem.label === "Website";
                   return (
-                    <a
-                      key={linkItem.label}
-                      href={linkItem.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-[10px] bg-[#f1f3f9] px-3 py-2.5 text-sm font-medium text-[#1a2b58] transition-colors hover:bg-[#e7ecf8]"
-                    >
-                      <Icon size={14} />
-                      {linkItem.label}
-                    </a>
+                    <div key={linkItem.label} className={cn("rounded-[10px] bg-white", isWebsite && "glow-border-wrapper")}>
+                      <a
+                        href={linkItem.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={cn(
+                          "inline-flex w-full items-center gap-2 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors",
+                          isWebsite
+                            ? "glow-border-inner text-[#1a2b58] hover:bg-slate-50/10"
+                            : "bg-[#f1f3f9] text-[#1a2b58] hover:bg-[#e7ecf8]"
+                        )}
+                      >
+                        <Icon size={14} />
+                        {linkItem.label}
+                      </a>
+                    </div>
                   );
                 })}
             </div>
@@ -239,18 +249,20 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
             <ul className="mt-4 space-y-3">
               <li className="inline-flex items-start gap-2 text-sm text-[#d3dcf6]">
                 <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#f1c44d]" />
-                Enrolled student at AASTU (Any Department)
+                {`Do you want to join ${club.name}?`}
               </li>
             </ul>
 
-            <a
-              href={club.links.membership}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-[10px] bg-[#f1c44d] px-4 py-3 text-sm font-bold text-[#0d1a46] transition-colors hover:bg-[#ffd66c]"
-            >
-              REGISTER NOW
-            </a>
+            <div className="glow-border-wrapper mt-6 rounded-[12px] bg-[#041347]">
+              <a
+                href={club.links.membership}
+                target="_blank"
+                rel="noreferrer"
+                className="glow-border-inner flex w-full items-center justify-center rounded-[10px] py-4 text-base font-black text-white transition-colors hover:bg-white/10"
+              >
+                REGISTER NOW
+              </a>
+            </div>
           </article>
         </aside>
       </div>

@@ -10,12 +10,16 @@ interface PublicClubCardProps {
 
 export function PublicClubCard({ club }: PublicClubCardProps) {
   const members = club.memberCount ?? "--";
-  const summary = club.description || "A growing student-led community focused on building skill, leadership, and impact.";
+  const rawDescription = club.description || "A growing student-led community focused on building skill, leadership, and impact.";
+  const summary = rawDescription.replace(/<[^>]*>/g, "");
   const bannerImage = club.coverImage;
 
   return (
-    <article className="group overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]">
-      <div className={cn("relative h-36 bg-gradient-to-r", club.headerGradient)}>
+    <Link 
+      href={`/public/clubs/${club.id}`}
+      className="group flex flex-col overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]"
+    >
+      <div className={cn("relative h-36 shrink-0 bg-linear-to-r", club.headerGradient)}>
         {bannerImage ? (
           <Image
             src={bannerImage}
@@ -40,34 +44,24 @@ export function PublicClubCard({ club }: PublicClubCardProps) {
         </div>
       </div>
 
-      <div className="p-6 pt-8">
-        <h3 className="text-2xl font-black leading-tight text-[#0d1842]">{club.name}</h3>
+      <div className="flex flex-1 flex-col p-6 pt-8">
+        <h3 className="text-2xl font-black leading-tight text-[#0d1842] transition-colors group-hover:text-[#b6861f]">{club.name}</h3>
         <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">{summary}</p>
 
-        <div className="mt-6 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
-          <span className="inline-flex items-center gap-2">
-            <Users size={14} className="text-[#b6861f]" />
-            {members} members
-          </span>
-          <span className="inline-flex items-center gap-2">
+        <div className="mt-auto border-t border-slate-50 pt-4 flex items-center justify-between">
+          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
             <Compass size={14} className="text-[#b6861f]" />
             AASTU Campus
           </span>
-        </div>
-
-        <div className="mt-5">
-          <Link
-            href={`/public/clubs/${club.id}`}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0f1d49] transition-colors hover:text-[#b6861f]"
-          >
-            View Details
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0f1d49] transition-colors group-hover:text-[#b6861f]">
+            Details
             <ArrowRight
               size={14}
               className="transition-transform duration-200 group-hover:translate-x-0.5"
             />
-          </Link>
+          </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

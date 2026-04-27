@@ -316,7 +316,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
               <form onSubmit={onSubmitProposal} className="max-h-[72vh] overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                       Proposed Club Name
                     </span>
                     <input
@@ -345,7 +345,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
                 </div>
 
                 <label className="mt-4 block">
-                  <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Idea Summary
                   </span>
                   <textarea
@@ -360,7 +360,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
                 </label>
 
                 <label className="mt-4 block">
-                  <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Initial Goals or Activities (Optional)
                   </span>
                   <textarea
@@ -373,7 +373,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                       Full Name
                     </span>
                     <input
@@ -389,7 +389,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
                   </label>
 
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                       Student ID (Optional)
                     </span>
                     <input
@@ -404,7 +404,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                       AASTU Email
                     </span>
                     <input
@@ -420,7 +420,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
                   </label>
 
                   <label className="block">
-                    <span className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                       Phone Number (Optional)
                     </span>
                     <input

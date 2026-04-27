@@ -201,7 +201,11 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
             <h2 className="text-xl font-bold text-[#1f2a44]">About the Club</h2>
             <div className="mt-3 space-y-4 text-sm leading-7 text-gray-600">
               {item.about.map((paragraph, index) => (
-                <p key={`${item.id}-about-${index}`}>{paragraph}</p>
+                <div 
+                  key={`${item.id}-about-${index}`} 
+                  className="prose prose-sm max-w-none text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: paragraph }} 
+                />
               ))}
             </div>
           </article>
@@ -330,12 +334,12 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
             <div className="mt-4 border-t border-white/10 pt-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">External Membership</p>
               <a
-                href={item.links.externalMembership}
+                href={item.links.membership}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-2 block break-all rounded-[8px] bg-[#18213a] px-3 py-2 text-xs text-[#d6ddf7] hover:text-white"
               >
-                {item.links.externalMembership}
+                {item.links.membership}
               </a>
             </div>
           </article>
