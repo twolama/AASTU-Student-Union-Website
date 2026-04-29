@@ -9,6 +9,7 @@ interface BookingRejectionModalProps {
   onReasonChange: (value: string) => void;
   onClose: () => void;
   onConfirm: () => void;
+  isLoading?: boolean;
 }
 
 export function BookingRejectionModal({
@@ -17,6 +18,7 @@ export function BookingRejectionModal({
   onReasonChange,
   onClose,
   onConfirm,
+  isLoading,
 }: BookingRejectionModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/45 p-3 sm:p-4">
@@ -60,11 +62,11 @@ export function BookingRejectionModal({
         </div>
 
         <footer className="flex flex-col-reverse gap-2 border-t border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-5 sm:py-4">
-          <Button type="button" variant="ghost" className="w-full sm:min-w-28 sm:w-auto" onClick={onClose}>
+          <Button type="button" variant="ghost" className="w-full sm:min-w-28 sm:w-auto" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button type="button" className="w-full bg-[#e3342f] hover:bg-[#c92d29] sm:min-w-44 sm:w-auto" onClick={onConfirm}>
-            Confirm Rejection
+          <Button type="button" className="w-full bg-[#e3342f] hover:bg-[#c92d29] sm:min-w-44 sm:w-auto" onClick={onConfirm} disabled={isLoading}>
+            {isLoading ? "Rejecting..." : "Confirm Rejection"}
           </Button>
         </footer>
       </div>

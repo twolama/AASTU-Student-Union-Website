@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Search, ShieldCheck } from "lucide-react";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Input } from "@/components/ui/Input";
+import { cn } from "@/lib/utils";
 import type { BookingRequestDateRange, BookingRequestItem } from "@/types/dashboard";
 
 interface ApprovalQueueSectionProps {
@@ -105,7 +107,17 @@ export function ApprovalQueueSection({
                         {initials(item.requesterName)}
                       </span>
                       <div>
-                        <p className="font-semibold text-[#1f2a44]">{item.requesterName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-[#1f2a44]">{item.requesterName}</p>
+                          {item.status !== "pending" && (
+                            <span className={cn(
+                              "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                              item.status === "approved" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+                            )}>
+                              {item.status}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-[#b48a1b]">{item.clubName}</p>
                       </div>
                     </div>
@@ -127,21 +139,35 @@ export function ApprovalQueueSection({
 
                   <td className="px-5 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onApprove(item)}
-                        className="inline-flex h-8 items-center gap-1 rounded-md bg-[#b48a1b] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#9a7616]"
+                      <Link
+                        href={`/bookings/${item.id}`}
+                        className="inline-flex h-8 items-center gap-1 rounded-md border border-gray-200 bg-white px-3 text-xs font-semibold text-[#1f2a44] transition-colors hover:bg-gray-50"
                       >
-                        <ShieldCheck size={13} />
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onReject(item)}
-                        className="inline-flex h-8 items-center rounded-md bg-rose-50 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100"
-                      >
-                        Reject
-                      </button>
+                        Details
+                      </Link>
+                      {item.status === "pending" ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => onApprove(item)}
+                            className="inline-flex h-8 items-center gap-1 rounded-md bg-[#b48a1b] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#9a7616]"
+                          >
+                            <ShieldCheck size={13} />
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onReject(item)}
+                            className="inline-flex h-8 items-center rounded-md bg-rose-50 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <span className="inline-flex h-8 items-center rounded-md border border-gray-100 bg-gray-50 px-3 text-xs font-semibold text-gray-400">
+                          Processed
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -150,7 +176,7 @@ export function ApprovalQueueSection({
               {items.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-sm text-[#8a95a8]">
-                    No pending requests match the current filters.
+                    No booking requests found matching the current filters.
                   </td>
                 </tr>
               ) : null}
@@ -161,14 +187,24 @@ export function ApprovalQueueSection({
         <div className="space-y-3 p-3 md:hidden">
           {items.map((item) => (
             <article key={item.id} className="rounded-[10px] border border-gray-100 bg-[#fbfcff] p-3">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f7d9b2] text-[10px] font-semibold text-[#80511f]">
-                  {initials(item.requesterName)}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[#1f2a44]">{item.requesterName}</p>
-                  <p className="truncate text-xs text-[#b48a1b]">{item.clubName}</p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f7d9b2] text-[10px] font-semibold text-[#80511f]">
+                    {initials(item.requesterName)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#1f2a44]">{item.requesterName}</p>
+                    <p className="truncate text-xs text-[#b48a1b]">{item.clubName}</p>
+                  </div>
                 </div>
+                {item.status !== "pending" && (
+                  <span className={cn(
+                    "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                    item.status === "approved" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+                  )}>
+                    {item.status}
+                  </span>
+                )}
               </div>
 
               <div className="mt-3 space-y-1 text-xs text-[#6d7a95]">
@@ -182,28 +218,42 @@ export function ApprovalQueueSection({
                 <p className="line-clamp-2">{item.purpose}</p>
               </div>
 
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onApprove(item)}
-                  className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-md bg-[#b48a1b] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#9a7616]"
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/bookings/${item.id}`}
+                  className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-md border border-gray-200 bg-white px-3 text-xs font-semibold text-[#1f2a44] transition-colors hover:bg-gray-50"
                 >
-                  <ShieldCheck size={13} />
-                  Approve
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onReject(item)}
-                  className="inline-flex h-8 flex-1 items-center justify-center rounded-md bg-rose-50 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100"
-                >
-                  Reject
-                </button>
+                  View Details
+                </Link>
+                {item.status === "pending" ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onApprove(item)}
+                      className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-md bg-[#b48a1b] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#9a7616]"
+                    >
+                      <ShieldCheck size={13} />
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onReject(item)}
+                      className="inline-flex h-8 flex-1 items-center justify-center rounded-md bg-rose-50 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100"
+                    >
+                      Reject
+                    </button>
+                  </>
+                ) : (
+                  <span className="inline-flex h-8 flex-1 items-center justify-center rounded-md border border-gray-100 bg-gray-50 px-3 text-xs font-semibold text-gray-400">
+                    Processed
+                  </span>
+                )}
               </div>
             </article>
           ))}
 
           {items.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#8a95a8]">No pending requests match the current filters.</p>
+            <p className="py-6 text-center text-sm text-[#8a95a8]">No booking requests found matching the current filters.</p>
           ) : null}
         </div>
 

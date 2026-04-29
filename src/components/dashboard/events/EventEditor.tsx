@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Bold,
@@ -28,6 +29,7 @@ import {
   Clock3,
   Settings2,
   UserPlus2,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -38,6 +40,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useCreateEvent, useUpdateEvent } from "@/hooks/useEvents";
 import { venueService } from "@/api/services/venue.service";
+import { bookingService } from "@/api/services/booking.service";
 
 // --- Editable Volunteers & User-Friendly Logistics UI ---
 
@@ -100,6 +103,7 @@ interface VolunteerDraft {
     logistics: LogisticsType;
     attendance: AttendanceType;
     volunteers: VolunteerEntry[];
+    booking_id?: string;
 }
 
 interface EventEditorProps {
@@ -111,9 +115,13 @@ interface EventEditorProps {
 
 
 export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) {
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get("bookingId");
+
   // --- Volunteers Edit State ---
   const [editVolunteerId, setEditVolunteerId] = useState<string | null>(null);
   const [venues, setVenues] = useState<Array<{ id: string; name: string }>>([]);
+  const [isPreFilling, setIsPreFilling] = useState(false);
   const [values, setValues] = useState<EventEditorValues>({
     ...initialValues,
     // Ensure all fields are defined and not undefined
@@ -132,6 +140,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
     logistics: initialValues.logistics || {},
     attendance: initialValues.attendance || {},
     volunteers: initialValues.volunteers || [],
+    booking_id: bookingId || initialValues.booking_id || undefined,
   });
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -236,6 +245,41 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
       setVolunteerDraft({ full_name: "", student_id: "", phone: "", email: "", role: "", is_active: true });
     }
   }
+
+  // Pre-fill from booking if bookingId is present
+  useEffect(() => {
+    if (mode === "create" && bookingId) {
+      setIsPreFilling(true);
+      bookingService.getBooking(bookingId)
+        .then((booking) => {
+          setValues((prev) => ({
+            ...prev,
+            title: booking.event_title || prev.title,
+            description: booking.purpose || prev.description,
+            short_description: booking.purpose ? (booking.purpose.length > 100 ? booking.purpose.substring(0, 97) + "..." : booking.purpose) : prev.short_description,
+            physical_location_details: booking.venue_name || prev.physical_location_details,
+            max_capacity: booking.expected_attendance || prev.max_capacity,
+            start_date_time: booking.start_date || prev.start_date_time,
+            end_date_time: booking.end_date || prev.end_date_time,
+            logistics: {
+              ...prev.logistics,
+              venue: booking.venue_name,
+              venue_id: booking.venue,
+              booking_id: booking.id,
+              equipment: booking.equipment_requested.join(", "),
+            }
+          }));
+          toast.success("Pre-filled details from your booking!");
+        })
+        .catch((err) => {
+          console.error("Failed to pre-fill from booking:", err);
+          toast.error("Could not load booking details");
+        })
+        .finally(() => {
+          setIsPreFilling(false);
+        });
+    }
+  }, [mode, bookingId]);
 
   // Fetch venues list on mount
   useEffect(() => {
@@ -401,6 +445,13 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
         <h1 className="text-[28px] font-bold tracking-tight text-[#1f2a44] sm:text-[34px]">{title}</h1>
         <p className="text-sm text-gray-500">{subtitle}</p>
       </header>
+
+      {isPreFilling && (
+        <div className="flex items-center justify-center gap-3 rounded-[10px] border border-[#c49a22]/20 bg-[#fdf8ec] p-6 text-[#c49a22]">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <p className="text-sm font-semibold">Syncing with your approved booking details...</p>
+        </div>
+      )}
 
       <section className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">

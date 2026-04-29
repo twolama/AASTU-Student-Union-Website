@@ -85,7 +85,7 @@ export function BrowseVenuesSection({
 
               <p className="line-clamp-2 text-sm leading-6 text-[#6d7a95]">{item.description}</p>
 
-              <Link href={`/bookings/${item.id}`} className="block">
+              <Link href={`/venues/${item.id}`} className="block">
                 <Button variant="gold" className="w-full" type="button">
                   View Details
                 </Button>

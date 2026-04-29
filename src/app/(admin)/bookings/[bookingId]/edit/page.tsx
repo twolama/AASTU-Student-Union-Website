@@ -1,91 +1,44 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useParams } from "next/navigation";
 import { BookingRequestForm, type BookingRequestFormInitialData } from "@/components/dashboard/bookings/BookingRequestForm";
-import { bookingVenueCards, myBookingItems } from "@/data/dummy";
+import { useBooking } from "@/hooks/useBookings";
+import { Loader2 } from "lucide-react";
 
-interface EditBookingPageProps {
-  params: Promise<{ bookingId: string }>;
-}
+export default function EditBookingPage() {
+  const { bookingId } = useParams() as { bookingId: string };
+  const { data: booking, isLoading, error } = useBooking(bookingId);
 
-function normalize(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-function toIsoDate(value: string) {
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "2024-10-25";
-  }
-
-  return parsed.toISOString().slice(0, 10);
-}
-
-function toHourSlot(value: string) {
-  const match = value.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-
-  if (!match) {
-    return "10:00";
-  }
-
-  let hour = Number(match[1]);
-  const minute = match[2];
-  const period = match[3].toUpperCase();
-
-  if (period === "PM" && hour < 12) {
-    hour += 12;
-  }
-
-  if (period === "AM" && hour === 12) {
-    hour = 0;
-  }
-
-  return `${String(hour).padStart(2, "0")}:${minute}`;
-}
-
-function buildInitialData(bookingId: string): BookingRequestFormInitialData | null {
-  const booking = myBookingItems.find((item) => item.id === bookingId);
-
-  if (!booking) {
-    return null;
-  }
-
-  const matchedVenue = bookingVenueCards.find((venue) => normalize(venue.name) === normalize(booking.venueName));
-  const selectedVenue = matchedVenue ?? bookingVenueCards[0];
-
-  return {
-    clubAssociation: "coding-club",
-    eventTitle: booking.eventTitle,
-    expectedAttendance: String(Math.max(1, selectedVenue.capacity - 20)),
-    startDate: toIsoDate(booking.dateLabel),
-    endDate: toIsoDate(booking.dateLabel),
-    selectedSlots: [toHourSlot(booking.timeLabel)],
-    purpose: `Request update for ${booking.eventTitle}.`,
-    selectedVenueId: selectedVenue.id,
-    equipment: ["microphones", "sound-system"],
-    specialRequests: "",
-  };
-}
-
-export async function generateMetadata({ params }: EditBookingPageProps): Promise<Metadata> {
-  const { bookingId } = await params;
-  const booking = myBookingItems.find((item) => item.id === bookingId);
-
-  return {
-    title: booking ? `Edit ${booking.eventTitle}` : "Edit Booking Request",
-  };
-}
-
-export default async function EditBookingPage({ params }: EditBookingPageProps) {
-  const { bookingId } = await params;
-  const initialData = buildInitialData(bookingId);
-
-  if (!initialData) {
+  if (isLoading) {
     return (
-      <div className="rounded-[10px] border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        Booking was not found.
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+        <p className="text-sm text-gray-500">Loading booking details...</p>
       </div>
     );
   }
+
+  if (error || !booking) {
+    return (
+      <div className="rounded-[10px] border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700 shadow-sm">
+        Booking was not found or failed to load.
+      </div>
+    );
+  }
+
+  const initialData: BookingRequestFormInitialData = {
+    clubAssociation: booking.club || "",
+    eventTitle: booking.event_title || "",
+    expectedAttendance: String(booking.expected_attendance || 0),
+    startDate: booking.start_date || "",
+    endDate: booking.end_date || "",
+    selectedSlots: booking.selected_slots || [],
+    purpose: booking.purpose || "",
+    selectedVenueId: booking.venue || "",
+    equipment: booking.equipment_requested || [],
+    specialRequests: booking.special_requests || "",
+    guidelinesChecked: booking.guidelines_acknowledged || false,
+  };
 
   return <BookingRequestForm mode="edit" bookingId={bookingId} initialData={initialData} />;
 }

@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { z } from "zod";
+import { useCreateBooking, useUpdateBooking } from "@/hooks/useBookings";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,14 +17,19 @@ import {
   Info,
   MapPin,
   Users2,
+  Loader2,
 } from "lucide-react";
-import { bookingVenueCards } from "@/data/dummy";
+import { useVenues, useVenue } from "@/hooks/useVenues";
+import { useClubs, useClubUpcomingEvents } from "@/hooks/useClubs";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
+import type { BookingVenueCard } from "@/types/dashboard";
+import type { Club } from "@/schemas/club.schema";
+import type { Venue } from "@/schemas/venue.schema";
 
 type StepId = 1 | 2 | 3;
 
@@ -31,26 +38,49 @@ interface EquipmentOption {
   label: string;
 }
 
-type BookingFormMode = "create" | "edit";
-
 export interface BookingRequestFormInitialData {
-  clubAssociation: string;
-  eventTitle: string;
-  expectedAttendance: string;
-  startDate: string;
-  endDate: string;
-  selectedSlots: string[];
-  purpose: string;
-  selectedVenueId: string;
-  equipment: string[];
-  specialRequests: string;
+  clubAssociation?: string;
+  eventTitle?: string;
+  expectedAttendance?: string;
+  startDate?: string;
+  endDate?: string;
+  selectedSlots?: string[];
+  purpose?: string;
+  selectedVenueId?: string;
+  equipment?: string[];
+  specialRequests?: string;
+  guidelinesChecked?: boolean;
 }
 
 interface BookingRequestFormProps {
-  mode?: BookingFormMode;
+  mode?: "create" | "edit";
   bookingId?: string;
-  initialData?: Partial<BookingRequestFormInitialData>;
+  initialData?: BookingRequestFormInitialData;
 }
+
+const Step1Schema = z.object({
+  clubAssociation: z.string().min(1, "Please select a student organization"),
+  selectedVenueId: z.string().min(1, "Please select a venue"),
+  eventTitle: z.string().min(5, "Event title must be at least 5 characters"),
+  expectedAttendance: z.string().refine(val => !isNaN(parseInt(val)) && parseInt(val) > 0, {
+    message: "Attendance must be a positive number",
+  }),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid start date format (YYYY-MM-DD)"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid end date format (YYYY-MM-DD)"),
+  selectedSlots: z.array(z.string()).min(1, "Please select at least one time slot"),
+  purpose: z.string().min(10, "Please provide a more detailed purpose (at least 10 chars)"),
+});
+
+const Step2Schema = z.object({
+  equipment: z.array(z.string()).optional(),
+  specialRequests: z.string().optional(),
+});
+
+const Step3Schema = z.object({
+  guidelinesChecked: z.boolean().refine((val) => val === true, {
+    message: "You must acknowledge the guidelines before submitting",
+  }),
+});
 
 const stepLabels: { id: StepId; label: string }[] = [
   { id: 1, label: "Event Details" },
@@ -58,13 +88,6 @@ const stepLabels: { id: StepId; label: string }[] = [
   { id: 3, label: "Review" },
 ];
 
-const clubOptions = [
-  { value: "", label: "Select your student organization" },
-  { value: "aastu-tech-club", label: "AASTU Tech Club" },
-  { value: "ieee-student-branch", label: "IEEE Student Branch" },
-  { value: "coding-club", label: "Coding Club" },
-  { value: "aastu-robotics", label: "AASTU Robotics" },
-];
 
 const timeSlots = [
   { label: "08:00", available: false },
@@ -81,14 +104,6 @@ const timeSlots = [
   { label: "19:00", available: true },
 ];
 
-const equipmentOptions: EquipmentOption[] = [
-  { id: "projector", label: "Projector" },
-  { id: "microphones", label: "Microphones" },
-  { id: "sound-system", label: "Sound System" },
-  { id: "extra-chairs", label: "Extra Chairs" },
-  { id: "tables", label: "Tables" },
-  { id: "podium", label: "Podium" },
-];
 
 function StepIndicator({ currentStep }: { currentStep: StepId }) {
   return (
@@ -149,48 +164,136 @@ export function BookingRequestForm({
 }: BookingRequestFormProps) {
   const searchParams = useSearchParams();
   const venueIdFromUrl = searchParams.get("venueId");
-  const fallbackVenueId =
-    initialData?.selectedVenueId &&
-    bookingVenueCards.some((venue) => venue.id === initialData.selectedVenueId)
-      ? initialData.selectedVenueId
-      : bookingVenueCards[0]?.id ?? "";
-  const defaultVenueId =
-    venueIdFromUrl && bookingVenueCards.some((venue) => venue.id === venueIdFromUrl)
-      ? venueIdFromUrl
-      : fallbackVenueId;
+
+  const [clubAssociation, setClubAssociation] = useState(initialData?.clubAssociation ?? "");
+  const [selectedVenueId, setSelectedVenueId] = useState(initialData?.selectedVenueId ?? "");
+  
+  const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100);
+  const { data: fullVenueData, isLoading: isFullVenueLoading } = useVenue(selectedVenueId);
+  const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100, undefined, "active");
+  const { data: upcomingEventsData, isLoading: isUpcomingEventsLoading } = useClubUpcomingEvents(clubAssociation);
+
+  const realVenues = useMemo(() => {
+    if (!venuesData || !venuesData.data) return [];
+    return venuesData.data.map(v => ({
+      id: v.id || "unknown",
+      name: v.name,
+      description: v.shortDescription,
+      imageUrl: v.imageUrl || v.heroImage || v.thumbnail || "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&auto=format&fit=crop",
+      capacity: v.maxCapacity,
+      category: v.category?.slug || "general",
+      status: v.status === "active" ? "available" : "blocked",
+      amenities: v.amenities || [],
+    })) as BookingVenueCard[];
+  }, [venuesData]);
+
+  const clubOptions = useMemo(() => {
+    const base = [{ value: "", label: "Select your student organization" }];
+    if (!clubsData || !clubsData.data) return base;
+    return [
+      ...base,
+      ...clubsData.data.map((c: Club) => ({
+        value: c.id,
+        label: c.name
+      }))
+    ];
+  }, [clubsData]);
+
+  const router = useRouter();
+  const createMutation = useCreateBooking();
+  const updateMutation = useUpdateBooking();
+
   const isEditMode = mode === "edit";
   const pageTitle = isEditMode ? "Edit Booking Request" : "New Booking Request";
   const [currentStep, setCurrentStep] = useState<StepId>(1);
 
-  const [clubAssociation, setClubAssociation] = useState(initialData?.clubAssociation ?? "");
   const [eventTitle, setEventTitle] = useState(initialData?.eventTitle ?? "");
   const [expectedAttendance, setExpectedAttendance] = useState(initialData?.expectedAttendance ?? "500");
-  const [startDate, setStartDate] = useState(initialData?.startDate ?? "2024-10-25");
-  const [endDate, setEndDate] = useState(initialData?.endDate ?? "2024-10-25");
-  const [selectedSlots, setSelectedSlots] = useState<string[]>(initialData?.selectedSlots ?? ["10:00", "11:00"]);
+  const [startDate, setStartDate] = useState(initialData?.startDate ?? "");
+  const [endDate, setEndDate] = useState(initialData?.endDate ?? "");
+  const [selectedSlots, setSelectedSlots] = useState<string[]>(initialData?.selectedSlots ?? []);
   const [purpose, setPurpose] = useState(initialData?.purpose ?? "");
-  const [selectedVenueId, setSelectedVenueId] = useState(defaultVenueId);
 
-  const [equipment, setEquipment] = useState<string[]>(initialData?.equipment ?? ["microphones", "sound-system"]);
+  const [equipment, setEquipment] = useState<string[]>(initialData?.equipment ?? []);
   const [specialRequests, setSpecialRequests] = useState(initialData?.specialRequests ?? "");
 
-  const [guidelinesChecked, setGuidelinesChecked] = useState(false);
+  const [guidelinesChecked, setGuidelinesChecked] = useState(initialData?.guidelinesChecked ?? false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  function FieldError({ name }: { name: string }) {
+    const errors = fieldErrors[name];
+    if (!errors || errors.length === 0) return null;
+    return (
+      <div className="mt-1 flex items-start gap-1 text-[11px] font-medium text-rose-600 animate-in fade-in slide-in-from-top-1">
+        <Info size={12} className="mt-0.5 shrink-0" />
+        <ul className="list-inside list-none">
+          {errors.map((err, i) => (
+            <li key={i}>{err}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // Sync selectedVenueId with URL or initial data only once
+  useEffect(() => {
+    if (realVenues.length > 0 && !isInitialized) {
+      if (venueIdFromUrl && realVenues.some(v => v.id === venueIdFromUrl)) {
+        setSelectedVenueId(venueIdFromUrl);
+        setIsInitialized(true);
+      } else if (initialData?.selectedVenueId && realVenues.some(v => v.id === initialData.selectedVenueId)) {
+        setSelectedVenueId(initialData.selectedVenueId);
+        setIsInitialized(true);
+      } else if (!selectedVenueId && !venueIdFromUrl) {
+        setSelectedVenueId(realVenues[0].id);
+        setIsInitialized(true);
+      }
+    }
+  }, [realVenues, venueIdFromUrl, initialData, isInitialized, selectedVenueId]);
+
+  // Reset equipment when venue changes to avoid stale requirements from previous venue
+  useEffect(() => {
+    if (isInitialized) {
+      setEquipment([]);
+    }
+  }, [selectedVenueId, isInitialized]);
 
   const venueOptions = useMemo(
-    () => bookingVenueCards.map((venue) => ({ value: venue.id, label: venue.name })),
-    []
+    () => realVenues.map((venue) => ({ value: venue.id, label: venue.name })),
+    [realVenues]
   );
 
-  const selectedVenue =
-    bookingVenueCards.find((venue) => venue.id === selectedVenueId) ?? bookingVenueCards[0];
+  const selectedVenue = useMemo(
+    () => realVenues.find((venue) => venue.id === selectedVenueId) || null,
+    [realVenues, selectedVenueId]
+  );
+
+  const dynamicEquipmentOptions = useMemo(() => {
+    // Prefer data from useVenue as it has full details
+    const venueAmenities = fullVenueData?.amenities || selectedVenue?.amenities || [];
+    
+    // If the venue has specific amenities listed, use them as options
+    if (venueAmenities.length > 0) {
+      return venueAmenities.map((amenity: string) => ({
+        id: amenity.toLowerCase().replace(/\s+/g, "-"),
+        label: amenity
+      }));
+    }
+    
+    // No specific amenities listed for this venue
+    return [];
+  }, [selectedVenue, fullVenueData]);
 
   const selectedEquipmentLabels = useMemo(
-    () => equipmentOptions.filter((option) => equipment.includes(option.id)).map((option) => option.label),
-    [equipment]
+    () => dynamicEquipmentOptions.filter((option: EquipmentOption) => equipment.includes(option.id)).map((option: EquipmentOption) => option.label),
+    [equipment, dynamicEquipmentOptions]
   );
 
-  const durationHours = Math.max(1, selectedSlots.length);
+  const durationHours = Math.max(0, selectedSlots.length);
 
   function toggleSlot(slotLabel: string) {
     setSelectedSlots((current) =>
@@ -203,25 +306,155 @@ export function BookingRequestForm({
   function toggleEquipment(optionId: string) {
     setEquipment((current) =>
       current.includes(optionId)
-        ? current.filter((item) => item !== optionId)
+          ? current.filter((item) => item !== optionId)
         : [...current, optionId]
     );
   }
 
+  // Clear field errors when user changes inputs
+  useEffect(() => {
+    setFieldErrors({});
+    setErrorMessage(null);
+  }, [
+    clubAssociation,
+    selectedVenueId,
+    eventTitle,
+    expectedAttendance,
+    startDate,
+    endDate,
+    selectedSlots,
+    purpose,
+    equipment,
+    specialRequests,
+    guidelinesChecked,
+  ]);
+
   function goNext() {
-    setCurrentStep((current) => (current < 3 ? ((current + 1) as StepId) : current));
+    setErrorMessage(null);
+    setFieldErrors({});
+
+    try {
+      if (currentStep === 1) {
+        Step1Schema.parse({
+          clubAssociation,
+          selectedVenueId,
+          eventTitle,
+          expectedAttendance,
+          startDate,
+          endDate,
+          selectedSlots,
+          purpose,
+        });
+      } else if (currentStep === 2) {
+        Step2Schema.parse({
+          equipment,
+          specialRequests,
+        });
+      }
+      
+      setCurrentStep((current) => (current < 3 ? ((current + 1) as StepId) : current));
+      window.scrollTo(0, 0);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string[]> = {};
+        error.issues.forEach((issue) => {
+          const path = issue.path[0] as string;
+          if (!errors[path]) errors[path] = [];
+          errors[path].push(issue.message);
+        });
+        setFieldErrors(errors);
+        setErrorMessage("Please fix the validation errors before proceeding.");
+      }
+    }
   }
 
   function goBack() {
     setCurrentStep((current) => (current > 1 ? ((current - 1) as StepId) : current));
   }
 
-  function handleSubmit() {
-    setStatusMessage(
-      isEditMode
-        ? `Booking ${bookingId ?? "request"} updated successfully.`
-        : "Booking request submitted successfully. You can track status in My Bookings."
-    );
+  async function handleSubmit() {
+    setErrorMessage(null);
+    setFieldErrors({});
+    
+    try {
+      // Final validation
+      Step1Schema.parse({ clubAssociation, selectedVenueId, eventTitle, expectedAttendance, startDate, endDate, selectedSlots, purpose });
+      Step2Schema.parse({ equipment, specialRequests });
+      Step3Schema.parse({ guidelinesChecked });
+
+      const payload = {
+        club: clubAssociation,
+        venue: selectedVenueId,
+        title: eventTitle, // Backend might expect 'title'
+        event_title: eventTitle,
+        expected_attendance: parseInt(expectedAttendance),
+        start_date: startDate,
+        end_date: endDate,
+        selected_slots: selectedSlots,
+        purpose: purpose,
+        equipment_requested: equipment,
+        special_requests: specialRequests,
+        guidelines_acknowledged: guidelinesChecked,
+      };
+
+      if (isEditMode && bookingId) {
+        await updateMutation.mutateAsync({ id: bookingId, data: payload });
+        setStatusMessage("Booking request updated successfully.");
+      } else {
+        await createMutation.mutateAsync(payload);
+        setStatusMessage("Booking request submitted successfully.");
+      }
+      
+      setTimeout(() => {
+        router.push("/bookings");
+      }, 2000);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string[]> = {};
+        error.issues.forEach((issue) => {
+          const path = issue.path[0] as string;
+          if (!errors[path]) errors[path] = [];
+          errors[path].push(issue.message);
+        });
+        setFieldErrors(errors);
+        setErrorMessage("Please fix the validation errors below.");
+        return;
+      }
+
+      let errorData = error?.response?.data;
+      
+      // Handle cases where the message is a stringified JSON (common in proxy responses)
+      if (typeof errorData?.message === "string" && errorData.message.includes("VALIDATION_ERROR")) {
+        try {
+          const parsedMessage = JSON.parse(errorData.message);
+          errorData = { ...errorData, ...parsedMessage };
+        } catch (e) {
+          // Not valid JSON, ignore
+        }
+      }
+
+      if (errorData?.code === "VALIDATION_ERROR" && errorData.details) {
+        // Map backend keys to frontend state keys if they differ
+        const mappedErrors: Record<string, string[]> = {};
+        Object.entries(errorData.details).forEach(([key, value]) => {
+          let fieldName = key;
+          if (key === "club") fieldName = "clubAssociation";
+          if (key === "venue") fieldName = "selectedVenueId";
+          if (key === "title" || key === "event_title") fieldName = "eventTitle";
+          if (key === "start_date") fieldName = "startDate";
+          if (key === "end_date") fieldName = "endDate";
+          if (key === "expected_attendance") fieldName = "expectedAttendance";
+          if (key === "selected_slots") fieldName = "selectedSlots";
+          if (key === "guidelines_acknowledged") fieldName = "guidelinesChecked";
+          
+          mappedErrors[fieldName] = value as string[];
+        });
+        setFieldErrors(mappedErrors);
+        setErrorMessage("Please correct the errors below.");
+      } else {
+        setErrorMessage(errorData?.message || error.message || "Failed to submit booking request.");
+      }
+    }
   }
 
   return (
@@ -252,26 +485,68 @@ export function BookingRequestForm({
             </h2>
 
             <div className="mt-4 space-y-4">
-              <DropdownSelect
-                label="Club / Association Selection"
-                value={clubAssociation}
-                options={clubOptions}
-                onValueChange={setClubAssociation}
-                className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
-              />
+              <div className="relative">
+                <DropdownSelect
+                  label="Club / Association Selection"
+                  value={clubAssociation}
+                  options={clubOptions}
+                  onValueChange={setClubAssociation}
+                  className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
+                  disabled={isClubsLoading}
+                />
+                {isClubsLoading && (
+                  <div className="absolute right-10 top-[34px]">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
+                  </div>
+                )}
+                <FieldError name="clubAssociation" />
+              </div>
 
-              <DropdownSelect
-                label="Venue Selection"
-                value={selectedVenueId}
-                options={venueOptions}
-                onValueChange={setSelectedVenueId}
-                className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
-              />
+              <div className="relative">
+                <DropdownSelect
+                  label="Venue Selection"
+                  value={selectedVenueId}
+                  options={venueOptions}
+                  onValueChange={setSelectedVenueId}
+                  className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
+                  disabled={isVenuesLoading}
+                />
+                {isVenuesLoading && (
+                  <div className="absolute right-10 top-[34px]">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
+                  </div>
+                )}
+                <FieldError name="selectedVenueId" />
+              </div>
 
               <div>
                 <label htmlFor="booking-event-title" className="mb-1.5 block text-xs font-semibold text-gray-700">
                   Event Title
                 </label>
+                
+                {upcomingEventsData && upcomingEventsData.length > 0 && (
+                  <div className="mb-2 space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Quick Select Upcoming Event</p>
+                    <div className="flex flex-wrap gap-2">
+                      {upcomingEventsData.slice(0, 3).map((event: any) => (
+                        <button
+                          key={event.id}
+                          type="button"
+                          onClick={() => setEventTitle(event.title)}
+                          className={cn(
+                            "rounded-full border px-3 py-1 text-[11px] font-medium transition-all",
+                            eventTitle === event.title
+                              ? "border-[#b48a1b] bg-[#fdf8ec] text-[#6f5510]"
+                              : "border-gray-200 bg-white text-[#5f6f8d] hover:border-gray-300"
+                          )}
+                        >
+                          {event.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <Input
                   id="booking-event-title"
                   value={eventTitle}
@@ -279,6 +554,7 @@ export function BookingRequestForm({
                   placeholder="e.g. Annual Tech Symposium 2024"
                   className="h-10 rounded-[10px]"
                 />
+                <FieldError name="eventTitle" />
               </div>
 
               <div>
@@ -294,6 +570,7 @@ export function BookingRequestForm({
                   placeholder="Number of attendees"
                   className="h-10 rounded-[10px]"
                 />
+                <FieldError name="expectedAttendance" />
               </div>
 
               <div className="rounded-[10px] border border-gray-200 bg-[#fbfcff] p-3 sm:p-4">
@@ -309,6 +586,7 @@ export function BookingRequestForm({
                       onChange={(event) => setStartDate(event.target.value)}
                       className="h-10 rounded-[8px]"
                     />
+                    <FieldError name="startDate" />
                   </div>
 
                   <div>
@@ -322,6 +600,7 @@ export function BookingRequestForm({
                       onChange={(event) => setEndDate(event.target.value)}
                       className="h-10 rounded-[8px]"
                     />
+                    <FieldError name="endDate" />
                   </div>
                 </div>
 
@@ -354,6 +633,7 @@ export function BookingRequestForm({
                       );
                     })}
                   </div>
+                  <FieldError name="selectedSlots" />
 
                   <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#90a0bb]">
                     <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-white ring-1 ring-gray-300" />Available</span>
@@ -374,6 +654,7 @@ export function BookingRequestForm({
                   placeholder="Briefly describe the activities and goals of the event..."
                   className="min-h-[104px] rounded-[10px]"
                 />
+                <FieldError name="purpose" />
               </div>
             </div>
 
@@ -383,7 +664,13 @@ export function BookingRequestForm({
                   Cancel Request
                 </Button>
               </Link>
-              <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={goNext}>
+              <Button 
+                type="button" 
+                variant="goldSolid" 
+                className="h-10 w-full sm:w-auto" 
+                onClick={goNext}
+                disabled={!selectedVenueId || isVenuesLoading}
+              >
                 Next Step
                 <ArrowRight size={14} />
               </Button>
@@ -399,7 +686,7 @@ export function BookingRequestForm({
                   fill
                   className="object-cover"
                 />
-                <span className="absolute left-2 top-2 rounded-full bg-[#b48a1b] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-white">
+                <span className="absolute left-2 top-2 rounded-full bg-[#b48a1b] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white">
                   Selected Venue
                 </span>
               </div>
@@ -434,32 +721,44 @@ export function BookingRequestForm({
             </h2>
 
             <div className="mt-4 grid gap-2 md:grid-cols-3">
-              {equipmentOptions.map((option) => {
-                const isSelected = equipment.includes(option.id);
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => toggleEquipment(option.id)}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-[10px] border px-3 py-3 text-left text-sm font-semibold transition-colors",
-                      isSelected
-                        ? "border-[#b48a1b]/35 bg-[#fdf8ec] text-[#6f5510]"
-                        : "border-gray-200 bg-[#fbfcff] text-[#4f5f7c] hover:border-[#b48a1b]/25"
-                    )}
-                  >
-                    <span
+              {isFullVenueLoading ? (
+                <div className="col-span-full flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#c49a22]" />
+                  <span className="ml-2 text-sm text-gray-500">Loading venue requirements...</span>
+                </div>
+              ) : dynamicEquipmentOptions.length > 0 ? (
+                dynamicEquipmentOptions.map((option: EquipmentOption) => {
+                  const isSelected = equipment.includes(option.id);
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => toggleEquipment(option.id)}
                       className={cn(
-                        "inline-flex h-4 w-4 items-center justify-center rounded border",
-                        isSelected ? "border-[#b48a1b] bg-[#b48a1b] text-white" : "border-gray-300 bg-white"
+                        "inline-flex items-center gap-2 rounded-[10px] border px-3 py-3 text-left text-sm font-semibold transition-colors",
+                        isSelected
+                          ? "border-[#b48a1b]/35 bg-[#fdf8ec] text-[#6f5510]"
+                          : "border-gray-200 bg-[#fbfcff] text-[#4f5f7c] hover:border-[#b48a1b]/25"
                       )}
                     >
-                      {isSelected ? <Check size={12} /> : null}
-                    </span>
-                    {option.label}
-                  </button>
-                );
-              })}
+                      <span
+                        className={cn(
+                          "inline-flex h-4 w-4 items-center justify-center rounded border",
+                          isSelected ? "border-[#b48a1b] bg-[#b48a1b] text-white" : "border-gray-300 bg-white"
+                        )}
+                      >
+                        {isSelected ? <Check size={12} /> : null}
+                      </span>
+                      {option.label}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="col-span-full flex items-center gap-3 rounded-[10px] bg-gray-50 p-4 text-sm text-gray-500 border border-gray-100">
+                  <Info size={18} className="text-gray-400 shrink-0" />
+                  <p>No specific equipment or support requirements are listed for this venue.</p>
+                </div>
+              )}
             </div>
           </article>
 
@@ -475,6 +774,7 @@ export function BookingRequestForm({
               placeholder="Please describe any specific technical requirements or logistics needs not covered above..."
               className="mt-3 min-h-[110px] rounded-[10px]"
             />
+            <FieldError name="specialRequests" />
           </article>
 
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
@@ -570,7 +870,7 @@ export function BookingRequestForm({
 
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedEquipmentLabels.length > 0 ? (
-                selectedEquipmentLabels.map((label) => (
+                selectedEquipmentLabels.map((label: string) => (
                   <span key={label} className="inline-flex items-center rounded-[8px] border border-[#ead9a3] bg-[#fbf4dc] px-2.5 py-1.5 text-xs font-medium text-[#7f6112]">
                     {label}
                   </span>
@@ -609,6 +909,7 @@ export function BookingRequestForm({
                 </span>
               </span>
             </label>
+            <FieldError name="guidelinesChecked" />
           </article>
 
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
@@ -628,6 +929,12 @@ export function BookingRequestForm({
             </div>
           </div>
         </section>
+      ) : null}
+
+      {errorMessage ? (
+        <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {errorMessage}
+        </div>
       ) : null}
 
       {statusMessage ? (

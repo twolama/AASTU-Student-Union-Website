@@ -12,6 +12,7 @@ export function BookingsTabs({ items, value, onValueChange }: BookingsTabsProps)
   const tabItems = items.map((item) => ({
     id: item.id,
     label: item.label,
+    badge: item.badge,
   }));
 
   const activeItem = items.find((item) => item.id === value);

@@ -355,6 +355,7 @@ export interface BookingTab {
   id: BookingTabId;
   label: string;
   showAdminBadge?: boolean;
+  badge?: string | number;
 }
 
 export interface BookingStat {
@@ -380,6 +381,7 @@ export interface BookingVenueCard {
   capacity: number;
   category: string;
   status: BookingVenueStatus;
+  amenities: string[];
 }
 
 export type BookingStatus = "pending" | "approved" | "cancelled";
@@ -407,6 +409,7 @@ export interface BookingRequestItem {
   venueType: string;
   requestedDateIso: string;
   requesterAvatarUrl?: string;
+  status: BookingStatus;
 }
 
 export interface BookingDetailAvailabilityDay {

@@ -9,9 +9,10 @@ interface BookingApprovalModalProps {
   onNoteChange: (value: string) => void;
   onClose: () => void;
   onConfirm: () => void;
+  isLoading?: boolean;
 }
 
-export function BookingApprovalModal({ request, note, onNoteChange, onClose, onConfirm }: BookingApprovalModalProps) {
+export function BookingApprovalModal({ request, note, onNoteChange, onClose, onConfirm, isLoading }: BookingApprovalModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/45 p-3 sm:p-4">
       <div className="my-6 w-full max-w-[560px] overflow-hidden rounded-[16px] bg-white shadow-[0_24px_60px_rgba(15,20,35,0.35)] sm:rounded-[18px]">
@@ -51,11 +52,11 @@ export function BookingApprovalModal({ request, note, onNoteChange, onClose, onC
         </div>
 
         <footer className="flex flex-col-reverse gap-2 border-t border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-5 sm:py-4">
-          <Button type="button" variant="outline" className="w-full sm:min-w-32 sm:w-auto" onClick={onClose}>
+          <Button type="button" variant="outline" className="w-full sm:min-w-32 sm:w-auto" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button type="button" variant="goldSolid" className="w-full sm:min-w-48 sm:w-auto" onClick={onConfirm}>
-            Confirm & Approve
+          <Button type="button" variant="goldSolid" className="w-full sm:min-w-48 sm:w-auto" onClick={onConfirm} disabled={isLoading}>
+            {isLoading ? "Approving..." : "Confirm & Approve"}
           </Button>
         </footer>
       </div>

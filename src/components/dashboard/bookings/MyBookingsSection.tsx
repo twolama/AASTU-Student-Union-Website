@@ -82,17 +82,20 @@ export function MyBookingsSection({
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center justify-end gap-2">
-                    {item.status === "pending" ? (
+                    {item.status.toLowerCase() === "pending" ? (
                       <Link
                         href={`/bookings/${item.id}/edit`}
-                        className="inline-flex h-8 items-center rounded-[8px] border border-[#d9e0ee] px-3 text-xs font-semibold text-[#1f2a44] transition-colors hover:border-[#b48a1b]/40 hover:text-[#b48a1b]"
+                        className="inline-flex h-8 items-center rounded-[8px] bg-[#c49a22]/10 border border-[#c49a22]/20 px-3 text-xs font-bold text-[#c49a22] transition-colors hover:bg-[#c49a22] hover:text-white"
                       >
                         Edit
                       </Link>
                     ) : (
-                      <span className="inline-flex h-8 items-center rounded-[8px] border border-gray-200 px-3 text-xs font-semibold text-gray-400">
-                        Locked
-                      </span>
+                      <Link
+                        href={`/bookings/${item.id}`}
+                        className="inline-flex h-8 items-center rounded-[8px] border border-gray-200 px-3 text-xs font-semibold text-gray-500 hover:bg-gray-50"
+                      >
+                        View
+                      </Link>
                     )}
 
                     <button
@@ -140,17 +143,20 @@ export function MyBookingsSection({
             </div>
 
             <div className="mt-3 flex items-center gap-2">
-              {item.status === "pending" ? (
+              {item.status.toLowerCase() === "pending" ? (
                 <Link
                   href={`/bookings/${item.id}/edit`}
-                  className="inline-flex h-8 items-center rounded-[8px] border border-[#d9e0ee] px-3 text-xs font-semibold text-[#1f2a44] transition-colors hover:border-[#b48a1b]/40 hover:text-[#b48a1b]"
+                  className="inline-flex h-8 items-center rounded-[8px] bg-[#c49a22]/10 border border-[#c49a22]/20 px-3 text-xs font-bold text-[#c49a22] transition-colors hover:bg-[#c49a22] hover:text-white"
                 >
                   Edit
                 </Link>
               ) : (
-                <span className="inline-flex h-8 items-center rounded-[8px] border border-gray-200 px-3 text-xs font-semibold text-gray-400">
-                  Locked
-                </span>
+                <Link
+                  href={`/bookings/${item.id}`}
+                  className="inline-flex h-8 items-center rounded-[8px] border border-gray-200 px-3 text-xs font-semibold text-gray-500 hover:bg-gray-50"
+                >
+                  View
+                </Link>
               )}
 
               <button

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export interface TabOption {
   id: string;
   label: string;
+  badge?: string | number;
 }
 
 interface TabsProps {
@@ -83,7 +84,7 @@ export function Tabs({ items, value, onValueChange, className }: TabsProps) {
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute bottom-0 top-0 z-0 rounded-lg bg-gradient-to-b from-white to-[#fdf8ec] shadow-sm ring-1 ring-[#c49a22]/30",
+            "pointer-events-none absolute bottom-0 top-0 z-0 rounded-lg bg-linear-to-b from-white to-[#fdf8ec] shadow-sm ring-1 ring-[#c49a22]/30",
             "transition-[left,width,opacity] duration-300 ease-[cubic-bezier(.22,.61,.36,1)]",
             indicator.ready ? "opacity-100" : "opacity-0"
           )}
@@ -107,7 +108,7 @@ export function Tabs({ items, value, onValueChange, className }: TabsProps) {
                 role="tab"
                 aria-selected={isActive}
                 className={cn(
-                  "cursor-pointer rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-[color,transform] duration-200 sm:text-sm",
+                  "flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-[color,transform] duration-200 sm:text-sm",
                   isActive
                     ? "text-[#8c6c14]"
                     : "text-gray-500 hover:text-gray-700"
@@ -115,6 +116,16 @@ export function Tabs({ items, value, onValueChange, className }: TabsProps) {
                 aria-current={isActive ? "page" : undefined}
               >
                 {item.label}
+                {item.badge !== undefined && (
+                  <span className={cn(
+                    "inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none",
+                    isActive 
+                      ? "bg-[#c49a22] text-white shadow-sm" 
+                      : "bg-gray-200 text-gray-600"
+                  )}>
+                    {item.badge}
+                  </span>
+                )}
               </button>
             </li>
           );

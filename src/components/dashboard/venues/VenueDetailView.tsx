@@ -75,10 +75,12 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
                       Edit Venue
                     </Button>
                   </Link>
-                  <Button variant="goldSolid" className="h-9 w-full whitespace-nowrap rounded-[10px] px-3 text-xs sm:px-4 sm:text-sm lg:min-w-[148px]">
-                    <CalendarDays size={14} />
-                    Book Venue
-                  </Button>
+                  <Link href={`/bookings/new?venueId=${item.id}`} className="w-full lg:w-auto">
+                    <Button variant="goldSolid" className="h-9 w-full whitespace-nowrap rounded-[10px] px-3 text-xs sm:px-4 sm:text-sm lg:min-w-[148px]">
+                      <CalendarDays size={14} />
+                      Book Venue
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

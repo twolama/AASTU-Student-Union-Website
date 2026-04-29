@@ -337,7 +337,7 @@ export const announcementItems: AnnouncementItem[] = [
   {
     id: "ann-1",
     title: "Final Examination Schedule Released",
-    summary:
+    body_excerpt:
       "The official schedule for the Semester II final examinations is now available for all departments. Please review the updated venues and time slots on the student portal.",
     imageUrl:
       "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=900&auto=format&fit=crop",
@@ -348,7 +348,7 @@ export const announcementItems: AnnouncementItem[] = [
   {
     id: "ann-2",
     title: "Annual Cultural Night 2024",
-    summary:
+    body_excerpt:
       "Join us for a night of diversity and talent. The Annual Cultural Night is happening this Friday at the Main Hall. Tickets are available at the Student Union office starting today.",
     imageUrl:
       "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&auto=format&fit=crop",
@@ -359,7 +359,7 @@ export const announcementItems: AnnouncementItem[] = [
   {
     id: "ann-3",
     title: "Student Council Monthly Meeting",
-    summary:
+    body_excerpt:
       "The next general meeting will discuss the upcoming campus facility renovations. All student representatives are required to attend. Minutes from the previous meeting are attached.",
     imageUrl:
       "https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&auto=format&fit=crop",
@@ -546,7 +546,7 @@ export const clubDetailItems: Record<string, ClubDetailItem> = {
     ],
     links: {
       website: "https://ieeerobotics.example.org/aastu",
-      externalMembership: "https://ieeerobotics.example.org/club/aastu-robotics",
+      membership: "https://ieeerobotics.example.org/club/aastu-robotics",
     },
     contacts: [
       {
@@ -618,7 +618,7 @@ export const clubDetailItems: Record<string, ClubDetailItem> = {
     ],
     links: {
       website: "https://aastu-literature.example.org",
-      externalMembership: "https://writers-foundation.example.org/join/aastu",
+      membership: "https://writers-foundation.example.org/join/aastu",
     },
     contacts: [
       {
@@ -680,7 +680,7 @@ export const clubDetailItems: Record<string, ClubDetailItem> = {
     ],
     links: {
       website: "https://aastu-fc.example.org",
-      externalMembership: "https://sports.example.org/clubs/aastu-fc",
+      membership: "https://sports.example.org/clubs/aastu-fc",
     },
     contacts: [
       {
@@ -1085,11 +1085,6 @@ export const venueDetailItems: Record<string, VenueDetailItem> = {
       "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&auto=format&fit=crop",
     gettingThere:
       "Located near the East Gate entrance, adjacent to the Library Complex, Kilinto Campus, Block B.",
-    venueStatistics: {
-      monthlyUtilization: "78%",
-      eventsThisMonth: "14 Events",
-      averageRating: "4.8 / 5.0",
-    },
     contact: {
       name: "Abebe Kebede",
       role: "Hall Manager",
@@ -1214,6 +1209,7 @@ export const bookingVenueCards: BookingVenueCard[] = [
     capacity: 500,
     category: "auditorium",
     status: "available",
+    amenities: ["Projector", "Sound System", "Wifi"],
   },
   {
     id: "booking-venue-2",
@@ -1225,6 +1221,7 @@ export const bookingVenueCards: BookingVenueCard[] = [
     capacity: 50,
     category: "meeting-room",
     status: "blocked",
+    amenities: ["Security", "Privacy Screen"],
   },
   {
     id: "booking-venue-3",
@@ -1236,6 +1233,7 @@ export const bookingVenueCards: BookingVenueCard[] = [
     capacity: 100,
     category: "lab",
     status: "available",
+    amenities: ["Projector", "Sound System", "Wifi"],
   },
   {
     id: "booking-venue-4",
@@ -1247,6 +1245,7 @@ export const bookingVenueCards: BookingVenueCard[] = [
     capacity: 200,
     category: "meeting-room",
     status: "available",
+    amenities: ["Projector", "Sound System", "Wifi"],
   },
   {
     id: "booking-venue-5",
@@ -1258,6 +1257,7 @@ export const bookingVenueCards: BookingVenueCard[] = [
     capacity: 1500,
     category: "sports-facility",
     status: "available",
+    amenities: ["Projector", "Sound System", "Wifi"],
   },
   {
     id: "booking-venue-6",
@@ -1269,6 +1269,7 @@ export const bookingVenueCards: BookingVenueCard[] = [
     capacity: 15,
     category: "meeting-room",
     status: "blocked",
+    amenities: ["Privacy Glass", "Conference Phone"],
   },
 ];
 
@@ -1351,6 +1352,7 @@ export const bookingRequests: BookingRequestItem[] = [
     purpose: "Weekly programming seminar and coding challenge session.",
     venueType: "hall",
     requestedDateIso: "2023-10-24",
+    status: "pending",
   },
   {
     id: "REQ-8830",
@@ -1363,6 +1365,7 @@ export const bookingRequests: BookingRequestItem[] = [
     purpose: "Guest lecture series featuring local industry leaders.",
     venueType: "auditorium",
     requestedDateIso: "2023-10-26",
+    status: "pending",
   },
   {
     id: "REQ-8831",
@@ -1375,6 +1378,7 @@ export const bookingRequests: BookingRequestItem[] = [
     purpose: "Inter-college debate preparation and mock rounds.",
     venueType: "meeting-room",
     requestedDateIso: "2023-10-27",
+    status: "pending",
   },
   {
     id: "REQ-8832",
@@ -1387,6 +1391,7 @@ export const bookingRequests: BookingRequestItem[] = [
     purpose: "Awareness and donation campaign for local shelters.",
     venueType: "outdoor",
     requestedDateIso: "2023-10-30",
+    status: "pending",
   },
 ];
 
