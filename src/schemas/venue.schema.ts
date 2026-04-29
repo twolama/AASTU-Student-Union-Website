@@ -50,6 +50,7 @@ export const VenueSchema = z.object({
 export const VenueFormSchema = z.object({
   name: z.string().min(3, "Venue name must be at least 3 characters"),
   category: z.string().min(1, "Category is required"),
+  status: z.enum(["active", "maintenance", "inactive"]),
   maxCapacity: z.string().min(1, "Capacity is required"),
   shortDescription: z.string().min(10, "Short description must be at least 10 characters"),
   managerName: z.string().min(3, "Manager name must be at least 3 characters"),

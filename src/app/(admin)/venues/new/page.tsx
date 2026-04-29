@@ -12,6 +12,7 @@ export default function AddVenuePage() {
       initialValues={{
         name: "",
         category: "",
+        status: "active",
         maxCapacity: "",
         floorLevel: "",
         campusBlock: "",

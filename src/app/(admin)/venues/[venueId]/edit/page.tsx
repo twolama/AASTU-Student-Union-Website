@@ -43,6 +43,7 @@ export default function EditVenuePage() {
       initialValues={{
         name: venue.name,
         category: venue.category?.id ?? "",
+        status: venue.status || "active",
         maxCapacity: String(venue.maxCapacity),
         floorLevel: venue.floorLevel || "",
         campusBlock: venue.campusBlock || "",

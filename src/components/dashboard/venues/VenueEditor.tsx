@@ -33,6 +33,7 @@ import { FileUpload } from "@/components/ui/FileUpload";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
 import { useVenueCategories, useCreateVenue, useUpdateVenue, useUploadVenueGalleryImage, useDeleteVenueGalleryImage } from "@/hooks/useVenues";
+import type { VenueStatus } from "@/types/dashboard";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { VenueFormSchema } from "@/schemas/venue.schema";
@@ -44,6 +45,7 @@ type EditorMode = "create" | "edit";
 export interface VenueEditorValues {
   name: string;
   category: string;
+  status: VenueStatus;
   maxCapacity: string;
   floorLevel: string;
   campusBlock: string;
@@ -172,10 +174,17 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
       ? "Register a new physical space for student activities, clubs, and academic events."
       : "Update venue records, specifications, and gallery assets.";
 
+  const venueStatusOptions: Array<{ value: VenueStatus; label: string }> = [
+    { value: "active", label: "Active" },
+    { value: "maintenance", label: "Maintenance" },
+    { value: "inactive", label: "Inactive" },
+  ];
+
   const completionPercent = useMemo(() => {
     const checks = [
       values.name.trim().length > 3,
       values.category.length > 0,
+      values.status.length > 0,
       values.maxCapacity.trim().length > 0,
       values.shortDescription.trim().length > 16,
       values.managerName.trim().length > 3,
@@ -374,6 +383,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
       formData.append("nearby_landmarks", values.nearbyLandmarks);
       formData.append("short_description", values.shortDescription);
       formData.append("full_description", values.fullDescription);
+      formData.append("status", values.status);
       formData.append("is_publicly_available", String(values.publicAvailability));
       formData.append("manager_name", values.managerName);
       formData.append("manager_phone", values.phoneNumber);
@@ -637,6 +647,17 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
                   className={`[&>div>button]:h-10 [&>div>button]:rounded-[8px] ${getFieldError("category_id") ? "border-red-500" : ""}`}
                 />
                 {renderError("category_id")}
+              </div>
+
+              <div className="space-y-1.5">
+                <DropdownSelect
+                  label="Venue Status"
+                  value={values.status}
+                  options={venueStatusOptions}
+                  onValueChange={(value) => updateField("status", value as VenueStatus)}
+                  className={`[&>div>button]:h-10 [&>div>button]:rounded-[8px] ${getFieldError("status") ? "border-red-500" : ""}`}
+                />
+                {renderError("status")}
               </div>
 
               <div>
