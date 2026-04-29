@@ -70,20 +70,20 @@ export function PublicHeader() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {!isLoading && (
-              <>
-                {user ? (
+            <div className="flex items-center min-w-[80px] justify-end">
+              {user ? (
+                <div className="flex items-center">
                   <HeaderAccountMenu />
-                ) : (
-                  <Link
-                    href="/login"
-                    className="hidden rounded-[4px] bg-[#14213d] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#1f2f55] lg:inline-flex"
-                  >
-                    Login
-                  </Link>
-                )}
-              </>
-            )}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="hidden rounded-[4px] bg-[#14213d] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#1f2f55] lg:inline-flex"
+                >
+                  Login
+                </Link>
+              )}
+            </div>
             <button
               type="button"
               aria-label="Open menu"

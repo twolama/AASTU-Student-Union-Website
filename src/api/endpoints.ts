@@ -54,6 +54,22 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `${API_V1_PREFIX}/clubs/${id}/`,
     UPCOMING_EVENTS: (id: string) => `${API_V1_PREFIX}/clubs/${id}/upcoming-events/`,
   },
+  EVENTS: {
+    LIST: `${API_V1_PREFIX}/events/`,
+    CREATE: `${API_V1_PREFIX}/events/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/events/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/events/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/events/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/events/${id}/`,
+    VOLUNTEER: (id: string) => `${API_V1_PREFIX}/events/${id}/volunteer/`,
+  },
+  VOLUNTEERS: {
+    LIST: `${API_V1_PREFIX}/volunteers/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/volunteers/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/volunteers/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/volunteers/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/volunteers/${id}/`,
+  },
   CLUB_CATEGORIES: {
     LIST: `${API_V1_PREFIX}/club-categories/`,
     CREATE: `${API_V1_PREFIX}/club-categories/`,
@@ -108,6 +124,16 @@ export const API_ENDPOINTS = {
     PATCH: (id: string) => `${API_V1_PREFIX}/venue-gallery/${id}/`,
     DELETE: (id: string) => `${API_V1_PREFIX}/venue-gallery/${id}/`,
   },
+  BOOKINGS: {
+    LIST: `${API_V1_PREFIX}/bookings/`,
+    CREATE: `${API_V1_PREFIX}/bookings/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/bookings/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/bookings/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/bookings/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/bookings/${id}/`,
+    APPROVE: (id: string) => `${API_V1_PREFIX}/bookings/${id}/approve/`,
+    CANCEL: (id: string) => `${API_V1_PREFIX}/bookings/${id}/cancel/`,
+  },
 } as const;
 
 export const AUTH_ENDPOINTS = API_ENDPOINTS.AUTHENTICATION;
@@ -118,6 +144,9 @@ export const ANNOUNCEMENT_ENDPOINTS = API_ENDPOINTS.ANNOUNCEMENTS;
 export const ANNOUNCEMENT_CATEGORY_ENDPOINTS = API_ENDPOINTS.ANNOUNCEMENT_CATEGORIES;
 export const CLUB_ENDPOINTS = API_ENDPOINTS.CLUBS;
 export const CLUB_CATEGORY_ENDPOINTS = API_ENDPOINTS.CLUB_CATEGORIES;
+export const EVENT_ENDPOINTS = API_ENDPOINTS.EVENTS;
+export const VOLUNTEER_ENDPOINTS = API_ENDPOINTS.VOLUNTEERS;
 export const VENUE_ENDPOINTS = API_ENDPOINTS.VENUES;
 export const VENUE_CATEGORY_ENDPOINTS = API_ENDPOINTS.VENUE_CATEGORIES;
 export const VENUE_GALLERY_ENDPOINTS = API_ENDPOINTS.VENUE_GALLERY;
+export const BOOKING_ENDPOINTS = API_ENDPOINTS.BOOKINGS;

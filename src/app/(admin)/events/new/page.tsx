@@ -11,19 +11,24 @@ export default function CreateEventPage() {
       mode="create"
       initialValues={{
         title: "",
-        shortDescription: "",
-        aboutEvent: "",
-        bannerUrl: "",
-        bannerFileName: undefined,
-        registrationLink: "",
-        startDateTime: "",
-        endDateTime: "",
-        venueSelection: "",
-        clubAssociation: "",
-        physicalLocationDetails: "",
-        maxCapacity: "",
-        megaEvent: true,
-        archived: false,
+        short_description: "",
+        status: "upcoming",
+        is_mega_event: true,
+        is_archived: false,
+        max_capacity: 0,
+        physical_location_details: "",
+        cover_image: "",
+        start_date_time: "",
+        end_date_time: "",
+        registration_link: "",
+        description: "",
+        logistics: {},
+        attendance: {
+          current: 0,
+          capacity: 0,
+          waitlist: 0,
+          vips: 0
+        },
         volunteers: [],
       }}
     />

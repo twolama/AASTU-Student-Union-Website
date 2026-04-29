@@ -47,12 +47,14 @@ apiClient.interceptors.response.use(
 
     // Automatically log out and redirect to login if we get a 401 Unauthorized
     if (status === 401 && typeof window !== "undefined") {
-      // Don't redirect if the error is from a login attempt
-      const isLoginRequest = requestUrl.includes("auth/login");
+      const requestUrlLower = requestUrl.toLowerCase();
+      // Don't redirect if the error is from a login attempt or a "me" check (used on public pages)
+      const isLoginRequest = requestUrlLower.includes("auth/login");
+      const isAuthCheck = requestUrlLower.includes("users/me");
       const isAlreadyOnLoginPage = window.location.pathname === "/login";
 
-      if (!isLoginRequest && !isAlreadyOnLoginPage) {
-        // Force redirect to login page (the actual path is /login based on logs)
+      if (!isLoginRequest && !isAuthCheck && !isAlreadyOnLoginPage) {
+        // Force redirect to login page
         window.location.href = "/login?expired=true";
       }
     }

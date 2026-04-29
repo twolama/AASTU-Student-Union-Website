@@ -12,9 +12,11 @@ interface EventsFiltersProps {
   onSelectedVenueChange: (value: string) => void;
   selectedStatus: string;
   onSelectedStatusChange: (value: string) => void;
+  clubOptions: { value: string; label: string }[];
+  venueOptions: { value: string; label: string }[];
 }
 
-const clubOptions = [
+const defaultClubOptions = [
   { value: "all", label: "All Clubs" },
   { value: "google-dsc", label: "Google DSC AASTU" },
   { value: "aastu-arts", label: "AASTU Arts Club" },
@@ -25,7 +27,7 @@ const clubOptions = [
   { value: "debate", label: "Debate Society" },
 ];
 
-const venueOptions = [
+const defaultVenueOptions = [
   { value: "all", label: "All Venues" },
   { value: "grand-library-hall", label: "Grand Library Hall" },
   { value: "outdoor-plaza", label: "Outdoor Plaza" },
@@ -53,6 +55,8 @@ export function EventsFilters({
   onSelectedVenueChange,
   selectedStatus,
   onSelectedStatusChange,
+  clubOptions,
+  venueOptions,
 }: EventsFiltersProps) {
   return (
     <section className="rounded-[10px] border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
@@ -68,7 +72,7 @@ export function EventsFilters({
         <DropdownSelect
           label=""
           value={selectedClub}
-          options={clubOptions}
+          options={clubOptions.length ? clubOptions : defaultClubOptions}
           onValueChange={onSelectedClubChange}
           className="[&>p]:hidden [&>div>button]:h-10 [&>div>button]:rounded-[10px]"
         />
@@ -76,7 +80,7 @@ export function EventsFilters({
         <DropdownSelect
           label=""
           value={selectedVenue}
-          options={venueOptions}
+          options={venueOptions.length ? venueOptions : defaultVenueOptions}
           onValueChange={onSelectedVenueChange}
           className="[&>p]:hidden [&>div>button]:h-10 [&>div>button]:rounded-[10px]"
         />

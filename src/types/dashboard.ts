@@ -94,6 +94,7 @@ export interface EventManagementItem {
   scheduleDate: string;
   scheduleTime: string;
   status: EventManagementStatus;
+  maxCapacity?: number;
 }
 
 export interface VenueOccupancyPoint {
