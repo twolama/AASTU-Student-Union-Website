@@ -143,7 +143,7 @@ export function VerifyResetCodeForm({ initialEmail = "" }: VerifyResetCodeFormPr
           {digits.map((digit, index) => (
             <input
               key={index}
-              ref={(element) => (inputsRef.current[index] = element)}
+              ref={(element) => { inputsRef.current[index] = element }}
               type="text"
               inputMode="numeric"
               maxLength={1}
