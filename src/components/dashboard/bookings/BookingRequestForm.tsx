@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { z } from "zod";
-import { useCreateBooking, useUpdateBooking } from "@/hooks/useBookings";
+import { useCreateBooking, useUpdateBooking, useBookingAvailability } from "@/hooks/useBookings";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,13 +18,16 @@ import {
   MapPin,
   Users2,
   Loader2,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import dayjs from "dayjs";
 import { useVenues, useVenue } from "@/hooks/useVenues";
 import { useClubs, useClubUpcomingEvents } from "@/hooks/useClubs";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
 import type { BookingVenueCard } from "@/types/dashboard";
@@ -65,10 +68,22 @@ const Step1Schema = z.object({
   expectedAttendance: z.string().refine(val => !isNaN(parseInt(val)) && parseInt(val) > 0, {
     message: "Attendance must be a positive number",
   }),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid start date format (YYYY-MM-DD)"),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid end date format (YYYY-MM-DD)"),
+  startDate: z.string().min(1, "Start date is required").refine((val) => {
+    const date = dayjs(val);
+    const today = dayjs().startOf("day");
+    return date.isAfter(today) || date.isSame(today);
+  }, "Start date cannot be in the past"),
+  endDate: z.string().min(1, "End date is required"),
   selectedSlots: z.array(z.string()).min(1, "Please select at least one time slot"),
   purpose: z.string().min(10, "Please provide a more detailed purpose (at least 10 chars)"),
+}).refine((data) => {
+  if (!data.startDate || !data.endDate) return true;
+  const start = dayjs(data.startDate);
+  const end = dayjs(data.endDate);
+  return end.isAfter(start) || end.isSame(start);
+}, {
+  message: "End date must be on or after start date",
+  path: ["endDate"],
 });
 
 const Step2Schema = z.object({
@@ -89,20 +104,7 @@ const stepLabels: { id: StepId; label: string }[] = [
 ];
 
 
-const timeSlots = [
-  { label: "08:00", available: false },
-  { label: "09:00", available: true },
-  { label: "10:00", available: true },
-  { label: "11:00", available: true },
-  { label: "12:00", available: true },
-  { label: "13:00", available: true },
-  { label: "14:00", available: false },
-  { label: "15:00", available: true },
-  { label: "16:00", available: true },
-  { label: "17:00", available: true },
-  { label: "18:00", available: true },
-  { label: "19:00", available: true },
-];
+
 
 
 function StepIndicator({ currentStep }: { currentStep: StepId }) {
@@ -157,6 +159,18 @@ function StepIndicator({ currentStep }: { currentStep: StepId }) {
   );
 }
 
+const DEFAULT_TIME_SLOTS = [
+  "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", 
+  "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"
+];
+
+const formatTimeLabel = (label: string) => {
+  const hour = parseInt(label.split(":")[0]);
+  if (hour === 12) return "12 PM";
+  if (hour > 12) return `${hour - 12} PM`;
+  return `${hour} AM`;
+};
+
 export function BookingRequestForm({
   mode = "create",
   bookingId,
@@ -172,6 +186,46 @@ export function BookingRequestForm({
   const { data: fullVenueData, isLoading: isFullVenueLoading } = useVenue(selectedVenueId);
   const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100, undefined, "active");
   const { data: upcomingEventsData, isLoading: isUpcomingEventsLoading } = useClubUpcomingEvents(clubAssociation);
+  
+  const [startDate, setStartDate] = useState(initialData?.startDate ?? "");
+  const [endDate, setEndDate] = useState(initialData?.endDate ?? "");
+  
+  const isDateRangeValid = useMemo(() => {
+    if (!startDate || !endDate) return false;
+    return new Date(endDate) >= new Date(startDate);
+  }, [startDate, endDate]);
+
+  const { data: availableSlotsData, isLoading: isAvailabilityLoading, isError: isAvailabilityError } = useBookingAvailability(
+    selectedVenueId,
+    startDate,
+    endDate,
+    bookingId
+  );
+  
+  // Actually, I should update the hook to be disabled if dates are invalid
+
+  const timeSlots = useMemo(() => {
+    // 1. If we have explicit data from the backend, use it
+    if (availableSlotsData && availableSlotsData.length > 0) {
+      return availableSlotsData;
+    }
+    
+    // 2. Determine if we should be in a "disabled/loading" state
+    // We disable everything if:
+    // - Dates are missing or invalid (end before start)
+    // - Hook is loading
+    // - Hook had an error
+    // - Hook is enabled but data hasn't arrived yet
+    const isFetching = isAvailabilityLoading;
+    const hasDates = !!(startDate && endDate);
+    const isValid = isDateRangeValid;
+    const shouldDisableAll = !hasDates || !isValid || isFetching || isAvailabilityError || !availableSlotsData;
+    
+    return DEFAULT_TIME_SLOTS.map(label => ({
+      label,
+      available: !shouldDisableAll
+    }));
+  }, [availableSlotsData, startDate, endDate, isAvailabilityLoading, isAvailabilityError, isDateRangeValid]);
 
   const realVenues = useMemo(() => {
     if (!venuesData || !venuesData.data) return [];
@@ -209,8 +263,6 @@ export function BookingRequestForm({
 
   const [eventTitle, setEventTitle] = useState(initialData?.eventTitle ?? "");
   const [expectedAttendance, setExpectedAttendance] = useState(initialData?.expectedAttendance ?? "500");
-  const [startDate, setStartDate] = useState(initialData?.startDate ?? "");
-  const [endDate, setEndDate] = useState(initialData?.endDate ?? "");
   const [selectedSlots, setSelectedSlots] = useState<string[]>(initialData?.selectedSlots ?? []);
   const [purpose, setPurpose] = useState(initialData?.purpose ?? "");
 
@@ -258,8 +310,16 @@ export function BookingRequestForm({
   useEffect(() => {
     if (isInitialized) {
       setEquipment([]);
+      setSelectedSlots([]); // Also clear slots when venue changes
     }
   }, [selectedVenueId, isInitialized]);
+
+  // Clear slots when date range changes
+  useEffect(() => {
+    if (isInitialized) {
+      setSelectedSlots([]);
+    }
+  }, [startDate, endDate, isInitialized]);
 
   const venueOptions = useMemo(() => {
     return realVenues.map((venue) => ({ 
@@ -488,23 +548,6 @@ export function BookingRequestForm({
             <div className="mt-4 space-y-4">
               <div className="relative">
                 <DropdownSelect
-                  label="Club / Association Selection"
-                  value={clubAssociation}
-                  options={clubOptions}
-                  onValueChange={setClubAssociation}
-                  className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
-                  disabled={isClubsLoading}
-                />
-                {isClubsLoading && (
-                  <div className="absolute right-10 top-[34px]">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
-                  </div>
-                )}
-                <FieldError name="clubAssociation" />
-              </div>
-
-              <div className="relative">
-                <DropdownSelect
                   label="Venue Selection"
                   value={selectedVenueId}
                   options={venueOptions}
@@ -518,6 +561,100 @@ export function BookingRequestForm({
                   </div>
                 )}
                 <FieldError name="selectedVenueId" />
+              </div>
+
+              <div className={cn("rounded-[10px] border border-gray-200 bg-[#fbfcff] p-3 sm:p-4 transition-opacity", !selectedVenueId && "opacity-50 pointer-events-none")}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <DatePicker
+                      id="booking-start-date"
+                      label="Start Date"
+                      value={startDate}
+                      onChange={setStartDate}
+                      minDate={dayjs().format("YYYY-MM-DD")}
+                    />
+                    <FieldError name="startDate" />
+                  </div>
+
+                  <div>
+                    <DatePicker
+                      id="booking-end-date"
+                      label="End Date"
+                      value={endDate}
+                      onChange={setEndDate}
+                      minDate={startDate || dayjs().format("YYYY-MM-DD")}
+                      align="right"
+                    />
+                    <FieldError name="endDate" />
+                  </div>
+                </div>
+
+                {startDate && endDate && !isDateRangeValid && (
+                  <p className="mt-2 text-xs font-medium text-red-500">
+                    Error: End date cannot be before start date.
+                  </p>
+                )}
+
+                <div className={cn("mt-3 transition-opacity", !selectedVenueId && "opacity-50 pointer-events-none")}>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">
+                      {!startDate || !endDate 
+                        ? "Select Dates to View Availability" 
+                        : isAvailabilityLoading 
+                          ? "Checking Availability..." 
+                          : "Select Time Slots (Hourly)"}
+                    </p>
+                    {isAvailabilityLoading && <Loader2 className="h-3 w-3 animate-spin text-[#c49a22]" />}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                    {timeSlots.map((slot) => {
+                      const isSelected = selectedSlots.includes(slot.label);
+                      const isClickable = slot.available && startDate && endDate;
+                      
+                      return (
+                        <button
+                          key={slot.label}
+                          type="button"
+                          disabled={!isClickable}
+                          onClick={() => toggleSlot(slot.label)}
+                          className={cn(
+                            "inline-flex h-9 items-center justify-center rounded-[8px] border text-xs font-semibold transition-colors",
+                            !isClickable && "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400",
+                            isClickable && !isSelected && "border-gray-200 bg-white text-[#4f5f7c] hover:border-[#b48a1b]/35",
+                            isClickable && isSelected && "border-[#b48a1b] bg-[#b48a1b] text-white"
+                          )}
+                        >
+                          {formatTimeLabel(slot.label)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <FieldError name="selectedSlots" />
+
+                  <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#90a0bb]">
+                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-white ring-1 ring-gray-300" />Available</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#b48a1b]" />Selected</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300" />Reserved</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative">
+                <DropdownSelect
+                  label="Club / Association Selection"
+                  value={clubAssociation}
+                  options={clubOptions}
+                  onValueChange={setClubAssociation}
+                  className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
+                  disabled={isClubsLoading}
+                />
+                {isClubsLoading && (
+                  <div className="absolute right-10 top-[34px]">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
+                  </div>
+                )}
+                <FieldError name="clubAssociation" />
               </div>
 
               <div>
@@ -574,75 +711,6 @@ export function BookingRequestForm({
                 <FieldError name="expectedAttendance" />
               </div>
 
-              <div className="rounded-[10px] border border-gray-200 bg-[#fbfcff] p-3 sm:p-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="booking-start-date" className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">
-                      Start Date
-                    </label>
-                    <Input
-                      id="booking-start-date"
-                      type="date"
-                      value={startDate}
-                      onChange={(event) => setStartDate(event.target.value)}
-                      className="h-10 rounded-[8px]"
-                    />
-                    <FieldError name="startDate" />
-                  </div>
-
-                  <div>
-                    <label htmlFor="booking-end-date" className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">
-                      End Date
-                    </label>
-                    <Input
-                      id="booking-end-date"
-                      type="date"
-                      value={endDate}
-                      onChange={(event) => setEndDate(event.target.value)}
-                      className="h-10 rounded-[8px]"
-                    />
-                    <FieldError name="endDate" />
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Select Time Slots (Hourly)</p>
-                    <button type="button" className="text-xs font-semibold text-[#b48a1b] hover:underline">
-                      Show Daily Schedule
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                    {timeSlots.map((slot) => {
-                      const isSelected = selectedSlots.includes(slot.label);
-                      return (
-                        <button
-                          key={slot.label}
-                          type="button"
-                          disabled={!slot.available}
-                          onClick={() => toggleSlot(slot.label)}
-                          className={cn(
-                            "inline-flex h-9 items-center justify-center rounded-[8px] border text-xs font-semibold transition-colors",
-                            !slot.available && "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400",
-                            slot.available && !isSelected && "border-gray-200 bg-white text-[#4f5f7c] hover:border-[#b48a1b]/35",
-                            slot.available && isSelected && "border-[#b48a1b] bg-[#b48a1b] text-white"
-                          )}
-                        >
-                          {slot.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <FieldError name="selectedSlots" />
-
-                  <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#90a0bb]">
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-white ring-1 ring-gray-300" />Available</span>
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#b48a1b]" />Selected</span>
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300" />Reserved</span>
-                  </div>
-                </div>
-              </div>
 
               <div>
                 <label htmlFor="booking-purpose" className="mb-1.5 block text-xs font-semibold text-gray-700">
@@ -849,11 +917,13 @@ export function BookingRequestForm({
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Date</p>
-                <p className="text-sm font-semibold text-[#1f2a44]">{startDate || "--"}</p>
+                <p className="text-sm font-semibold text-[#1f2a44]">{startDate ? dayjs(startDate).format("MMM DD, YYYY") : "--"}</p>
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Selected Time Slots</p>
-                <p className="text-sm font-semibold text-[#1f2a44]">{selectedSlots.length > 0 ? selectedSlots.join(", ") : "None"}</p>
+                <p className="text-sm font-semibold text-[#1f2a44]">
+                  {selectedSlots.length > 0 ? selectedSlots.map(formatTimeLabel).join(", ") : "None"}
+                </p>
               </div>
             </div>
           </article>

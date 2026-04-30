@@ -58,8 +58,19 @@ function getLoginCookieMaxAge(expiresAt: string) {
 
 function buildProxyUrl(baseUrl: string, pathSegments: string[], requestUrl: URL) {
   const encodedPath = pathSegments.map((segment) => encodeURIComponent(segment)).join("/");
-  const normalizedPath = requestUrl.pathname.endsWith("/") ? `${encodedPath}/` : `${encodedPath}/`;
+  
+  // Django REST Framework generally requires a trailing slash for non-file resources.
+  // We ensure it exists if the original request ends with a slash OR if it's an API resource without an extension.
+  const lastSegment = pathSegments[pathSegments.length - 1] || "";
+  const isFile = lastSegment.includes(".");
+  const isApiRequest = pathSegments[0] === "api";
+  
+  const shouldHaveSlash = requestUrl.pathname.endsWith("/") || (isApiRequest && !isFile);
+  const normalizedPath = shouldHaveSlash ? `${encodedPath}/` : encodedPath;
+  
+  // Use searchParams to ensure query parameters are correctly extracted
   const query = requestUrl.search || "";
+  
   return `${baseUrl}/${normalizedPath}${query}`;
 }
 
@@ -238,7 +249,7 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
       headers,
       body,
       cache: "no-store",
-      redirect: "manual",
+      redirect: "follow",
     });
 
     const durationMs = Date.now() - startedAt;

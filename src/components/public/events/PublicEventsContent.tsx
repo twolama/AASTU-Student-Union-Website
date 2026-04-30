@@ -3,23 +3,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Clock3, MapPin, Search, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, MapPin, Search, ArrowRight, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   publicEventCategories,
-  publicEventItems,
-  publicEventsHero,
 } from "@/lib/public/events";
-import type { PublicEventItem } from "@/lib/public/events";
+import { useEvents } from "@/hooks/useEvents";
+import type { EventListItem } from "@/schemas/event.schema";
+import dayjs from "dayjs";
 
 const PAGE_SIZE = 5;
 
-function EventCard({ event }: { event: PublicEventItem }) {
+function EventCard({ event }: { event: EventListItem }) {
+  const dateDay = event.date_day || (event.start_date_time ? dayjs(event.start_date_time).format("DD") : "??");
+  const dateMonth = event.date_month || (event.start_date_time ? dayjs(event.start_date_time).format("MMM") : "???");
+  
+  const timeRange = event.start_date_time && event.end_date_time 
+    ? `${dayjs(event.start_date_time).format("hh:mm A")} - ${dayjs(event.end_date_time).format("hh:mm A")}`
+    : "Time TBD";
+
   return (
     <article className="group overflow-hidden rounded-[20px] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]">
       <div className="relative h-36 overflow-hidden sm:h-44">
         <Image
-          src={event.imageUrl}
+          src={event.cover_image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800"}
           alt={event.title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
@@ -27,29 +34,29 @@ function EventCard({ event }: { event: PublicEventItem }) {
         />
 
         <div className="absolute left-4 top-4 flex h-12 w-12 flex-col items-center justify-center rounded-[10px] bg-white text-[#14213d] shadow-sm">
-          <span className="text-xl font-black leading-none">{event.dateDay}</span>
+          <span className="text-xl font-black leading-none">{dateDay}</span>
           <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-            {event.dateMonth}
+            {dateMonth}
           </span>
         </div>
       </div>
 
       <div className="p-5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b6861f]">
-          {event.category}
+          {event.organizing_club.category_name || "General"}
         </p>
-        <h3 className="mt-3 text-[1.4rem] font-black leading-[1.2] text-[#0f1d49] sm:text-[1.55rem]">
+        <h3 className="mt-3 text-[1.4rem] font-black leading-[1.2] text-[#0f1d49] sm:text-[1.55rem] line-clamp-2 min-h-[3rem]">
           {event.title}
         </h3>
 
         <div className="mt-4 space-y-2 text-sm text-slate-500">
           <p className="inline-flex items-center gap-2">
             <MapPin size={14} />
-            {event.venue}
+            <span className="line-clamp-1">{event.venue || "TBA"}</span>
           </p>
           <p className="inline-flex items-center gap-2">
             <Clock3 size={14} />
-            {event.timeRange}
+            <span>{timeRange}</span>
           </p>
         </div>
 
@@ -96,46 +103,43 @@ export function PublicEventsContent() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
 
+  const { data: eventsResponse, isLoading, isError } = useEvents(page, PAGE_SIZE);
+
   const filteredEvents = useMemo(() => {
+    if (!eventsResponse?.data) return [];
+    
     const normalized = query.trim().toLowerCase();
 
-    return publicEventItems.filter((event) => {
+    return eventsResponse.data.filter((event) => {
       const categoryMatches =
         activeCategory === "All Events" ||
-        event.filterCategory.toLowerCase() === activeCategory.toLowerCase();
+        (event.organizing_club.category_name?.toLowerCase() === activeCategory.toLowerCase());
 
       const queryMatches =
         normalized.length === 0 ||
         event.title.toLowerCase().includes(normalized) ||
-        event.venue.toLowerCase().includes(normalized) ||
-        event.category.toLowerCase().includes(normalized);
+        (event.venue?.toLowerCase().includes(normalized) ?? false) ||
+        (event.organizing_club.category_name?.toLowerCase().includes(normalized) ?? false);
 
       return categoryMatches && queryMatches;
     });
-  }, [activeCategory, query]);
+  }, [activeCategory, query, eventsResponse]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / PAGE_SIZE));
+  const totalPages = eventsResponse?.meta?.totalPages || 1;
 
-  // Keep page in sync with filters and totalPages
+  // Reset to first page when category or query changes
   useEffect(() => {
-    // If filters change, reset to first page
     setPage(1);
-     
   }, [activeCategory, query]);
-
-  useEffect(() => {
-    // If current page is out of bounds, set to last page
-    setPage((prevPage) => (prevPage > totalPages ? totalPages : prevPage));
-  }, [totalPages]);
-
-  const paginatedEvents = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredEvents.slice(start, start + PAGE_SIZE);
-  }, [filteredEvents, page]);
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }, [totalPages]);
+
+  // Find a mega event for the hero section
+  const megaEvent = useMemo(() => {
+    return eventsResponse?.data?.find(e => e.is_mega_event);
+  }, [eventsResponse]);
 
   return (
     <div className="space-y-7 sm:space-y-8">
@@ -151,44 +155,46 @@ export function PublicEventsContent() {
         </p>
       </section>
 
-      <section className="relative overflow-hidden rounded-[28px] bg-[#020d2f] text-white shadow-[0_22px_44px_rgba(8,20,60,0.24)]">
-        <div className="relative flex flex-col justify-end">
-          <Image
-            src={publicEventsHero.imageUrl}
-            alt={publicEventsHero.title}
-            fill
-            priority
-            sizes="(max-width: 1280px) 100vw, 1200px"
-            className="object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(4,18,63,0.85),rgba(4,18,63,0.2)_65%)]" />
+      {megaEvent ? (
+        <section className="relative overflow-hidden rounded-[28px] bg-[#020d2f] text-white shadow-[0_22px_44px_rgba(8,20,60,0.24)]">
+          <div className="relative flex flex-col justify-end min-h-[400px]">
+            <Image
+              src={megaEvent.cover_image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1800"}
+              alt={megaEvent.title}
+              fill
+              priority
+              sizes="(max-width: 1280px) 100vw, 1200px"
+              className="object-cover opacity-60"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(4,18,63,0.85),rgba(4,18,63,0.2)_65%)]" />
 
-          <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between lg:p-10">
-            <div className="max-w-[640px]">
-              <p className="inline-flex items-center gap-3 text-xs uppercase tracking-[0.08em] text-white/90">
-                <span className="rounded-full bg-[#f1c44d] px-2.5 py-1 text-[10px] font-bold text-[#08143c]">
-                  {publicEventsHero.tag}
-                </span>
-                {publicEventsHero.dateTime}
-              </p>
+            <div className="relative z-10 flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between lg:p-10">
+              <div className="max-w-[640px]">
+                <p className="inline-flex items-center gap-3 text-xs uppercase tracking-[0.08em] text-white/90">
+                  <span className="rounded-full bg-[#f1c44d] px-2.5 py-1 text-[10px] font-bold text-[#08143c]">
+                    MEGA EVENT
+                  </span>
+                  {megaEvent.start_date_time ? dayjs(megaEvent.start_date_time).format("MMMM DD, YYYY | hh:mm A") : ""}
+                </p>
 
-              <h2 className="mt-4 text-[2.2rem] font-black leading-[0.98] sm:text-[3rem] lg:text-[4rem]">
-                {publicEventsHero.title}
-              </h2>
-              <p className="mt-4 max-w-[58ch] text-sm leading-7 text-[#c7d3f2] sm:text-base">
-                {publicEventsHero.description}
-              </p>
+                <h2 className="mt-4 text-[2.2rem] font-black leading-[0.98] sm:text-[3rem] lg:text-[4rem]">
+                  {megaEvent.title}
+                </h2>
+                <p className="mt-4 max-w-[58ch] text-sm leading-7 text-[#c7d3f2] sm:text-base line-clamp-2">
+                  {megaEvent.short_description || megaEvent.title}
+                </p>
+              </div>
+
+              <Link
+                href={`/public/events/${megaEvent.id}`}
+                className="inline-flex h-12 shrink-0 items-center justify-center rounded-[12px] bg-[#f1c44d] px-8 text-sm font-semibold text-[#0d1a45] transition-colors hover:bg-[#ffd668]"
+              >
+                Register Now
+              </Link>
             </div>
-
-            <button
-              type="button"
-              className="inline-flex h-12 shrink-0 items-center justify-center rounded-[12px] bg-[#f1c44d] px-8 text-sm font-semibold text-[#0d1a45] transition-colors hover:bg-[#ffd668]"
-            >
-              {publicEventsHero.ctaLabel}
-            </button>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section className="space-y-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -228,9 +234,18 @@ export function PublicEventsContent() {
           </label>
         </div>
 
-        {paginatedEvents.length > 0 ? (
+        {isLoading ? (
+          <div className="flex min-h-[400px] items-center justify-center py-20">
+            <Loader2 className="h-12 w-12 animate-spin text-[#b6861f]" />
+          </div>
+        ) : isError ? (
+          <div className="rounded-[14px] border border-dashed border-red-300 bg-red-50 p-10 text-center shadow-sm">
+            <p className="text-lg font-semibold text-red-800">Failed to load events</p>
+            <p className="mt-2 text-sm text-red-600">Please try again later.</p>
+          </div>
+        ) : filteredEvents.length > 0 ? (
           <div className="grid min-w-0 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {paginatedEvents.map((event) => (
+            {filteredEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
             <ProposalCard />

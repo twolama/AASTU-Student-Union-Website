@@ -133,6 +133,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `${API_V1_PREFIX}/bookings/${id}/`,
     APPROVE: (id: string) => `${API_V1_PREFIX}/bookings/${id}/approve/`,
     CANCEL: (id: string) => `${API_V1_PREFIX}/bookings/${id}/cancel/`,
+    AVAILABILITY: `${API_V1_PREFIX}/bookings/availability/`,
   },
 } as const;
 

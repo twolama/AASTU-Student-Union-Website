@@ -42,6 +42,10 @@ export interface PublicEventDetail {
     organization: string;
     capacity: string;
     coordinator: string;
+    attendance?: {
+      current: string;
+      waitlist: string;
+    };
   };
   venueCard: {
     title: string;
@@ -244,6 +248,10 @@ export const publicEventDetails: Record<string, PublicEventDetail> = Object.from
         organization,
         capacity,
         coordinator,
+        attendance: {
+          current: `${150 + index * 20}`,
+          waitlist: `${10 + index * 5}`
+        }
       },
       venueCard: {
         title: `${item.venue}, Block ${20 + (index % 5)}`,

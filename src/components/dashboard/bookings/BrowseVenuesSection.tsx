@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
 import type { BookingVenueCard, BookingVenueFilter } from "@/types/dashboard";
 
 interface BrowseVenuesSectionProps {
@@ -58,8 +58,8 @@ export function BrowseVenuesSection({
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
-          <article key={item.id} className="overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm">
-            <div className="relative h-44 bg-gray-100">
+          <article key={item.id} className="flex h-full flex-col overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm">
+            <div className="relative h-44 shrink-0 bg-gray-100">
               <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
               <Badge
                 className={cn(
@@ -73,18 +73,22 @@ export function BrowseVenuesSection({
               </Badge>
             </div>
 
-            <div className="space-y-3 p-4">
+            <div className="flex grow flex-col space-y-3 p-4">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-lg font-semibold text-[#1f2a44]">{item.name}</h3>
+                <h3 className="line-clamp-1 text-lg font-semibold text-[#1f2a44]">{item.name}</h3>
                 <p className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#6d7a95]">
                   <Users size={12} />
                   {item.capacity}
                 </p>
               </div>
 
-              <p className="line-clamp-2 text-sm leading-6 text-[#6d7a95]">{item.description}</p>
+              <div className="min-h-12">
+                <p className="line-clamp-2 text-sm leading-6 text-[#6d7a95]">
+                  {stripHtml(item.description)}
+                </p>
+              </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="mt-auto grid grid-cols-2 gap-2 pt-2">
                 <Link href={`/venues/${item.id}`} className="block">
                   <Button variant="outline" className="w-full text-xs h-9" type="button">
                     View Details

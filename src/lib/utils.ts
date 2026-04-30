@@ -22,3 +22,10 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength).trimEnd() + "…";
 }
+/**
+ * Strips HTML tags from a string using regex.
+ */
+export function stripHtml(html: string): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>?/gm, "");
+}

@@ -83,4 +83,15 @@ export const bookingService = {
     }
     return normalizedData as BookingDetail;
   },
+  
+  getAvailability: async (venueId: string, startDate: string, endDate: string, excludeId?: string) => {
+    const params: Record<string, string> = { venue_id: venueId, start_date: startDate, end_date: endDate };
+    if (excludeId) params.exclude_id = excludeId;
+    
+    const response = await apiClient.get<{ success: boolean; data: Array<{ label: string; available: boolean }> }>(
+      BOOKING_ENDPOINTS.AVAILABILITY, 
+      { params }
+    );
+    return response.data.data;
+  },
 };

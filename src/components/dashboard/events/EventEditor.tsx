@@ -159,7 +159,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
     end_date_time: initialValues.end_date_time || "",
     registration_link: initialValues.registration_link || "",
     description: initialValues.description || "",
-    logistics: initialValues.logistics || {},
+    logistics: Array.isArray(initialValues.logistics) ? (initialValues.logistics[0] || {}) : (initialValues.logistics || {}),
     attendance: initialValues.attendance || {},
     volunteers: initialValues.volunteers || [],
     booking_id: bookingId || initialValues.booking_id || undefined,
@@ -316,32 +316,36 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
         console.warn("Failed to fetch venue details for booking:", vErr);
       }
 
-      setValues((prev) => ({
-        ...prev,
-        booking_id: booking.id,
-        // Only overwrite content if explicitly requested (usually on creation or manual selection)
-        title: overwriteContent ? (booking.event_title || prev.title) : prev.title,
-        description: overwriteContent ? (booking.purpose || prev.description) : prev.description,
-        short_description: overwriteContent ? (booking.purpose ? (booking.purpose.length > 100 ? booking.purpose.substring(0, 97) + "..." : booking.purpose) : prev.short_description) : prev.short_description,
-        physical_location_details: booking.venue_name || prev.physical_location_details,
-        max_capacity: booking.expected_attendance || venueData?.maxCapacity || prev.max_capacity,
-        start_date_time: booking.start_date || prev.start_date_time,
-        end_date_time: booking.end_date || prev.end_date_time,
-        logistics: {
-          ...prev.logistics,
-          venue: booking.venue_name,
-          venue_id: booking.venue,
+      setValues((prev) => {
+        const prevLogistics = Array.isArray(prev.logistics) ? (prev.logistics[0] || {}) : (prev.logistics || {});
+        
+        return {
+          ...prev,
           booking_id: booking.id,
-          equipment: booking.equipment_requested.join(", "),
-          amenities: venueData?.amenities || [],
-          // Don't reset selected amenities if we are just syncing in edit mode
-          selected_amenities: prev.logistics?.selected_amenities || [],
-        },
-        attendance: {
-          ...prev.attendance,
-          capacity: booking.expected_attendance || venueData?.maxCapacity || prev.max_capacity,
-        }
-      }));
+          // Only overwrite content if explicitly requested (usually on creation or manual selection)
+          title: overwriteContent ? (booking.event_title || prev.title) : prev.title,
+          description: overwriteContent ? (booking.purpose || prev.description) : prev.description,
+          short_description: overwriteContent ? (booking.purpose ? (booking.purpose.length > 100 ? booking.purpose.substring(0, 97) + "..." : booking.purpose) : prev.short_description) : prev.short_description,
+          physical_location_details: booking.venue_name || prev.physical_location_details,
+          max_capacity: booking.expected_attendance || venueData?.maxCapacity || prev.max_capacity,
+          start_date_time: booking.start_date || prev.start_date_time,
+          end_date_time: booking.end_date || prev.end_date_time,
+          logistics: {
+            ...prevLogistics,
+            venue: booking.venue_name,
+            venue_id: booking.venue,
+            booking_id: booking.id,
+            equipment: booking.equipment_requested.join(", "),
+            amenities: venueData?.amenities || [],
+            // Don't reset selected amenities if we are just syncing in edit mode
+            selected_amenities: prevLogistics?.selected_amenities || [],
+          },
+          attendance: {
+            ...prev.attendance,
+            capacity: booking.expected_attendance || venueData?.maxCapacity || prev.max_capacity,
+          }
+        };
+      });
       if (overwriteContent) {
         toast.success("Details imported from booking!");
       }
@@ -363,7 +367,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
         if (typeof data.maxCapacity === "number") {
           updateField("max_capacity", Number(data.maxCapacity));
         }
-        updateField("logistics", { ...values.logistics, amenities: data.amenities || [], selected_amenities: [], venue: data.name, venue_id: data.id });
+        const prevLogistics = Array.isArray(values.logistics) ? (values.logistics[0] || {}) : (values.logistics || {});
+        updateField("logistics", { ...prevLogistics, amenities: data.amenities || [], selected_amenities: [], venue: data.name, venue_id: data.id });
       }
     } catch {
       // ignore
@@ -752,10 +757,11 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
                           key={idx}
                           type="button"
                           onClick={() => {
-                            const current = Array.isArray(values.logistics?.selected_amenities) ? [...(values.logistics.selected_amenities as unknown[])] : [];
+                            const prevLogistics = Array.isArray(values.logistics) ? (values.logistics[0] || {}) : (values.logistics || {});
+                            const current = Array.isArray(prevLogistics?.selected_amenities) ? [...(prevLogistics.selected_amenities as unknown[])] : [];
                             const idxExist = current.findIndex((c) => String(c) === key);
                             const next = idxExist === -1 ? [...current, key] : current.filter(c => String(c) !== key);
-                            updateField("logistics", { ...values.logistics, selected_amenities: next });
+                            updateField("logistics", { ...prevLogistics, selected_amenities: next });
                           }}
                           className={cn(
                             "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium transition-all border",

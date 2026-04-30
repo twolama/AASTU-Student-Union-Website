@@ -69,3 +69,12 @@ export const useDeleteBooking = () => {
     },
   });
 };
+
+export const useBookingAvailability = (venueId: string, startDate: string, endDate: string, excludeId?: string) => {
+  return useQuery({
+    queryKey: ["booking-availability", { venueId, startDate, endDate, excludeId }],
+    queryFn: () => bookingService.getAvailability(venueId, startDate, endDate, excludeId),
+    enabled: !!venueId && !!startDate && !!endDate && (new Date(endDate) >= new Date(startDate)),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
