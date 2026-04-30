@@ -234,7 +234,10 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     const targetUrl = buildProxyUrl(baseUrl, path, request.nextUrl);
 
     const headers = sanitizeHeaders(request.headers, FORWARDED_HEADER_BLOCKLIST);
-    headers.set("accept", "application/json");
+    // Preserve the incoming Accept header when present (important for binary/file responses).
+    if (!headers.has("accept")) {
+      headers.set("accept", "application/json");
+    }
 
     const accessTokenCookie = request.cookies.get("access_token")?.value;
     if (accessTokenCookie && !headers.has("authorization")) {
@@ -256,7 +259,13 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
 
 
     if (!upstreamResponse.ok) {
-      return await normalizeErrorResponse(upstreamResponse);
+      const err = await normalizeErrorResponse(upstreamResponse);
+      try {
+        err.headers.set("x-proxy-target", targetUrl);
+      } catch (e) {
+        // ignore header set errors in older runtimes
+      }
+      return err;
     }
 
     if (method === "POST" && proxiedPath === LOGIN_PATH) {
@@ -264,6 +273,11 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     }
 
     const responseHeaders = sanitizeHeaders(upstreamResponse.headers, RESPONSE_HEADER_BLOCKLIST);
+    try {
+      responseHeaders.set("x-proxy-target", targetUrl);
+    } catch (e) {
+      /* ignore */
+    }
 
     return new NextResponse(upstreamResponse.body, {
       status: upstreamResponse.status,

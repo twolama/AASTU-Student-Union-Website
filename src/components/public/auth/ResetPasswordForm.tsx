@@ -1,27 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { AuthField } from "@/components/public/auth/AuthField";
 import { AuthPasswordField } from "@/components/public/auth/AuthPasswordField";
 import { AuthPasswordStrength } from "@/components/public/auth/AuthPasswordStrength";
 import { resetPasswordSchema, type ResetPasswordValues } from "@/lib/public/auth";
+import { resetPassword as resetPasswordRequest } from "@/api/services/auth.service";
 
 interface ResetPasswordFormProps {
-  token?: string;
-  onSubmit?: (values: ResetPasswordValues & { token?: string }) => void | Promise<void>;
+  initialEmail?: string;
+  initialOtp?: string;
+  onSubmit?: (values: ResetPasswordValues) => void | Promise<void>;
 }
 
-export function ResetPasswordForm({ token, onSubmit }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ initialEmail = "", initialOtp = "", onSubmit }: ResetPasswordFormProps) {
+  const [email, setEmail] = useState(initialEmail);
+  const [otp, setOtp] = useState(initialOtp);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof ResetPasswordValues, string>>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const parsed = resetPasswordSchema.safeParse({ password, confirmPassword });
+    const parsed = resetPasswordSchema.safeParse({ email, otp, password, confirmPassword });
     if (!parsed.success) {
       const nextErrors: Partial<Record<keyof ResetPasswordValues, string>> = {};
       for (const issue of parsed.error.issues) {
@@ -31,14 +39,34 @@ export function ResetPasswordForm({ token, onSubmit }: ResetPasswordFormProps) {
         }
       }
       setErrors(nextErrors);
+      setFormError(null);
       return;
     }
 
     setErrors({});
+    setFormError(null);
     setIsSubmitting(true);
 
     try {
-      await onSubmit?.({ ...parsed.data, token });
+      if (onSubmit) {
+        await onSubmit(parsed.data);
+      } else {
+        await resetPasswordRequest({
+          email: parsed.data.email,
+          otp: parsed.data.otp,
+          password: parsed.data.password,
+        });
+        router.push("/login?reset=success");
+      }
+    } catch (unknownError: unknown) {
+      const error = unknownError as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+
+      setFormError(
+        error.response?.data?.message || error.message || "Failed to reset your password. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -46,16 +74,41 @@ export function ResetPasswordForm({ token, onSubmit }: ResetPasswordFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      <input type="hidden" name="token" value={token ?? ""} />
-
       <div className="space-y-2">
         <h2 className="text-[2rem] font-extrabold tracking-[-0.04em] text-[#1f2a44] sm:text-[2.1rem]">
           Create new password
         </h2>
         <p className="text-sm leading-6 text-[#73819d]">
-          Please enter a strong password that you haven&apos;t used before.
+          Enter the 6-digit code from your email and choose a new password.
         </p>
       </div>
+
+      <AuthField
+        id="email"
+        label="Institutional Email"
+        type="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        placeholder="name.surname@aastu.edu.et"
+        autoComplete="email"
+        inputMode="email"
+        error={errors.email}
+        disabled={Boolean(initialEmail)}
+      />
+
+      {!initialOtp ? (
+        <AuthField
+          id="otp"
+          label="Verification Code"
+          type="text"
+          value={otp}
+          onChange={(event) => setOtp(event.target.value)}
+          placeholder="123456"
+          inputMode="numeric"
+          error={errors.otp}
+          helperText="Enter the 6-digit code we sent to your email."
+        />
+      ) : null}
 
       <AuthPasswordField
         id="new-password"
@@ -78,6 +131,10 @@ export function ResetPasswordForm({ token, onSubmit }: ResetPasswordFormProps) {
       />
 
       <AuthPasswordStrength password={password} />
+
+      {formError ? (
+        <p className="text-sm font-medium text-red-600">{formError}</p>
+      ) : null}
 
       <Button
         type="submit"

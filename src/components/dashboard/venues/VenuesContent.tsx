@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { venueItems, venueStats } from "@/data/dummy";
+import { useMemo, useState, useEffect } from "react";
+import { venueStats } from "@/data/dummy";
+import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import { VenuesFilters } from "@/components/dashboard/venues/VenuesFilters";
 import { VenuesStatsSection } from "@/components/dashboard/venues/VenuesStatsSection";
 import { VenuesTable } from "@/components/dashboard/venues/VenuesTable";
@@ -54,13 +55,51 @@ export function VenuesContent() {
   const totalPages = venuesResponse?.meta.totalPages || 1;
   const totalCount = venuesResponse?.meta.total || 0;
 
+  const [liveVenueStats, setLiveVenueStats] = useState<typeof venueStats | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getAnalyticsDashboard("last-8-months")
+      .then((res) => {
+        if (!mounted) return;
+        // Support both wrapped and unwrapped API payload shapes.
+        const payload = res?.data && typeof res.data === "object" ? res.data : res;
+        const stats =
+          payload?.venue_stats ||
+          payload?.venueStats ||
+          payload?.data?.venue_stats ||
+          payload?.data?.venueStats ||
+          null;
+
+        if (Array.isArray(stats)) {
+          setLiveVenueStats(
+            stats.map((s: any) => ({
+              id: s.id,
+              title: s.title,
+              value: String(s.value ?? "0"),
+              icon: s.icon || "Building2",
+            }))
+          );
+        }
+      })
+      .catch((error) => {
+        // Keep fallback cards but make failures visible during development.
+        // eslint-disable-next-line no-console
+        console.error("Failed to load venue analytics", error);
+      })
+      .finally(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   if (isLoading) {
     return <div className="flex h-64 items-center justify-center">Loading venues...</div>;
   }
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <VenuesStatsSection items={venueStats} />
+      <VenuesStatsSection items={liveVenueStats ?? venueStats} />
 
       <VenuesFilters
         selectedType={selectedType}

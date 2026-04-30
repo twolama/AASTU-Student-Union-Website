@@ -45,13 +45,15 @@ function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) 
           </span>
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <h3 className="text-[1.15rem] font-black leading-[1.12] text-[#0f1d49]">
-            {announcement.title}
-          </h3>
-          <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
-            {announcement.body_excerpt}
-          </p>
+        <div className="flex flex-1 flex-col justify-between p-5">
+          <div>
+            <h3 className="text-[1.15rem] font-black leading-[1.12] text-[#0f1d49]">
+              {announcement.title}
+            </h3>
+            <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
+              {announcement.body_excerpt}
+            </p>
+          </div>
 
           <div className="mt-5 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
             <span className="flex flex-col gap-0.5">

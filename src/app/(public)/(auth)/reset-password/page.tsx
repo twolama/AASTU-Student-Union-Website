@@ -9,7 +9,8 @@ export const metadata: Metadata = {
 
 interface ResetPasswordPageProps {
   searchParams?: Promise<{
-    token?: string;
+    email?: string;
+    otp?: string;
   }>;
 }
 
@@ -18,7 +19,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
 
   return (
     <AuthSplitLayout>
-      <ResetPasswordForm token={params?.token} />
+      <ResetPasswordForm initialEmail={params?.email ?? ""} initialOtp={params?.otp ?? ""} />
     </AuthSplitLayout>
   );
 }

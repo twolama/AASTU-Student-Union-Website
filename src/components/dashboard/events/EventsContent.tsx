@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { EventsFilters } from "@/components/dashboard/events/EventsFilters";
 import { EventsStatsSection } from "@/components/dashboard/events/EventsStatsSection";
 import { EventsTable } from "@/components/dashboard/events/EventsTable";
 import { VenueOccupancyTrends } from "@/components/dashboard/events/VenueOccupancyTrends";
 import { eventManagementStats, venueOccupancyTrends } from "@/data/dummy";
+import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import { useEvents } from "@/hooks/useEvents";
 import type { EventManagementItem } from "@/types/dashboard";
 
@@ -103,9 +104,48 @@ export function EventsContent() {
   const clampedPage = Math.min(currentPage, totalPages);
   const totalCount = searchTerm || selectedVenue !== "all" ? filteredItems.length : totalCountFromServer;
 
+  const [liveEventStats, setLiveEventStats] = useState<typeof eventManagementStats | null>(null);
+  const [liveVenueOccupancy, setLiveVenueOccupancy] = useState<typeof venueOccupancyTrends | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getAnalyticsDashboard("last-8-months")
+      .then((res) => {
+        if (!mounted) return;
+        const data = res?.data || {};
+        const distribution = data.event_distribution || data.eventDistribution || [];
+        const occupancy = data.occupancy_trends || data.occupancyTrends || [];
+
+        const totalEvents = distribution.reduce((s: number, it: any) => s + (it.value || 0), 0);
+        const mega = (distribution.find((d: any) => d.id === 'mega') || { value: 0 }).value || 0;
+
+        const lastOcc = occupancy[occupancy.length - 1]?.value ?? 0;
+        const prevOcc = occupancy[occupancy.length - 2]?.value ?? 0;
+        const occDelta = Number((lastOcc - prevOcc).toFixed(1));
+
+        const totalEventsPrev = 0; // fallback if not available
+        const totalEventsDelta = 0; // cannot compute without event_trends; keep 0
+
+        setLiveEventStats([
+          { id: 'total-events', title: 'Total Events', value: String(totalEvents), trend: `${totalEventsDelta >= 0 ? '+' : ''}${totalEventsDelta}% vs last month`, icon: 'CalendarDays' },
+          { id: 'mega-events', title: 'Mega Events', value: String(mega), trend: 'Priority Tier', icon: 'BadgeCheck' },
+          { id: 'venue-utilization', title: 'Venue Utilization', value: `${lastOcc}%`, trend: `${occDelta >= 0 ? '+' : ''}${occDelta}% efficiency`, icon: 'MapPin' },
+        ]);
+        if (Array.isArray(occupancy) && occupancy.length > 0) {
+          // occupancy is expected as [{ label, value }, ...]
+          setLiveVenueOccupancy(occupancy.map((it: any) => ({ label: it.label, value: Number(it.value) })));
+        }
+      })
+      .catch(() => {})
+      .finally(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <div className="space-y-4 sm:space-y-5">
-      <EventsStatsSection items={eventManagementStats} />
+      <EventsStatsSection items={liveEventStats ?? eventManagementStats} />
 
       <EventsFilters
         searchTerm={searchTerm}
@@ -140,7 +180,7 @@ export function EventsContent() {
         totalCount={totalCount}
       />
 
-      <VenueOccupancyTrends points={venueOccupancyTrends} />
+      <VenueOccupancyTrends points={liveVenueOccupancy ?? venueOccupancyTrends} />
     </div>
   );
 }

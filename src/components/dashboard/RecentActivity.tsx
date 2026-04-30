@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { ActivityItem } from "@/components/dashboard/ActivityItem";
 import { recentActivities } from "@/data/dummy";
+import type { Activity } from "@/types/dashboard";
 
-export function RecentActivity() {
+interface RecentActivityProps {
+  items?: Activity[];
+}
+
+export function RecentActivity({ items = recentActivities }: RecentActivityProps) {
   return (
     <section
       aria-label="Recent Activity"
@@ -18,19 +23,19 @@ export function RecentActivity() {
 
       {/* Activity list */}
       <ul className="divide-y divide-gray-50 px-5">
-        {recentActivities.map((activity) => (
+        {items.map((activity) => (
           <ActivityItem key={activity.id} activity={activity} />
         ))}
       </ul>
 
       {/* Footer CTA */}
       <div className="border-t border-gray-100 px-5 py-4 text-center">
-        <Link
+        {/* <Link
           href="/activity"
           className="text-sm font-medium text-[#c49a22] hover:text-[#a07d15] transition-colors"
         >
           View Full Activity Log
-        </Link>
+        </Link> */}
       </div>
     </section>
   );

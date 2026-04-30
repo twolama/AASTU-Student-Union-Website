@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
     REFRESH: `${API_V1_PREFIX}/auth/refresh/`,
     VERIFY: `${API_V1_PREFIX}/auth/verify/`,
     FORGOT_PASSWORD: `${API_V1_PREFIX}/auth/forgot-password/`,
+    RESEND_RESET_OTP: `${API_V1_PREFIX}/auth/resend-reset-otp/`,
+    VERIFY_RESET_OTP: `${API_V1_PREFIX}/auth/verify-reset-otp/`,
     RESET_PASSWORD: `${API_V1_PREFIX}/auth/reset-password/`,
     CHANGE_PASSWORD: `${API_V1_PREFIX}/auth/change-password/`,
   },

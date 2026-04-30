@@ -1,43 +1,68 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { /* Download */ } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { StatsSection } from "@/components/dashboard/StatsSection";
 import { VenueOccupancyTrends } from "@/components/dashboard/events/VenueOccupancyTrends";
-import {
-  statsClubBreakdown,
-  statsEventDistribution,
-  statsOverviewCards,
-  statsPeriods,
-  statsRegistrationTrends,
-  statsVenueOccupancyTrends,
-} from "@/data/dummy";
+import { statsPeriods } from "@/data/dummy";
+import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import type { StatsRangeId } from "@/types/dashboard";
 import { StatsBarChartCard } from "@/components/dashboard/stats/StatsBarChartCard";
 import { StatsBreakdownCard } from "@/components/dashboard/stats/StatsBreakdownCard";
 
 export function StatsContent() {
   const [selectedPeriod, setSelectedPeriod] = useState<StatsRangeId>("last-8-months");
+  const [loading, setLoading] = useState(true);
+  const [dashboard, setDashboard] = useState<any>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    getAnalyticsDashboard(selectedPeriod)
+      .then((data) => {
+        if (!mounted) return;
+        setDashboard(data.data);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setDashboard(null);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [selectedPeriod]);
 
   const selectedPeriodOption = statsPeriods.find((item) => item.id === selectedPeriod) ?? statsPeriods[0];
-  const registrationPoints = statsRegistrationTrends[selectedPeriod];
-  const occupancyPoints = statsVenueOccupancyTrends[selectedPeriod];
+
+  if (loading || !dashboard) {
+    return <div className="p-8 text-center text-gray-400">Loading analytics...</div>;
+  }
+
+  const registrationPoints = dashboard.registrationTrends || [];
+  const occupancyPoints = dashboard.occupancyTrends || [];
+  const clubBreakdown = dashboard.clubBreakdown || [];
+  const eventDistribution = dashboard.eventDistribution || [];
+  const overviewCards = dashboard.overview || [];
+  const venueKpis = dashboard.venueKpis || {};
 
   const registrationsSummary = useMemo(() => {
     const firstValue = registrationPoints[0]?.value ?? 0;
     const lastValue = registrationPoints[registrationPoints.length - 1]?.value ?? 0;
     const peakPoint = registrationPoints.reduce(
-      (highest, point) => (point.value > highest.value ? point : highest),
+      (highest: any, point: any) => (point.value > highest.value ? point : highest),
       registrationPoints[0] ?? { label: "", value: 0 }
     );
     const momentum = firstValue > 0 ? Math.round(((lastValue - firstValue) / firstValue) * 100) : 0;
-
     return {
       peakPoint,
-      average: Math.round(registrationPoints.reduce((sum, point) => sum + point.value, 0) / Math.max(registrationPoints.length, 1)),
+      average: Math.round(registrationPoints.reduce((sum: number, point: any) => sum + point.value, 0) / Math.max(registrationPoints.length, 1)),
       momentum,
     };
   }, [registrationPoints]);
@@ -60,16 +85,12 @@ export function StatsContent() {
               onValueChange={(value) => setSelectedPeriod(value as StatsRangeId)}
               className="min-w-[220px]"
             />
-
-            <Button variant="outline" size="md">
-              <Download size={15} />
-              Export CSV
-            </Button>
+            
           </div>
         </div>
       </section>
 
-      <StatsSection items={statsOverviewCards} className="xl:grid-cols-4" />
+      <StatsSection items={overviewCards} className="xl:grid-cols-4" />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_0.95fr]">
         <StatsBarChartCard
@@ -86,8 +107,8 @@ export function StatsContent() {
         <StatsBreakdownCard
           title="Club Categories"
           subtitle="Share of active clubs by program focus."
-          items={statsClubBreakdown}
-          footerNote="4 tracked categories across 8 active fields."
+          items={clubBreakdown}
+          footerNote={`${clubBreakdown.length} tracked categories.`}
         />
       </div>
 
@@ -102,12 +123,12 @@ export function StatsContent() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <article className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">Most popular venue</p>
-              <p className="mt-2 text-sm font-semibold text-gray-900">Main Auditorium</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{venueKpis.mostPopular || "-"}</p>
             </article>
 
             <article className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">Average session</p>
-              <p className="mt-2 text-sm font-semibold text-gray-900">3.5 Hours</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{venueKpis.avgSessionHours ?? "-"} Hours</p>
             </article>
           </div>
         </div>
@@ -115,10 +136,10 @@ export function StatsContent() {
         <StatsBreakdownCard
           title="Event Distribution"
           subtitle="Categorical split of planned activities."
-          items={statsEventDistribution}
+          items={eventDistribution}
           showDonut
           donutLabel="Events"
-          footerNote="24 events recorded in the selected period."
+          footerNote={`${eventDistribution.reduce((sum: number, item: any) => sum + (item.value || 0), 0)} events recorded in the selected period.`}
           className="min-w-0"
         />
       </div>

@@ -52,6 +52,26 @@ export async function changePassword(payload: any): Promise<{ success: boolean; 
   return response.data;
 }
 
+export async function forgotPassword(payload: { email: string; }): Promise<{ success: boolean; message: string }> {
+  const response = await apiClient.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, payload);
+  return response.data;
+}
+
+export async function resendResetOtp(payload: { email: string; }): Promise<{ success: boolean; message: string }> {
+  const response = await apiClient.post(AUTH_ENDPOINTS.RESEND_RESET_OTP, payload);
+  return response.data;
+}
+
+export async function verifyResetOtp(payload: { email: string; otp: string; }): Promise<{ success: boolean; message: string }> {
+  const response = await apiClient.post(AUTH_ENDPOINTS.VERIFY_RESET_OTP, payload);
+  return response.data;
+}
+
+export async function resetPassword(payload: { email: string; otp: string; password: string; }): Promise<{ success: boolean; message: string }> {
+  const response = await apiClient.post(AUTH_ENDPOINTS.RESET_PASSWORD, payload);
+  return response.data;
+}
+
 export async function logout(): Promise<{ success: boolean; message: string }> {
   const response = await apiClient.post(AUTH_ENDPOINTS.LOGOUT);
 

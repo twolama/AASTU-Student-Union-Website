@@ -17,22 +17,31 @@ export function ForgotPasswordSentView({ email }: ForgotPasswordSentViewProps) {
           Check your email
         </h2>
         <p className="mx-auto max-w-[28ch] text-sm leading-6 text-[#73819d]">
-          We have sent a password recovery link to your institutional email:{" "}
+          We have sent a 6-digit password recovery code to your institutional email:{" "}
           <span className="font-semibold text-[#c49a22]">{email}</span>
         </p>
       </div>
 
-      <Link
-        href="/login"
-        className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#c49a22] px-6 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(196,154,34,0.22)] transition-colors hover:bg-[#b58d1f]"
-      >
-        Back to Login
-      </Link>
+      <div className="space-y-3">
+        <Link
+          href={`/reset-password/verify?email=${encodeURIComponent(email)}`}
+          className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#c49a22] px-6 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(196,154,34,0.22)] transition-colors hover:bg-[#b58d1f]"
+        >
+          Enter Reset Code
+        </Link>
+
+        <Link
+          href="/login"
+          className="inline-flex h-12 w-full items-center justify-center rounded-[12px] border border-[#d9dbe2] bg-white px-6 text-sm font-semibold text-[#33415f] shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition-colors hover:bg-[#fbfbfd]"
+        >
+          Back to Login
+        </Link>
+      </div>
 
       <p className="text-sm text-[#74819b]">
         Didn&apos;t receive the email?{" "}
         <Link href={`/forgot-password?email=${encodeURIComponent(email)}`} className="font-semibold text-[#c49a22] transition-colors hover:text-[#a9801f]">
-          Resend link <ArrowRight size={14} className="inline-block" />
+          Resend code <ArrowRight size={14} className="inline-block" />
         </Link>
       </p>
     </div>

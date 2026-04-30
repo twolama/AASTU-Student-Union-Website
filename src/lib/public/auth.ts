@@ -12,6 +12,8 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z
   .object({
+    email: z.string().trim().min(1, "Enter your institutional email.").email("Enter a valid institutional email address."),
+    otp: z.string().regex(/^[0-9]{6}$/, "Enter the 6-digit verification code."),
     password: z.string().min(8, "Use at least 8 characters."),
     confirmPassword: z.string().min(1, "Confirm your password."),
   })

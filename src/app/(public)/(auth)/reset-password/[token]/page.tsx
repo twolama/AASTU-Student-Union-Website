@@ -7,16 +7,10 @@ export const metadata: Metadata = {
   description: "Create a new password for your AASTU account.",
 };
 
-interface ResetPasswordTokenPageProps {
-  params: {
-    token: string;
-  };
-}
-
-export default function ResetPasswordTokenPage({ params }: ResetPasswordTokenPageProps) {
+export default function ResetPasswordTokenPage() {
   return (
     <AuthSplitLayout>
-      <ResetPasswordForm token={params.token} />
+      <ResetPasswordForm />
     </AuthSplitLayout>
   );
 }

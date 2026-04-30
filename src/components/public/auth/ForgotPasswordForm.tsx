@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AuthField } from "@/components/public/auth/AuthField";
 import { forgotPasswordSchema, type ForgotPasswordValues } from "@/lib/public/auth";
+import { forgotPassword as forgotPasswordRequest } from "@/api/services/auth.service";
 
 interface ForgotPasswordFormProps {
   initialEmail?: string;
@@ -35,8 +36,12 @@ export function ForgotPasswordForm({ initialEmail = "", onSubmit }: ForgotPasswo
       if (onSubmit) {
         await onSubmit(parsed.data);
       } else {
-        router.push(`/forgot-password/sent?email=${encodeURIComponent(parsed.data.email)}`);
+        await forgotPasswordRequest(parsed.data);
+        router.push(`/reset-password/verify?email=${encodeURIComponent(parsed.data.email)}`);
       }
+    } catch (unknownError: unknown) {
+      const error = unknownError as { response?: { data?: { message?: string } }; message?: string };
+      setError(error.response?.data?.message || error.message || "Unable to send reset code. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -49,7 +54,7 @@ export function ForgotPasswordForm({ initialEmail = "", onSubmit }: ForgotPasswo
           Reset your password
         </h2>
         <p className="text-sm leading-6 text-[#73819d]">
-          Enter your institutional email to receive a password reset link.
+          Enter your institutional email to receive a 6-digit verification code.
         </p>
       </div>
 
@@ -74,7 +79,7 @@ export function ForgotPasswordForm({ initialEmail = "", onSubmit }: ForgotPasswo
         isLoading={isSubmitting}
         className="h-12 w-full rounded-[12px] shadow-[0_10px_24px_rgba(196,154,34,0.22)]"
       >
-        Send Reset Link
+        Send Reset Code
       </Button>
 
       <div className="pt-1 text-center">

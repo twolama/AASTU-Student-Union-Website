@@ -418,7 +418,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
       }
     });
     if (bannerFile) {
-      formData.append("coverImage", bannerFile);
+      formData.append("cover_image", bannerFile);
     }
     return formData;
   }
@@ -635,8 +635,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
               }}
               className="[&>label]:min-h-[120px] [&>label]:rounded-[10px]"
             />
-            {fieldErrors.coverImage && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.coverImage.join(" ")}</p>
+            {(fieldErrors.cover_image || fieldErrors.coverImage) && (
+              <p className="mt-1 text-xs text-red-500">{(fieldErrors.cover_image || fieldErrors.coverImage).join(" ")}</p>
             )}
             <p className="mt-1 text-[11px] text-gray-400">Recommended size: 1200×630px for optimal social sharing.</p>
           </div>

@@ -127,7 +127,9 @@ export function RichTextEditor({
           onBlur={handleInput}
           className={cn(
             "p-3 text-sm focus:outline-none prose prose-sm max-w-none",
-            "overflow-y-auto"
+            "overflow-y-auto",
+            "empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400",
+            "empty:before:pointer-events-none empty:before:block"
           )}
           style={{ minHeight }}
           data-placeholder={placeholder}
@@ -137,15 +139,6 @@ export function RichTextEditor({
         <p className="text-xs text-red-500">{error.join(" ")}</p>
       )}
       
-      {/* Basic placeholder support for contentEditable */}
-      <style jsx>{`
-        [contentEditable]:empty:before {
-          content: attr(data-placeholder);
-          color: #9ca3af;
-          pointer-events: none;
-          display: block;
-        }
-      `}</style>
     </div>
   );
 }

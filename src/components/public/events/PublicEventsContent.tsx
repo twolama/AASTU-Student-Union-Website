@@ -5,9 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Clock3, MapPin, Search, ArrowRight, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  publicEventCategories,
-} from "@/lib/public/events";
+import { publicEventCategories,} from "@/lib/public/events";
 import { useEvents } from "@/hooks/useEvents";
 import type { EventListItem } from "@/schemas/event.schema";
 import dayjs from "dayjs";
