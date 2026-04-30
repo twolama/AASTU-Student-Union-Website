@@ -75,12 +75,21 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
                       Edit Venue
                     </Button>
                   </Link>
-                  <Link href={`/bookings/new?venueId=${item.id}`} className="w-full lg:w-auto">
-                    <Button variant="goldSolid" className="h-9 w-full whitespace-nowrap rounded-[10px] px-3 text-xs sm:px-4 sm:text-sm lg:min-w-[148px]">
-                      <CalendarDays size={14} />
-                      Book Venue
-                    </Button>
-                  </Link>
+                  {item.status === "active" ? (
+                    <Link href={`/bookings/new?venueId=${item.id}`} className="w-full lg:w-auto">
+                      <Button variant="goldSolid" className="h-9 w-full whitespace-nowrap rounded-[10px] px-3 text-xs sm:px-4 sm:text-sm lg:min-w-[148px]">
+                        <CalendarDays size={14} />
+                        Book Venue
+                      </Button>
+                    </Link>
+                  ) : (
+                    <div className="w-full lg:w-auto" title="Venue is not available for booking">
+                      <Button variant="goldSolid" disabled className="h-9 w-full whitespace-nowrap rounded-[10px] px-3 text-xs sm:px-4 sm:text-sm lg:min-w-[148px] opacity-50 cursor-not-allowed">
+                        <CalendarDays size={14} />
+                        Unavailable
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

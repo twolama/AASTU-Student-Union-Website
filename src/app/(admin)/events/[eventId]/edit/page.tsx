@@ -77,7 +77,7 @@ async function fetchEventDetail(eventId: string): Promise<ApiEventDetail | null>
   try {
     const baseUrl = process.env.API_BASE_URL || "http://localhost:8000";
     const apiUrl = `${baseUrl}/api/v1/events/${eventId}/`;
-    console.log(`[EDIT PAGE] Fetching event from: ${apiUrl}`);
+
 
     const response = await fetch(apiUrl, {
       cache: "no-store",
@@ -86,18 +86,18 @@ async function fetchEventDetail(eventId: string): Promise<ApiEventDetail | null>
       },
     });
 
-    console.log(`[EDIT PAGE] Response status: ${response.status}`);
+
 
     if (!response.ok) {
-      console.error(`[EDIT PAGE] Failed to fetch event ${eventId}: ${response.status} ${response.statusText}`);
+
       return null;
     }
 
     const payload = await response.json();
-    console.log(`[EDIT PAGE] Fetched event ${eventId}:`, payload);
+
     return payload?.data ?? null;
   } catch (error) {
-    console.error(`[EDIT PAGE] Error fetching event ${eventId}:`, error);
+
     return null;
   }
 }
@@ -114,10 +114,10 @@ export async function generateMetadata({ params }: EditEventPageProps): Promise<
 export default async function EditEventPage({ params }: EditEventPageProps) {
   const { eventId } = await params;
   const event = await fetchEventDetail(eventId);
-  console.log(`[EDIT PAGE] Event data for ${eventId}:`, event);
+
 
   const fallbackEvent = eventManagementItems.find((item) => item.id === eventId);
-  console.log(`[EDIT PAGE] Fallback event:`, fallbackEvent);
+
 
   const initialValues = event
     ? buildInitialValues(event)
@@ -139,7 +139,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
       volunteers: [],
     };
 
-  console.log(`[EDIT PAGE] Initial values:`, initialValues);
+
 
   return (
     <EventEditor

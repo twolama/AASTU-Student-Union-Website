@@ -62,15 +62,14 @@ export function BrowseVenuesSection({
             <div className="relative h-44 bg-gray-100">
               <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
               <Badge
-                variant={item.status === "available" ? "success" : "warning"}
                 className={cn(
-                  "absolute left-3 top-3 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
+                  "absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm",
                   item.status === "available"
                     ? "bg-emerald-500 text-white"
-                    : "bg-[#f59e0b] text-white"
+                    : "bg-slate-500 text-white"
                 )}
               >
-                {item.status}
+                {item.status === "available" ? "Active" : "Under Maintenance"}
               </Badge>
             </div>
 
@@ -85,11 +84,24 @@ export function BrowseVenuesSection({
 
               <p className="line-clamp-2 text-sm leading-6 text-[#6d7a95]">{item.description}</p>
 
-              <Link href={`/venues/${item.id}`} className="block">
-                <Button variant="gold" className="w-full" type="button">
-                  View Details
-                </Button>
-              </Link>
+              <div className="grid grid-cols-2 gap-2">
+                <Link href={`/venues/${item.id}`} className="block">
+                  <Button variant="outline" className="w-full text-xs h-9" type="button">
+                    View Details
+                  </Button>
+                </Link>
+                {item.status === "available" ? (
+                  <Link href={`/bookings/new?venueId=${item.id}`} className="block">
+                    <Button variant="goldSolid" className="w-full text-xs h-9" type="button">
+                      Book Now
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button variant="ghost" className="w-full text-xs h-9 cursor-not-allowed bg-gray-50 text-gray-400" disabled type="button">
+                    Unavailable
+                  </Button>
+                )}
+              </div>
             </div>
           </article>
         ))}

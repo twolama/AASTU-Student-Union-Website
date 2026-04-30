@@ -70,7 +70,7 @@ export function BookingsContent() {
     isLoading: isVenuesLoading, 
     isError: isVenuesError, 
     error: venuesError 
-  } = useVenues(browsePage, BROWSE_PAGE_SIZE, activeVenueFilter);
+  } = useVenues(browsePage, BROWSE_PAGE_SIZE, activeVenueFilter, "active");
 
   const { data: categoriesData } = useVenueCategories();
 

@@ -213,7 +213,7 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
   // Frontend-managed logout: clear auth cookies without calling backend.
   if (method === "POST" && proxiedPath === LOGOUT_PATH) {
     const durationMs = Date.now() - startedAt;
-    console.info(`[Proxy] ${method} ${proxiedPath} -> 200 (${durationMs}ms)`);
+
     return handleLogoutResponse();
   }
 
@@ -242,7 +242,7 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     });
 
     const durationMs = Date.now() - startedAt;
-    console.info(`[Proxy] ${method} ${proxiedPath} -> ${upstreamResponse.status} (${durationMs}ms)`);
+
 
     if (!upstreamResponse.ok) {
       return await normalizeErrorResponse(upstreamResponse);
@@ -261,7 +261,7 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     const durationMs = Date.now() - startedAt;
-    console.error(`[Proxy] ${method} ${proxiedPath} -> 500 (${durationMs}ms)`, error);
+
 
     return NextResponse.json(
       {

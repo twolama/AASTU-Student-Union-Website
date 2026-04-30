@@ -168,7 +168,7 @@ export function BookingRequestForm({
   const [clubAssociation, setClubAssociation] = useState(initialData?.clubAssociation ?? "");
   const [selectedVenueId, setSelectedVenueId] = useState(initialData?.selectedVenueId ?? "");
   
-  const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100);
+  const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100, undefined, "active");
   const { data: fullVenueData, isLoading: isFullVenueLoading } = useVenue(selectedVenueId);
   const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100, undefined, "active");
   const { data: upcomingEventsData, isLoading: isUpcomingEventsLoading } = useClubUpcomingEvents(clubAssociation);
@@ -244,16 +244,15 @@ export function BookingRequestForm({
     if (realVenues.length > 0 && !isInitialized) {
       if (venueIdFromUrl && realVenues.some(v => v.id === venueIdFromUrl)) {
         setSelectedVenueId(venueIdFromUrl);
-        setIsInitialized(true);
       } else if (initialData?.selectedVenueId && realVenues.some(v => v.id === initialData.selectedVenueId)) {
         setSelectedVenueId(initialData.selectedVenueId);
-        setIsInitialized(true);
-      } else if (!selectedVenueId && !venueIdFromUrl) {
+      } else {
+        // Fallback to first available venue if URL/initial ID is missing or invalid
         setSelectedVenueId(realVenues[0].id);
-        setIsInitialized(true);
       }
+      setIsInitialized(true);
     }
-  }, [realVenues, venueIdFromUrl, initialData, isInitialized, selectedVenueId]);
+  }, [realVenues, venueIdFromUrl, initialData, isInitialized]);
 
   // Reset equipment when venue changes to avoid stale requirements from previous venue
   useEffect(() => {
@@ -262,10 +261,12 @@ export function BookingRequestForm({
     }
   }, [selectedVenueId, isInitialized]);
 
-  const venueOptions = useMemo(
-    () => realVenues.map((venue) => ({ value: venue.id, label: venue.name })),
-    [realVenues]
-  );
+  const venueOptions = useMemo(() => {
+    return realVenues.map((venue) => ({ 
+      value: venue.id, 
+      label: venue.name 
+    }));
+  }, [realVenues]);
 
   const selectedVenue = useMemo(
     () => realVenues.find((venue) => venue.id === selectedVenueId) || null,

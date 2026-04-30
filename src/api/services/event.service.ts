@@ -41,41 +41,33 @@ export const eventService = {
   },
 
   createEvent: async (data: FormData | Record<string, unknown>) => {
-    console.log("Service: createEvent payload:", data);
     const response = await apiClient.post<{ success: boolean; data: EventDetail }>(EVENT_ENDPOINTS.CREATE, data);
-    console.log("Service: createEvent response status:", response.status);
-    console.log("Service: createEvent response data:", response.data);
     try {
       if (!EventDetailSchema) {
-        console.error("Service: EventDetailSchema is UNDEFINED!");
         throw new Error("EventDetailSchema is undefined");
       }
       const normalizedData = normalizeKeys(response.data.data);
       const parsed = EventDetailSchema.parse(normalizedData);
-      console.log("Service: createEvent parsed successfully");
+
       return parsed;
     } catch (err) {
-      console.error("Service: createEvent Zod parse failed:", err);
       throw err;
     }
   },
 
   updateEvent: async (id: string, data: FormData | Record<string, unknown>) => {
-    console.log(`Service: updateEvent id: ${id} payload:`, data);
+
     const response = await apiClient.patch<{ success: boolean; data: EventDetail }>(EVENT_ENDPOINTS.PATCH(id), data);
-    console.log("Service: updateEvent response status:", response.status);
-    console.log("Service: updateEvent response data:", response.data);
+
     try {
       if (!EventDetailSchema) {
-        console.error("Service: EventDetailSchema is UNDEFINED!");
         throw new Error("EventDetailSchema is undefined");
       }
       const normalizedData = normalizeKeys(response.data.data);
       const parsed = EventDetailSchema.parse(normalizedData);
-      console.log("Service: updateEvent parsed successfully");
+
       return parsed;
     } catch (err) {
-      console.error("Service: updateEvent Zod parse failed:", err);
       throw err;
     }
   },

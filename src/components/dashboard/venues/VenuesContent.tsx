@@ -36,7 +36,7 @@ export function VenuesContent() {
   }, [categoriesData]);
 
   const mapToVenueItem = (venue: Venue): VenueItem => ({
-    id: venue.id,
+    id: venue.id || "",
     name: venue.name,
     typeLabel: venue.category?.name || "Uncategorized",
     imageUrl: venue.thumbnail || venue.heroImage || venue.imageUrl || "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=500&auto=format&fit=crop",
