@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   ChevronRight,
   Clock3,
@@ -10,7 +14,9 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
+import { useArchiveEvent, useDeleteEvent } from "@/hooks/useEvents";
 import type { EventDetailItem } from "@/types/dashboard";
 
 interface EventDetailViewProps {
@@ -30,7 +36,25 @@ const statusVariantMap = {
 } as const;
 
 export function EventDetailView({ item }: EventDetailViewProps) {
+  const router = useRouter();
+  const [pendingArchive, setPendingArchive] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const archiveEvent = useArchiveEvent();
+  const deleteEvent = useDeleteEvent();
   const attendancePercent = Math.min(100, Math.round((item.attendance.current / item.attendance.capacity) * 100));
+
+  async function confirmArchive() {
+    await archiveEvent.mutateAsync(item.id);
+    setPendingArchive(false);
+    router.refresh();
+  }
+
+  async function confirmDelete() {
+    await deleteEvent.mutateAsync(item.id);
+    setPendingDelete(false);
+    router.push("/events");
+    router.refresh();
+  }
 
   return (
     <div className="space-y-5">
@@ -128,11 +152,23 @@ export function EventDetailView({ item }: EventDetailViewProps) {
                 Edit
               </Button>
             </Link>
-            <Button type="button" variant="outline" size="md" className="h-9 w-full rounded-[10px] px-2 text-xs">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              className="h-9 w-full rounded-[10px] px-2 text-xs"
+              onClick={() => setPendingArchive(true)}
+            >
               <ShieldAlert size={14} />
               Archive
             </Button>
-            <Button type="button" variant="outline" size="md" className="h-9 w-full rounded-[10px] border-red-200 px-2 text-xs text-red-600 hover:bg-red-50">
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              className="h-9 w-full rounded-[10px] border-red-200 px-2 text-xs text-red-600 hover:bg-red-50"
+              onClick={() => setPendingDelete(true)}
+            >
               <Trash2 size={14} />
               Delete
             </Button>
@@ -204,6 +240,26 @@ export function EventDetailView({ item }: EventDetailViewProps) {
           </article>
         </aside>
       </section>
+
+      <ConfirmationDialog
+        open={pendingArchive}
+        title="Archive Event"
+        message={`Archive \"${item.title}\"? It will be marked as archived.`}
+        confirmLabel="Archive Event"
+        isLoading={archiveEvent.isPending}
+        onConfirm={confirmArchive}
+        onCancel={() => setPendingArchive(false)}
+      />
+
+      <ConfirmationDialog
+        open={pendingDelete}
+        title="Delete Event"
+        message={`Delete \"${item.title}\"? This cannot be undone.`}
+        confirmLabel="Delete Event"
+        isLoading={deleteEvent.isPending}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(false)}
+      />
 
       <DashboardFooter />
     </div>

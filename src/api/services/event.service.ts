@@ -12,6 +12,45 @@ import {
 } from "@/schemas/event.schema";
 
 export const eventService = {
+  sanitizeCreatePayload: (data: FormData | Record<string, unknown>) => {
+    const allowedKeys = new Set([
+      "title",
+      "short_description",
+      "status",
+      "is_mega_event",
+      "is_archived",
+      "max_capacity",
+      "physical_location_details",
+      "start_date_time",
+      "end_date_time",
+      "registration_link",
+      "description",
+      "booking",
+      "organizing_club",
+      "cover_image",
+    ]);
+
+    if (data instanceof FormData) {
+      const sanitized = new FormData();
+      for (const [key, value] of data.entries()) {
+        if (!allowedKeys.has(key)) {
+          continue;
+        }
+        sanitized.append(key, value as string | Blob);
+      }
+      return sanitized;
+    }
+
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (!allowedKeys.has(key)) {
+        continue;
+      }
+      sanitized[key] = value;
+    }
+    return sanitized;
+  },
+
   getEvents: async (page = 1, limit = 20, status?: string, clubId?: string) => {
     const params: Record<string, string | number> = { page, limit };
 
@@ -41,7 +80,8 @@ export const eventService = {
   },
 
   createEvent: async (data: FormData | Record<string, unknown>) => {
-    const response = await apiClient.post<{ success: boolean; data: EventDetail }>(EVENT_ENDPOINTS.CREATE, data);
+    const sanitizedData = eventService.sanitizeCreatePayload(data);
+    const response = await apiClient.post<{ success: boolean; data: EventDetail }>(EVENT_ENDPOINTS.CREATE, sanitizedData);
     try {
       if (!EventDetailSchema) {
         throw new Error("EventDetailSchema is undefined");
@@ -70,6 +110,21 @@ export const eventService = {
     } catch (err) {
       throw err;
     }
+  },
+
+  archiveEvent: async (id: string) => {
+    const response = await apiClient.patch<{ success: boolean; data: EventDetail }>(EVENT_ENDPOINTS.PATCH(id), {
+      status: "archived",
+      is_archived: true,
+    });
+
+    const normalizedData = normalizeKeys(response.data.data);
+    return EventDetailSchema.parse(normalizedData);
+  },
+
+  deleteEvent: async (id: string) => {
+    const response = await apiClient.delete<{ success: boolean }>(EVENT_ENDPOINTS.DELETE(id));
+    return response.data;
   },
 
   volunteerForEvent: async (eventId: string, data: Record<string, unknown>) => {

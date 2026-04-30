@@ -42,6 +42,29 @@ export function useUpdateEvent() {
   });
 }
 
+export function useArchiveEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => eventService.archiveEvent(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["event", data.id] });
+    },
+  });
+}
+
+export function useDeleteEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => eventService.deleteEvent(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+}
+
 export function useVolunteerForEvent() {
   const queryClient = useQueryClient();
 

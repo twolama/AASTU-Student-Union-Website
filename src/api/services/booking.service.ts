@@ -60,15 +60,22 @@ export const bookingService = {
 
   approveBooking: async (id: string, note?: string) => {
     const payload = note ? { note } : {};
-    const response = await apiClient.post<any>(BOOKING_ENDPOINTS.APPROVE(id), payload);
-    const rawData = response.data?.data || response.data;
-    const normalizedData = normalizeBookingKeys(rawData);
-    
-    const result = BookingDetailSchema.safeParse(normalizedData);
-    if (!result.success) {
-      console.warn("Booking approval response validation failed:", result.error);
+    try {
+      const response = await apiClient.post<any>(BOOKING_ENDPOINTS.APPROVE(id), payload);
+      const rawData = response.data?.data || response.data;
+      const normalizedData = normalizeBookingKeys(rawData);
+      const result = BookingDetailSchema.safeParse(normalizedData);
+      if (!result.success) {
+        console.warn("Booking approval response validation failed:", result.error);
+      }
+      return normalizedData as BookingDetail;
+    } catch (err) {
+      // Surface server payload in dev console to aid debugging permissions issues
+      try {
+        console.error("approveBooking error:", err);
+      } catch {}
+      throw err;
     }
-    return normalizedData as BookingDetail;
   },
 
   cancelBooking: async (id: string, reason?: string) => {

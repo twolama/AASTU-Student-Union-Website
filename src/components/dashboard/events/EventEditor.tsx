@@ -1,38 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Bold,
-  Italic,
-  List,
-  ListOrdered,
-  Type,
-  Layout,
-  Plus,
-  Trash2,
-  Save,
-  X,
-  PlusCircle,
-  Calendar,
-  Clock,
-  MapPin,
-  Users,
-  Image as ImageIcon,
-  ChevronRight,
-  Info,
-  CheckCircle2,
-  AlertCircle,
-  Link as LinkIcon,
-  Clock3,
-  Settings2,
-  UserPlus2,
-  Loader2,
-} from "lucide-react";
+import { Plus, Trash2, PlusCircle, ChevronRight, Info, CheckCircle2, Link as LinkIcon, Clock3, Settings2, UserPlus2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { FileUpload } from "@/components/ui/FileUpload";
@@ -47,22 +21,7 @@ import { bookingService } from "@/api/services/booking.service";
 
 // --- Editable Volunteers & User-Friendly Logistics UI ---
 
-// Define the editable fields for logistics (customize as needed)
-const defaultLogisticsFields = [
-  { key: "venue", label: "Venue Name", type: "text" },
-  { key: "equipment", label: "Equipment Needed", type: "text" },
-  { key: "team", label: "Team Required", type: "number" },
-  { key: "notes", label: "Notes", type: "text" },
-];
-
-// Helper to format date for datetime-local input
-function formatDateTimeLocal(value: string) {
-  if (!value) return "";
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "";
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+// (Some helper fields were removed because they were unused.)
 
 function formatDisplayDate(isoString: string) {
   if (!isoString) return "Not set";
@@ -81,6 +40,14 @@ function formatDisplayDate(isoString: string) {
     return isoString;
   }
 }
+
+// Safe typed shape for unknown errors returned from API calls
+type UnknownError = {
+  payload?: { details?: Record<string, string[]>; message?: string };
+  response?: { data?: { details?: Record<string, string[]>; message?: string } };
+  details?: Record<string, string[]>;
+  message?: string;
+};
 type EditorMode = "create" | "edit";
 
 
@@ -137,12 +104,13 @@ interface EventEditorProps {
 
 
 export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId");
 
   // --- Volunteers Edit State ---
   const [editVolunteerId, setEditVolunteerId] = useState<string | null>(null);
-  const [venues, setVenues] = useState<Array<{ id: string; name: string }>>([]);
+  // venues list removed (unused)
   const [isPreFilling, setIsPreFilling] = useState(false);
   const [values, setValues] = useState<EventEditorValues>({
     ...initialValues,
@@ -196,7 +164,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
       { label: "Logistics", done: Boolean(values.booking_id) },
       { label: "Settings", done: (values.status || "").trim().length > 0 },
     ],
-    [values.end_date_time, values.short_description, values.start_date_time, values.title, values.status]
+    [values.short_description, values.title, values.status, values.booking_id]
   );
 
   const completionPercent = Math.round(
@@ -272,33 +240,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
   }
 
   // Pre-fill from booking if booking_id is present (either from URL or initialValues)
-  useEffect(() => {
-    const effectiveBookingId = values.booking_id;
-    if (effectiveBookingId && !values.logistics.venue) {
-      handleBookingSelect(effectiveBookingId, mode === "create");
-    }
-  }, [values.booking_id, mode]);
-
-  // Fetch venues list on mount
-  useEffect(() => {
-    let mounted = true;
-    venueService.getVenues(1, 100)
-      .then((res) => {
-        if (!mounted) return;
-        const items = Array.isArray(res?.data)
-          ? res.data.map((v) => ({ id: String(v.id), name: String(v.name) }))
-          : [];
-        setVenues(items);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch venues:", err);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  async function handleBookingSelect(bookingId: string, overwriteContent = true) {
+  const handleBookingSelect = useCallback(async (bookingId: string, overwriteContent = true) => {
     if (!bookingId) {
       updateField("booking_id", undefined);
       return;
@@ -322,8 +264,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
         return {
           ...prev,
           booking_id: booking.id,
-          // Only overwrite content if explicitly requested (usually on creation or manual selection)
-          title: overwriteContent ? (booking.event_title || prev.title) : prev.title,
+          // Keep the event title user-authored; booking data should not replace it.
+          title: prev.title,
           description: overwriteContent ? (booking.purpose || prev.description) : prev.description,
           short_description: overwriteContent ? (booking.purpose ? (booking.purpose.length > 100 ? booking.purpose.substring(0, 97) + "..." : booking.purpose) : prev.short_description) : prev.short_description,
           physical_location_details: booking.venue_name || prev.physical_location_details,
@@ -355,35 +297,21 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
     } finally {
       setIsPreFilling(false);
     }
-  }
+  }, []);
 
-  async function handleVenueSelect(venueId: string) {
-    if (!venueId) return;
-    try {
-      const data = await venueService.getVenue(venueId);
-      if (data) {
-        // Import amenities and basic location details into logistics
-        updateField("physical_location_details", data.location || values.physical_location_details);
-        if (typeof data.maxCapacity === "number") {
-          updateField("max_capacity", Number(data.maxCapacity));
-        }
-        const prevLogistics = Array.isArray(values.logistics) ? (values.logistics[0] || {}) : (values.logistics || {});
-        updateField("logistics", { ...prevLogistics, amenities: data.amenities || [], selected_amenities: [], venue: data.name, venue_id: data.id });
-      }
-    } catch {
-      // ignore
+  useEffect(() => {
+    const effectiveBookingId = values.booking_id;
+    if (effectiveBookingId && !values.logistics.venue) {
+      handleBookingSelect(effectiveBookingId, mode === "create");
     }
-  }
+  }, [values.booking_id, mode, handleBookingSelect, values.logistics?.venue]);
+
+  // Fetch venues list on mount
+  // Venue list fetch removed — `venues` not used in this component
+
+  // handleVenueSelect removed (unused)
 
   function buildPayload() {
-    // Always send attendance with required keys
-    const attendance = {
-      current: values.attendance?.current ?? 0,
-      capacity: values.attendance?.capacity ?? values.max_capacity ?? 0,
-      waitlist: values.attendance?.waitlist ?? 0,
-      vips: values.attendance?.vips ?? 0,
-    };
-
     const payload: Record<string, unknown> = {
       title: values.title,
       short_description: values.short_description,
@@ -396,30 +324,61 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
       end_date_time: values.end_date_time,
       registration_link: values.registration_link,
       description: values.description,
-      logistics: Array.isArray(values.logistics) ? values.logistics : [values.logistics],
-      attendance,
-      volunteers: values.volunteers,
       booking: values.booking_id,
       organizing_club: values.organizing_club,
     };
 
+    // The backend can now derive logistics and attendance from the linked booking.
+    // Keep them out of the request unless you want to override the defaults later.
+
+    // If no file to upload, send JSON payload
     if (!bannerFile) {
       return payload;
     }
 
-    // Always use FormData for file upload
+    // Build FormData for multipart upload. Ensure nested objects are JSON strings.
     const formData = new FormData();
     Object.entries(payload).forEach(([key, value]) => {
       if (value === undefined || value === null) return;
+      // Files/Blobs should not be stringified here (we don't expect any besides cover_image)
+      if (value instanceof Blob || value instanceof File) {
+        formData.append(key, value as Blob);
+        return;
+      }
+
+      // Always stringify arrays/objects so backend JSONField can parse them reliably
       if (typeof value === "object") {
-        formData.append(key, JSON.stringify(value));
+        try {
+          formData.append(key, JSON.stringify(value));
+        } catch {
+          // Fallback: send a safe minimal representation
+          formData.append(key, JSON.stringify(String(value)));
+        }
       } else {
         formData.append(key, String(value));
       }
     });
+
+    // Append the cover image last
     if (bannerFile) {
       formData.append("cover_image", bannerFile);
     }
+
+    // Debug: reveal FormData entries in dev to help reproduce JSON validation issues
+    try {
+      // Only log in non-production environments
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("EventEditor: FormData entries:");
+        for (const entry of Array.from(formData.entries())) {
+          // Avoid logging binary blobs fully
+          const val = entry[1] instanceof File ? `(File) ${entry[1].name}` : entry[1];
+          console.debug(entry[0], val);
+        }
+      }
+    } catch {
+      // ignore logging errors
+    }
+
     return formData;
   }
 
@@ -449,6 +408,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
         const result = await createEventMutation.mutateAsync(payload);
         console.log("EventEditor: Create success:", result);
         toast.success("Event created successfully!");
+        router.push("/events");
+        router.refresh();
       } else if (eventId) {
         const result = await updateEventMutation.mutateAsync({ id: eventId, data: payload });
         console.log("EventEditor: Update success:", result);
@@ -459,7 +420,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
       }
     } catch (error) {
       console.error("EventEditor: Submit error caught:", error);
-      const err = error as any;
+      const err = error as UnknownError;
       let details: Record<string, string[]> | undefined;
       let message = "Unable to save event. Please try again.";
 
@@ -467,8 +428,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
         details = err.payload.details;
         message = err.payload.message || message;
       } else if (err?.response?.data) {
-        details = err.response.data.details;
-        message = err.response.data.message || message;
+        details = (err.response.data as { details?: Record<string, string[]>; message?: string })?.details;
+        message = (err.response.data as { message?: string })?.message || message;
       } else if (err?.details) {
         details = err.details;
         message = err.message || message;
@@ -478,7 +439,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
           details = parsed.details;
           message = parsed.message || message;
         } catch {
-          message = err.message;
+          message = err.message || message;
         }
       }
 
@@ -586,17 +547,17 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
             )}
           </div>
 
-          <DropdownSelect
-            label="Event Status"
-            value={values.status}
-            options={[
-              { value: "upcoming", label: "Upcoming" },
-              { value: "live-now", label: "Live Now" },
-              { value: "archived", label: "Archived" },
-            ]}
-            onValueChange={(value) => updateField("status", value)}
-            className="[&>div>button]:h-10 [&>div>button]:rounded-[8px]"
-          />
+          <div className="rounded-[10px] border border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-gray-700">Event Status</p>
+                <p className="mt-0.5 text-xs text-gray-500">Controlled by the system. New events start as upcoming.</p>
+              </div>
+              <span className="inline-flex items-center rounded-full bg-[#fdf8ec] px-3 py-1 text-xs font-semibold text-[#c49a22]">
+                {values.status === "live-now" ? "Live Now" : values.status === "archived" ? "Archived" : "Upcoming"}
+              </span>
+            </div>
+          </div>
 
           <RichTextEditor
             label="Short Description"
@@ -621,6 +582,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
             <FileUpload
               label=""
               helperText="Upload a file or drag and drop"
+              file={bannerFile}
               previewUrl={values.cover_image || undefined}
               fileName={bannerFile?.name}
               onChange={(file) => {
