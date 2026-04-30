@@ -65,7 +65,10 @@ export function EventDetailView({ item }: EventDetailViewProps) {
               </div>
 
               <h1 className="text-[34px] font-bold leading-tight tracking-tight text-[#1f2a44]">{item.title}</h1>
-              <p className="max-w-3xl text-sm text-gray-500">{item.summary}</p>
+              <div 
+                className="max-w-3xl text-sm text-gray-500 prose prose-sm prose-slate"
+                dangerouslySetInnerHTML={{ __html: item.summary }}
+              />
             </div>
           </div>
 
@@ -110,11 +113,10 @@ export function EventDetailView({ item }: EventDetailViewProps) {
 
           <article className="rounded-[10px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="text-2xl font-bold text-[#1f2a44]">About the Event</h2>
-            <div className="mt-3 space-y-4 text-sm leading-7 text-gray-600">
-              {item.aboutParagraphs.map((paragraph, index) => (
-                <p key={`${item.id}-about-${index}`}>{paragraph}</p>
-              ))}
-            </div>
+            <div 
+              className="mt-3 text-sm leading-7 text-gray-600 prose prose-slate max-w-none prose-headings:text-[#1f2a44] prose-strong:text-[#1f2a44]"
+              dangerouslySetInnerHTML={{ __html: item.description }}
+            />
           </article>
         </div>
 
@@ -150,18 +152,18 @@ export function EventDetailView({ item }: EventDetailViewProps) {
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="rounded-[8px] bg-white/8 p-3">
-                <p className="text-[10px] uppercase tracking-[0.1em] text-white/65">Waitlist</p>
+                <p className="text-[10px] uppercase tracking-widest text-white/65">Waitlist</p>
                 <p className="text-2xl font-bold leading-none">{item.attendance.waitlist}</p>
               </div>
               <div className="rounded-[8px] bg-white/8 p-3">
-                <p className="text-[10px] uppercase tracking-[0.1em] text-white/65">VIPs</p>
+                <p className="text-[10px] uppercase tracking-widest text-white/65">VIPs</p>
                 <p className="text-2xl font-bold leading-none">{item.attendance.vips}</p>
               </div>
             </div>
           </article>
 
           <article className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">Organizing Club</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Organizing Club</p>
             <div className="mt-3">
               <p className="text-lg font-bold text-[#1f2a44]">{item.organizingClub.name}</p>
               <p className="text-xs text-gray-500">{item.organizingClub.subtitle}</p>

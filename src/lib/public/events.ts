@@ -35,6 +35,7 @@ export interface PublicEventDetail {
   timeLabel: string;
   venueLabel: string;
   heroImageUrl: string;
+  description?: string;
   aboutParagraphs: string[];
   quote: string;
   details: {

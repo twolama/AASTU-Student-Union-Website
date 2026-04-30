@@ -10,30 +10,32 @@ interface EditEventPageProps {
 type ApiEventDetail = {
   id: string;
   title: string;
+  short_description?: string;
   shortDescription?: string;
   description?: string;
+  cover_image?: string;
   coverImage?: string;
+  registration_link?: string;
   registrationLink?: string;
+  start_date_time?: string;
   startDateTime?: string;
+  end_date_time?: string;
   endDateTime?: string;
   venue?: string;
+  physical_location_details?: string;
   physicalLocationDetails?: string;
+  max_capacity?: number;
   maxCapacity?: number;
+  is_mega_event?: boolean;
   isMegaEvent?: boolean;
+  is_archived?: boolean;
   isArchived?: boolean;
   status?: string;
-  organizingClub?: {
-    id: string;
-    name: string;
-  };
-  volunteers?: Array<{
-    id: string;
-    fullName: string;
-    studentId?: string;
-    phone?: string;
-    email?: string;
-    role?: string;
-  }>;
+  organizing_club?: { id: string; name: string };
+  organizingClub?: { id: string; name: string };
+  volunteers?: any[];
+  booking?: string;
+  logistics?: Record<string, unknown>;
 };
 
 function toClubValue(rawClub: string) {
@@ -47,29 +49,31 @@ function toVenueValue(rawVenue: string) {
 function buildInitialValues(event: ApiEventDetail): EventEditorValues {
   return {
     title: event.title || "",
-    short_description: event.shortDescription || "",
+    short_description: event.short_description || event.shortDescription || "",
     status: event.status || "upcoming",
-    is_mega_event: Boolean(event.isMegaEvent),
-    is_archived: Boolean(event.isArchived),
-    max_capacity: event.maxCapacity ?? 0,
-    physical_location_details: event.physicalLocationDetails || event.venue || "",
-    cover_image: event.coverImage || "",
-    start_date_time: event.startDateTime || "",
-    end_date_time: event.endDateTime || "",
-    registration_link: event.registrationLink || "",
+    is_mega_event: Boolean(event.is_mega_event ?? event.isMegaEvent),
+    is_archived: Boolean(event.is_archived ?? event.isArchived),
+    max_capacity: event.max_capacity ?? event.maxCapacity ?? 0,
+    physical_location_details: event.physical_location_details || event.physicalLocationDetails || event.venue || "",
+    cover_image: event.cover_image || event.coverImage || "",
+    start_date_time: event.start_date_time || event.startDateTime || "",
+    end_date_time: event.end_date_time || event.endDateTime || "",
+    registration_link: event.registration_link || event.registrationLink || "",
     description: event.description || "",
-    logistics: {},
+    logistics: event.logistics || {},
     attendance: {},
+    organizing_club: event.organizing_club?.id || event.organizingClub?.id || "",
     volunteers:
-      event.volunteers?.map((volunteer) => ({
+      event.volunteers?.map((volunteer: any) => ({
         id: volunteer.id,
-        full_name: volunteer.fullName || "",
-        student_id: volunteer.studentId || "",
+        full_name: volunteer.full_name || volunteer.fullName || "",
+        student_id: volunteer.student_id || volunteer.studentId || "",
         phone: volunteer.phone || "",
         email: volunteer.email || "",
         role: volunteer.role || "",
         is_active: true,
       })) ?? [],
+    booking_id: event.booking || "",
   };
 }
 
@@ -137,6 +141,8 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
       logistics: {},
       attendance: {},
       volunteers: [],
+      booking_id: "",
+      organizing_club: "",
     };
 
 

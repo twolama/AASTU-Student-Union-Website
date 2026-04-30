@@ -81,11 +81,10 @@ export function PublicEventDetailPage({ eventDetail }: PublicEventDetailPageProp
           <div className="space-y-6">
             <article>
               <h2 className="text-4xl font-black leading-tight text-[#0f1d49]">About the Event</h2>
-              <div className="mt-4 space-y-5 text-[1.05rem] leading-9 text-slate-600">
-                {eventDetail.aboutParagraphs.map((paragraph, index) => (
-                  <p key={`${eventDetail.id}-about-${index}`}>{paragraph}</p>
-                ))}
-              </div>
+              <div 
+                className="mt-4 text-[1.05rem] leading-9 text-slate-600 prose prose-slate max-w-none prose-p:leading-9 prose-p:mt-0 prose-p:mb-5"
+                dangerouslySetInnerHTML={{ __html: eventDetail.description || eventDetail.aboutParagraphs.join("<br/>") }}
+              />
 
               <blockquote className="mt-6 rounded-[12px] border-l-4 border-[#d2ab42] bg-[#edf0f5] px-5 py-5 text-lg leading-8 text-[#1f2b4e]">
                 &quot;{eventDetail.quote}&quot;
@@ -189,6 +188,11 @@ export function PublicEventDetailPage({ eventDetail }: PublicEventDetailPageProp
         </div>
 
         <section className="rounded-[16px] bg-[#eef1f7] p-5 sm:p-6 lg:p-7">
+          <div className="flex flex-col gap-1 rounded-[10px] bg-[#f5f7f9] px-4 py-3">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#0d173c]/50">Waitlist</span>
+            <span className="text-xl font-black text-[#0d173c]">{eventDetail.attendance.waitlist}</span>
+          </div>
+
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b6861f]">Discovery</p>

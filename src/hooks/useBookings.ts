@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bookingService } from "@/api/services/booking.service";
 
-export const useBookings = (page = 1, limit = 20, status?: string) => {
+export const useBookings = (page = 1, limit = 20, status?: string, clubId?: string) => {
   return useQuery({
-    queryKey: ["bookings", { page, limit, status }],
-    queryFn: () => bookingService.getBookings(page, limit, status),
+    queryKey: ["bookings", { page, limit, status, clubId }],
+    queryFn: () => bookingService.getBookings(page, limit, status, clubId),
   });
 };
 

@@ -4,30 +4,22 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  Bold,
   Camera,
   Check,
   ChevronRight,
-  Heading1,
-  Heading2,
   ImagePlus,
   Info,
-  Italic,
   Link as LinkIcon,
-  List,
-  ListOrdered,
   MapPinned,
-  Pilcrow,
   Plus,
-  Quote,
   Search,
   SquarePen,
   Trash2,
-  Unlink,
   X,
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Switch } from "@/components/ui/Switch";
@@ -71,40 +63,6 @@ interface VenueEditorProps {
   initialValues: VenueEditorValues;
 }
 
-const DEFAULT_MAP_COORDINATES = { lat: 9.0182, lng: 38.7525 };
-
-type SelectionToolbarAction =
-  | "bold"
-  | "italic"
-  | "link"
-  | "unlink"
-  | "bulletList"
-  | "orderedList"
-  | "quote"
-  | "heading1"
-  | "heading2"
-  | "paragraph";
-
-const toolbarActions: Array<{ id: SelectionToolbarAction; icon: any; label: string }> = [
-  { id: "bold", icon: Bold, label: "Bold" },
-  { id: "italic", icon: Italic, label: "Italic" },
-  { id: "link", icon: LinkIcon, label: "Link" },
-  { id: "unlink", icon: Unlink, label: "Unlink" },
-  { id: "bulletList", icon: List, label: "Bullet list" },
-  { id: "orderedList", icon: ListOrdered, label: "Numbered list" },
-  { id: "quote", icon: Quote, label: "Quote" },
-  { id: "heading1", icon: Heading1, label: "Heading 1" },
-  { id: "heading2", icon: Heading2, label: "Heading 2" },
-  { id: "paragraph", icon: Pilcrow, label: "Paragraph" },
-];
-
-function normalizeBodyHtml(body: string) {
-  const trimmed = body.trim();
-  if (!trimmed) return "";
-  if (trimmed.startsWith("<")) return trimmed;
-  return `<p>${trimmed.replace(/\n/g, "<br />")}</p>`;
-}
-
 function extractCoordinates(input: string): { lat: number; lng: number } {
   // Case 1: Simple coordinates "lat, lng"
   if (!input.startsWith("http") && input.includes(",")) {
@@ -144,18 +102,6 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
   const [deleteImageConfirm, setDeleteImageConfirm] = useState<string | null>(null);
 
-  // Rich Text State
-  const [bodyHtml, setBodyHtml] = useState(() => normalizeBodyHtml(initialValues.fullDescription));
-  const [selectionToolbar, setSelectionToolbar] = useState({ visible: false, top: 0, left: 0 });
-  const [linkInputOpen, setLinkInputOpen] = useState(false);
-  const [linkValue, setLinkValue] = useState("");
-  const [currentLinkHref, setCurrentLinkHref] = useState("");
-  const editorCanvasRef = useRef<HTMLDivElement | null>(null);
-  const editorRef = useRef<HTMLDivElement | null>(null);
-  const selectionRef = useRef<Range | null>(null);
-  const bodyHtmlRef = useRef(bodyHtml);
-  const initialBodySyncedRef = useRef(false);
-
   const router = useRouter();
   const { data: categoriesData } = useVenueCategories();
   const createVenue = useCreateVenue();
@@ -194,128 +140,11 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [values]);
 
-  // Rich Text Initialization and Sync
-  useEffect(() => {
-    if (initialValues.fullDescription && !initialBodySyncedRef.current) {
-      const normalized = normalizeBodyHtml(initialValues.fullDescription);
-      setBodyHtml(normalized);
-      bodyHtmlRef.current = normalized;
-      if (editorRef.current) {
-        editorRef.current.innerHTML = normalized;
-        initialBodySyncedRef.current = true;
-      }
-    }
-  }, [initialValues.fullDescription]);
-
-  useEffect(() => {
-    bodyHtmlRef.current = bodyHtml;
-  }, [bodyHtml]);
 
   function updateField<K extends keyof VenueEditorValues>(key: K, value: VenueEditorValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
   }
 
-  // Rich Text Helpers
-  function syncEditorValue() {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const nextHtml = editor.innerHTML;
-    bodyHtmlRef.current = nextHtml;
-    setBodyHtml(nextHtml);
-    updateField("fullDescription", nextHtml);
-  }
-
-  function getSelectionRange() {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return null;
-    const range = selection.getRangeAt(0);
-    const editor = editorRef.current;
-    if (!editor || !editor.contains(range.commonAncestorContainer)) return null;
-    return range;
-  }
-
-  function updateSelectionToolbar() {
-    const range = getSelectionRange();
-    const canvas = editorCanvasRef.current;
-    let isLink = false;
-    let currentHref = "";
-
-    if (range) {
-      const node = range.commonAncestorContainer;
-      const element = node.nodeType === 3 ? node.parentElement : (node as HTMLElement);
-      const anchor = element?.closest("a");
-      isLink = Boolean(anchor);
-      currentHref = anchor?.getAttribute("href") ?? "";
-    }
-
-    if (!range || (!isLink && range.collapsed) || !canvas) {
-      setSelectionToolbar((prev) => ({ ...prev, visible: false }));
-      setCurrentLinkHref("");
-      return;
-    }
-
-    setCurrentLinkHref(currentHref);
-    selectionRef.current = range.cloneRange();
-    const rect = range.getBoundingClientRect();
-    const canvasRect = canvas.getBoundingClientRect();
-    const toolbarWidth = 320;
-    const left = Math.min(canvasRect.width - toolbarWidth - 12, Math.max(12, rect.left - canvasRect.left + rect.width / 2 - toolbarWidth / 2));
-    const top = rect.top - canvasRect.top - 52 < 8 ? rect.bottom - canvasRect.top + 8 : rect.top - canvasRect.top - 52;
-
-    setSelectionToolbar({ visible: true, top, left });
-  }
-
-  function applyCommand(command: SelectionToolbarAction) {
-    if (!editorRef.current) return;
-    editorRef.current.focus();
-    
-    const selection = window.getSelection();
-    if (selectionRef.current && selection) {
-      selection.removeAllRanges();
-      selection.addRange(selectionRef.current);
-    }
-
-    if (command === "link") {
-      setLinkInputOpen(true);
-      return;
-    }
-
-    if (command === "unlink") {
-      document.execCommand("unlink");
-    } else {
-      const cmdMap: Record<string, [string, boolean, string?]> = {
-        bold: ["bold", false],
-        italic: ["italic", false],
-        bulletList: ["insertUnorderedList", false],
-        orderedList: ["insertOrderedList", false],
-        quote: ["formatBlock", false, "blockquote"],
-        heading1: ["formatBlock", false, "h1"],
-        heading2: ["formatBlock", false, "h2"],
-        paragraph: ["formatBlock", false, "p"]
-      };
-      const [cmd, ui, val] = cmdMap[command];
-      document.execCommand(cmd, ui, val);
-    }
-
-    syncEditorValue();
-    setSelectionToolbar((prev) => ({ ...prev, visible: false }));
-  }
-
-  function applyLink() {
-    if (!editorRef.current || !linkValue) return;
-    editorRef.current.focus();
-    const selection = window.getSelection();
-    if (selectionRef.current && selection) {
-      selection.removeAllRanges();
-      selection.addRange(selectionRef.current);
-    }
-    const url = linkValue.startsWith("http") ? linkValue : `https://${linkValue}`;
-    document.execCommand("createLink", false, url);
-    syncEditorValue();
-    setLinkInputOpen(false);
-    setLinkValue("");
-    setSelectionToolbar((prev) => ({ ...prev, visible: false }));
-  }
 
   function addAmenity() {
     const clean = newAmenity.trim();
@@ -719,85 +548,25 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
               </div>
 
               <div className="md:col-span-2">
-                <label htmlFor="venue-short-description" className="mb-1.5 block text-xs font-semibold text-gray-700">
-                  Short Description
-                </label>
-                <Textarea
-                  id="venue-short-description"
+                <RichTextEditor
+                  label="Short Description"
                   value={values.shortDescription}
-                  onChange={(event) => updateField("shortDescription", event.target.value)}
+                  onChange={(val) => updateField("shortDescription", val)}
                   placeholder="A brief summary of the venue for card previews..."
-                  className={`min-h-[86px] rounded-[8px] ${getFieldError("short_description") ? "border-red-500" : ""}`}
+                  minHeight="86px"
+                  error={fieldErrors.short_description}
                 />
-                {renderError("short_description")}
               </div>
 
               <div className="md:col-span-2">
-                <label htmlFor="venue-full-description" className="mb-1.5 block text-xs font-semibold text-gray-700">
-                  Full Description
-                </label>
-                
-                <div ref={editorCanvasRef} className="relative mt-2 min-h-[300px] w-full rounded-[10px] border border-gray-200 bg-white p-1">
-                  {/* Floating Toolbar */}
-                  <div
-                    role="toolbar"
-                    className={cn(
-                      "absolute z-50 flex items-center gap-1 rounded-lg border border-[#1f2844] bg-[#1a2238] px-1.5 py-1 shadow-xl transition-opacity",
-                      selectionToolbar.visible ? "opacity-100" : "pointer-events-none opacity-0"
-                    )}
-                    style={{ top: selectionToolbar.top, left: selectionToolbar.left }}
-                  >
-                    {linkInputOpen ? (
-                      <div className="flex items-center gap-1.5 px-1">
-                        <input
-                          autoFocus
-                          placeholder="Paste link..."
-                          value={linkValue}
-                          onChange={(e) => setLinkValue(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && applyLink()}
-                          className="h-7 w-32 rounded border border-white/20 bg-white/10 px-2 text-[10px] text-white outline-none"
-                        />
-                        <button onClick={applyLink} className="text-white hover:text-gold-400"><Check size={14}/></button>
-                        <button onClick={() => setLinkInputOpen(false)} className="text-white hover:text-red-400"><X size={14}/></button>
-                      </div>
-                    ) : (
-                      <>
-                        {toolbarActions.map((action) => (
-                          <button
-                            key={action.id}
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => applyCommand(action.id)}
-                            className="inline-flex h-7 w-7 items-center justify-center text-white/80 hover:bg-white/10 hover:text-white"
-                          >
-                            <action.icon size={13} />
-                          </button>
-                        ))}
-                      </>
-                    )}
-                  </div>
-
-                  <div
-                    ref={editorRef}
-                    contentEditable
-                    suppressContentEditableWarning
-                    onInput={syncEditorValue}
-                    onMouseUp={updateSelectionToolbar}
-                    onKeyUp={updateSelectionToolbar}
-                    onFocus={updateSelectionToolbar}
-                    onBlur={() => setTimeout(() => setSelectionToolbar(prev => ({...prev, visible: false})), 200)}
-                    data-placeholder="Enter detailed venue description here..."
-                    className={cn(
-                      "min-h-[290px] w-full px-4 py-3 outline-none",
-                      "text-[15px] leading-relaxed text-gray-700",
-                      "[&:empty:before]:pointer-events-none [&:empty:before]:block [&:empty:before]:text-gray-300 [&:empty:before]:content-[attr(data-placeholder)]",
-                      "[&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-gold-500 [&_blockquote]:pl-4 [&_blockquote]:italic",
-                      "[&_a]:text-blue-600 [&_a]:underline"
-                    )}
-                  />
-                </div>
-                {renderError("full_description")}
-                <p className="mt-2 text-[10px] text-gray-400">Select text to show formatting toolbar.</p>
+                <RichTextEditor
+                  label="Full Description"
+                  value={values.fullDescription}
+                  onChange={(val) => updateField("fullDescription", val)}
+                  placeholder="Enter detailed venue description here..."
+                  minHeight="300px"
+                  error={fieldErrors.full_description}
+                />
               </div>
             </div>
 

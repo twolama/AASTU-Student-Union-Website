@@ -120,6 +120,7 @@ function formatEventDetail(event: ApiEventDetail): EventDetailItem {
     startDateLabel: formatDateLabel(event.startDateTime),
     locationName: event.physicalLocationDetails || venueTitle,
     locationWing: "AASTU North Campus",
+    description: event.description || "",
     aboutParagraphs:
       event.description?.split(/\r?\n/).filter(Boolean) || ["This event profile was generated from the backend event record."],
     attendance: {
@@ -172,6 +173,7 @@ function buildFallbackEventDetail(eventId: string) {
     startDateLabel: event.scheduleDate,
     locationName: event.venue,
     locationWing: "Main Campus",
+    description: "This preview card was generated from event summary data.",
     aboutParagraphs: [
       "This preview card was generated from event summary data. Add a full event profile in dummy data or API response for richer details.",
     ],

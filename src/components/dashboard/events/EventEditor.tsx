@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -33,12 +33,15 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useCreateEvent, useUpdateEvent } from "@/hooks/useEvents";
+import { useBookings } from "@/hooks/useBookings";
+import { useClubs } from "@/hooks/useClubs";
 import { venueService } from "@/api/services/venue.service";
 import { bookingService } from "@/api/services/booking.service";
 
@@ -59,6 +62,24 @@ function formatDateTimeLocal(value: string) {
   if (isNaN(d.getTime())) return "";
   const pad = (n: number) => n.toString().padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatDisplayDate(isoString: string) {
+  if (!isoString) return "Not set";
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch {
+    return isoString;
+  }
 }
 type EditorMode = "create" | "edit";
 
@@ -83,27 +104,28 @@ interface VolunteerDraft {
   is_active: boolean;
 }
 
-  // Backend-aligned event fields
-  type LogisticsType = Record<string, unknown>;
-  type AttendanceType = Record<string, unknown>;
+// Backend-aligned event fields
+type LogisticsType = Record<string, unknown>;
+type AttendanceType = Record<string, unknown>;
 
-  export interface EventEditorValues {
-    title: string;
-    short_description: string;
-    status: string;
-    is_mega_event: boolean;
-    is_archived: boolean;
-    max_capacity: number;
-    physical_location_details: string;
-    cover_image: string;
-    start_date_time: string;
-    end_date_time: string;
-    registration_link: string;
-    description: string;
-    logistics: LogisticsType;
-    attendance: AttendanceType;
-    volunteers: VolunteerEntry[];
-    booking_id?: string;
+export interface EventEditorValues {
+  title: string;
+  short_description: string;
+  status: string;
+  is_mega_event: boolean;
+  is_archived: boolean;
+  max_capacity: number;
+  physical_location_details: string;
+  cover_image: string;
+  start_date_time: string;
+  end_date_time: string;
+  registration_link: string;
+  description: string;
+  logistics: LogisticsType;
+  attendance: AttendanceType;
+  volunteers: VolunteerEntry[];
+  booking_id?: string;
+  organizing_club: string;
 }
 
 interface EventEditorProps {
@@ -141,6 +163,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
     attendance: initialValues.attendance || {},
     volunteers: initialValues.volunteers || [],
     booking_id: bookingId || initialValues.booking_id || undefined,
+    organizing_club: initialValues.organizing_club || "",
   });
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -156,6 +179,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
 
   const createEventMutation = useCreateEvent();
   const updateEventMutation = useUpdateEvent();
+  const { data: clubsData } = useClubs(1, 100);
+  const { data: approvedBookings, isLoading: isBookingsLoading } = useBookings(1, 100, "approved", values.organizing_club);
   const isSubmitting = createEventMutation.status === "pending" || updateEventMutation.status === "pending";
 
   const isCreate = mode === "create";
@@ -168,7 +193,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
   const completionItems = useMemo(
     () => [
       { label: "Basic", done: (values.title || "").trim().length >= 6 && (values.short_description || "").trim().length >= 20 },
-      { label: "Logistics", done: Boolean(values.start_date_time && values.end_date_time) },
+      { label: "Logistics", done: Boolean(values.booking_id) },
       { label: "Settings", done: (values.status || "").trim().length > 0 },
     ],
     [values.end_date_time, values.short_description, values.start_date_time, values.title, values.status]
@@ -246,40 +271,13 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
     }
   }
 
-  // Pre-fill from booking if bookingId is present
+  // Pre-fill from booking if booking_id is present (either from URL or initialValues)
   useEffect(() => {
-    if (mode === "create" && bookingId) {
-      setIsPreFilling(true);
-      bookingService.getBooking(bookingId)
-        .then((booking) => {
-          setValues((prev) => ({
-            ...prev,
-            title: booking.event_title || prev.title,
-            description: booking.purpose || prev.description,
-            short_description: booking.purpose ? (booking.purpose.length > 100 ? booking.purpose.substring(0, 97) + "..." : booking.purpose) : prev.short_description,
-            physical_location_details: booking.venue_name || prev.physical_location_details,
-            max_capacity: booking.expected_attendance || prev.max_capacity,
-            start_date_time: booking.start_date || prev.start_date_time,
-            end_date_time: booking.end_date || prev.end_date_time,
-            logistics: {
-              ...prev.logistics,
-              venue: booking.venue_name,
-              venue_id: booking.venue,
-              booking_id: booking.id,
-              equipment: booking.equipment_requested.join(", "),
-            }
-          }));
-          toast.success("Pre-filled details from your booking!");
-        })
-        .catch((err) => {
-          console.error("Failed to pre-fill from booking:", err);
-          toast.error("Could not load booking details");
-        })
-        .finally(() => {
-          setIsPreFilling(false);
-        });
+    const effectiveBookingId = values.booking_id;
+    if (effectiveBookingId && !values.logistics.venue) {
+      handleBookingSelect(effectiveBookingId, mode === "create");
     }
-  }, [mode, bookingId]);
+  }, [values.booking_id, mode]);
 
   // Fetch venues list on mount
   useEffect(() => {
@@ -299,6 +297,61 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
       mounted = false;
     };
   }, []);
+
+  async function handleBookingSelect(bookingId: string, overwriteContent = true) {
+    if (!bookingId) {
+      updateField("booking_id", undefined);
+      return;
+    }
+
+    setIsPreFilling(true);
+    try {
+      const booking = await bookingService.getBooking(bookingId);
+      
+      // Also fetch venue details to get amenities and capacity
+      let venueData = null;
+      try {
+        venueData = await venueService.getVenue(booking.venue);
+      } catch (vErr) {
+        console.warn("Failed to fetch venue details for booking:", vErr);
+      }
+
+      setValues((prev) => ({
+        ...prev,
+        booking_id: booking.id,
+        // Only overwrite content if explicitly requested (usually on creation or manual selection)
+        title: overwriteContent ? (booking.event_title || prev.title) : prev.title,
+        description: overwriteContent ? (booking.purpose || prev.description) : prev.description,
+        short_description: overwriteContent ? (booking.purpose ? (booking.purpose.length > 100 ? booking.purpose.substring(0, 97) + "..." : booking.purpose) : prev.short_description) : prev.short_description,
+        physical_location_details: booking.venue_name || prev.physical_location_details,
+        max_capacity: booking.expected_attendance || venueData?.maxCapacity || prev.max_capacity,
+        start_date_time: booking.start_date || prev.start_date_time,
+        end_date_time: booking.end_date || prev.end_date_time,
+        logistics: {
+          ...prev.logistics,
+          venue: booking.venue_name,
+          venue_id: booking.venue,
+          booking_id: booking.id,
+          equipment: booking.equipment_requested.join(", "),
+          amenities: venueData?.amenities || [],
+          // Don't reset selected amenities if we are just syncing in edit mode
+          selected_amenities: prev.logistics?.selected_amenities || [],
+        },
+        attendance: {
+          ...prev.attendance,
+          capacity: booking.expected_attendance || venueData?.maxCapacity || prev.max_capacity,
+        }
+      }));
+      if (overwriteContent) {
+        toast.success("Details imported from booking!");
+      }
+    } catch (err) {
+      console.error("Failed to load booking details:", err);
+      toast.error("Could not load booking details");
+    } finally {
+      setIsPreFilling(false);
+    }
+  }
 
   async function handleVenueSelect(venueId: string) {
     if (!venueId) return;
@@ -341,6 +394,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
       logistics: Array.isArray(values.logistics) ? values.logistics : [values.logistics],
       attendance,
       volunteers: values.volunteers,
+      booking: values.booking_id,
+      organizing_club: values.organizing_club,
     };
 
     if (!bannerFile) {
@@ -367,6 +422,18 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
     event.preventDefault();
     setStatusMessage(null);
     setFieldErrors({});
+
+    if (!values.organizing_club) {
+      setFieldErrors({ organizing_club: ["Please select an organizing club."] });
+      toast.error("Organizing club is required.");
+      return;
+    }
+
+    if (!values.booking_id) {
+      setFieldErrors({ booking: ["Please select an approved venue booking to proceed."] });
+      toast.error("An approved booking is required to organize an event.");
+      return;
+    }
 
     const payload = buildPayload();
     console.log("EventEditor: Submitting payload:", payload);
@@ -491,6 +558,29 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
             )}
           </div>
 
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-700">Organizing Club</label>
+            <DropdownSelect
+              label=""
+              value={values.organizing_club}
+              options={[
+                { value: "", label: "Select the organizing club" },
+                ...(clubsData?.data || []).map(c => ({ value: c.id, label: c.name }))
+              ]}
+              onValueChange={(value) => {
+                updateField("organizing_club", value);
+                // Reset booking if club changes as it might not belong to the new club
+                if (values.booking_id) {
+                  updateField("booking_id", undefined);
+                }
+              }}
+              className="[&>div>button]:h-10 [&>div>button]:rounded-[8px]"
+            />
+            {fieldErrors.organizing_club && (
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.organizing_club.join(" ")}</p>
+            )}
+          </div>
+
           <DropdownSelect
             label="Event Status"
             value={values.status}
@@ -503,65 +593,23 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
             className="[&>div>button]:h-10 [&>div>button]:rounded-[8px]"
           />
 
-          <div>
-            <label htmlFor="shortDescription" className="mb-1.5 block text-xs font-semibold text-gray-700">
-              Short Description
-            </label>
-            <div className="rounded-[8px] border border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
-                {[Bold, Italic, List, LinkIcon].map((Icon, index) => (
-                  <button
-                    key={`short-toolbar-${index}`}
-                    type="button"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                    aria-label="Formatting action"
-                  >
-                    <Icon size={14} />
-                  </button>
-                ))}
-              </div>
-              <Textarea
-                id="shortDescription"
-                value={values.short_description}
-                onChange={(event) => updateField("short_description", event.target.value)}
-                placeholder="Provide a short description of the event..."
-                className="min-h-[96px] rounded-none border-0 shadow-none focus:ring-0"
-              />
-              {fieldErrors.short_description && (
-                <p className="mt-1 text-xs text-red-500">{fieldErrors.short_description.join(" ")}</p>
-              )}
-            </div>
-          </div>
+          <RichTextEditor
+            label="Short Description"
+            value={values.short_description}
+            onChange={(val) => updateField("short_description", val)}
+            placeholder="Provide a short description of the event..."
+            minHeight="80px"
+            error={fieldErrors.short_description}
+          />
 
-          <div>
-            <label htmlFor="aboutEvent" className="mb-1.5 block text-xs font-semibold text-gray-700">
-              About The Event
-            </label>
-            <div className="rounded-[8px] border border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
-                {[Bold, Italic, List, LinkIcon].map((Icon, index) => (
-                  <button
-                    key={`about-toolbar-${index}`}
-                    type="button"
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                    aria-label="Formatting action"
-                  >
-                    <Icon size={14} />
-                  </button>
-                ))}
-              </div>
-              <Textarea
-                id="description"
-                value={values.description}
-                onChange={(event) => updateField("description", event.target.value)}
-                placeholder="Provide a detailed description of the event..."
-                className="min-h-[150px] rounded-none border-0 shadow-none focus:ring-0"
-              />
-              {fieldErrors.description && (
-                <p className="mt-1 text-xs text-red-500">{fieldErrors.description.join(" ")}</p>
-              )}
-            </div>
-          </div>
+          <RichTextEditor
+            label="About The Event"
+            value={values.description}
+            onChange={(val) => updateField("description", val)}
+            placeholder="Provide a detailed description of the event..."
+            minHeight="150px"
+            error={fieldErrors.description}
+          />
 
           <div>
             <p className="mb-1.5 text-xs font-semibold text-gray-700">Event Banner</p>
@@ -614,197 +662,128 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
           <h2 className="text-xl font-bold text-[#1f2a44] sm:text-2xl">Logistics &amp; Schedule</h2>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div>
-            <label htmlFor="startDate" className="mb-1.5 block text-xs font-semibold text-gray-700">
-              Start Date &amp; Time
-            </label>
-            <Input
-              id="startDate"
-              type="datetime-local"
-              value={formatDateTimeLocal(values.start_date_time)}
-              onChange={(event) => updateField("start_date_time", event.target.value)}
-              className={controlClassName}
-            />
-            {fieldErrors.start_date_time && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.start_date_time.join(" ")}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="endDate" className="mb-1.5 block text-xs font-semibold text-gray-700">
-              End Date &amp; Time
-            </label>
-            <Input
-              id="endDate"
-              type="datetime-local"
-              value={formatDateTimeLocal(values.end_date_time)}
-              onChange={(event) => updateField("end_date_time", event.target.value)}
-              className={controlClassName}
-            />
-            {fieldErrors.end_date_time && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.end_date_time.join(" ")}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-gray-700">Venue</label>
+        <div className="mt-4 space-y-4">
+          <div className="md:col-span-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-[#c49a22]">
+                Select Approved Booking <span className="text-red-500">*</span>
+                <span className="ml-2 text-[10px] font-normal opacity-70">(Required)</span>
+              </label>
+              <Link 
+                href={`/bookings/new${values.organizing_club ? `?clubId=${values.organizing_club}` : ''}`}
+                className="text-[10px] font-bold text-[#c49a22] hover:underline flex items-center gap-1"
+              >
+                <Plus size={10} />
+                Create New Booking
+              </Link>
+            </div>
             <DropdownSelect
               label=""
-              value={String(values.logistics?.venue_id ?? "")}
-              options={[{ value: "", label: "Select a venue" }, ...venues.map((v) => ({ value: v.id, label: v.name }))]}
-              onValueChange={(value) => handleVenueSelect(value)}
-              className="[&>div>button]:h-10 [&>div>button]:rounded-[8px]"
+              value={values.booking_id || ""}
+              options={[
+                { value: "", label: "Choose an approved venue booking..." },
+                ...(approvedBookings?.data || []).map(b => ({
+                  value: b.id,
+                  label: `${b.event_title || 'Untitled Request'} — ${b.venue_name} (${b.date_label})`
+                }))
+              ]}
+              onValueChange={(value) => handleBookingSelect(value)}
+              className="[&>div>button]:h-11 [&>div>button]:rounded-[10px] border-[#c49a22]/30 shadow-sm"
+              disabled={isBookingsLoading || isPreFilling}
             />
+            {isBookingsLoading && <p className="mt-1.5 text-[10px] text-gray-400 flex items-center gap-1"><Loader2 size={10} className="animate-spin" /> Fetching your approved bookings...</p>}
+            {fieldErrors.booking && <p className="mt-1 text-xs text-red-500">{fieldErrors.booking.join(" ")}</p>}
           </div>
 
-          <div className="md:col-span-2">
-            <label htmlFor="physicalLocation" className="mb-1.5 block text-xs font-semibold text-gray-700">
-              Specific Physical Location Details
-            </label>
-            <Input
-              id="physicalLocation"
-              value={values.physical_location_details}
-              onChange={(event) => updateField("physical_location_details", event.target.value)}
-              placeholder="e.g. Block 45, Second floor, Room 204"
-              className={controlClassName}
-            />
-            {fieldErrors.physical_location_details && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.physical_location_details.join(" ")}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="maxCapacity" className="mb-1.5 block text-xs font-semibold text-gray-700">
-              Max Capacity
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="maxCapacity"
-                type="number"
-                min={0}
-                value={values.max_capacity}
-                onChange={(event) => updateField("max_capacity", Number(event.target.value))}
-                placeholder="0"
-                className={cn(controlClassName, "max-w-[160px]")}
-              />
-              {fieldErrors.max_capacity && (
-                <p className="mt-1 text-xs text-red-500">{fieldErrors.max_capacity.join(" ")}</p>
-              )}
-              <span className="text-xs text-gray-500">Participants (Optional)</span>
-            </div>
-          </div>
-
-          {/* Attendance fields */}
-          <div className="md:col-span-2 grid grid-cols-2 gap-3 mt-2">
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-700">Current Attendance</label>
-              <Input
-                type="number"
-                min={0}
-                value={typeof values.attendance?.current === 'number' ? values.attendance.current : ''}
-                onChange={e => updateField("attendance", { ...values.attendance, current: Number(e.target.value) })}
-                className={controlClassName}
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-700">Capacity</label>
-              <Input
-                type="number"
-                min={0}
-                value={typeof values.attendance?.capacity === 'number' ? values.attendance.capacity : (typeof values.max_capacity === 'number' ? values.max_capacity : '')}
-                onChange={e => updateField("attendance", { ...values.attendance, capacity: Number(e.target.value) })}
-                className={controlClassName}
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-700">Waitlist</label>
-              <Input
-                type="number"
-                min={0}
-                value={typeof values.attendance?.waitlist === 'number' ? values.attendance.waitlist : ''}
-                onChange={e => updateField("attendance", { ...values.attendance, waitlist: Number(e.target.value) })}
-                className={controlClassName}
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-700">VIPs</label>
-              <Input
-                type="number"
-                min={0}
-                value={typeof values.attendance?.vips === 'number' ? values.attendance.vips : ''}
-                onChange={e => updateField("attendance", { ...values.attendance, vips: Number(e.target.value) })}
-                className={controlClassName}
-              />
-            </div>
-          </div>
-          {fieldErrors.attendance && (
-            <div className="md:col-span-2">
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.attendance.join(" ")}</p>
-            </div>
-          )}
-
-          {/* Logistics field (user-friendly form + advanced JSON toggle) */}
-          <div className="md:col-span-2 mt-2">
-            <label className="mb-1.5 block text-xs font-semibold text-gray-700">Logistics</label>
-            <div className="grid gap-3 md:grid-cols-2 bg-[#f8fafc] rounded p-3 mb-2">
-              {defaultLogisticsFields.map((field) => (
-                <div key={field.key}>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">{field.label}</label>
-                  <Input
-                    type={field.type}
-                    value={typeof values.logistics[field.key] === 'undefined' ? '' : String(values.logistics[field.key])}
-                    disabled={!values.logistics?.venue_id}
-                    onChange={e => {
-                      let val = e.target.value;
-                      // Remove leading zeros for numbers
-                      if (field.type === 'number') {
-                        val = val.replace(/^0+(\d)/, '$1');
-                        if (val === '') val = '0';
-                        if (/^\d+$/.test(val)) val = String(Number(val));
-                      }
-                      updateField("logistics", { ...values.logistics, [field.key]: field.type === 'number' ? Number(val) : val });
-                    }}
-                    placeholder={field.label}
-                    className="rounded-[8px] h-10"
-                  />
+          {values.booking_id ? (
+            <div className="grid gap-4 rounded-[12px] border border-[#c49a22]/20 bg-[#fdf8ec]/30 p-5">
+              <div className="flex items-center justify-between border-b border-[#c49a22]/10 pb-3 mb-1">
+                <h3 className="text-sm font-bold text-[#c49a22] flex items-center gap-2">
+                  <CheckCircle2 size={16} />
+                  Linked Booking Details
+                </h3>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 text-[10px] font-bold uppercase tracking-wider text-red-500 hover:bg-red-50 hover:text-red-600"
+                  onClick={() => updateField("booking_id", undefined)}
+                >
+                  Unlink
+                </Button>
+              </div>
+              
+              <div className="grid gap-y-4 sm:grid-cols-2 sm:gap-x-8">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Venue & Location</p>
+                  <p className="text-sm font-semibold text-[#1f2a44]">{typeof values.logistics.venue === 'string' ? values.logistics.venue : (values.logistics.venue ? String(values.logistics.venue) : 'No venue set')}</p>
+                  <p className="text-xs text-gray-500">{values.physical_location_details || 'No specific location details'}</p>
                 </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">Select the required logistics and amenities below.</p>
 
-            {/* Display imported amenities (if any) and allow selecting required amenities */}
-            {Array.isArray(values.logistics?.amenities) && values.logistics.amenities.length > 0 && (
-              <div className="mt-3">
-                <p className="text-xs font-semibold text-gray-700 mb-2">Available amenities — select those required for this event</p>
-                <div className="flex flex-wrap gap-2">
-                  {((values.logistics.amenities as unknown[]) || []).map((a, idx) => {
-                    const key = String(a);
-                    const selected = Array.isArray(values.logistics?.selected_amenities) && (values.logistics.selected_amenities as unknown[]).includes(a);
-                    return (
-                      <label key={idx} className="inline-flex items-center gap-2 rounded-full bg-[#f1f5f9] px-3 py-1 text-xs text-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(selected)}
-                          onChange={(e) => {
-                            const current = Array.isArray(values.logistics?.selected_amenities) ? [...(values.logistics.selected_amenities as unknown[])] : [];
-                            const idxExist = current.findIndex((c) => String(c) === key);
-                            if (e.target.checked && idxExist === -1) current.push(key);
-                            if (!e.target.checked && idxExist !== -1) current.splice(idxExist, 1);
-                            updateField("logistics", { ...values.logistics, selected_amenities: current });
-                          }}
-                        />
-                        <span>{key}</span>
-                      </label>
-                    );
-                  })}
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Schedule</p>
+                  <p className="text-sm font-semibold text-[#1f2a44]">
+                    {formatDisplayDate(values.start_date_time)}
+                  </p>
+                  <p className="text-xs text-gray-500">to {formatDisplayDate(values.end_date_time)}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Attendance Capacity</p>
+                  <p className="text-sm font-semibold text-[#1f2a44]">{values.max_capacity} Participants</p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Equipment Requested</p>
+                  <p className="text-sm font-semibold text-[#1f2a44]">{typeof values.logistics.equipment === 'string' ? values.logistics.equipment : (Array.isArray(values.logistics.equipment) ? values.logistics.equipment.join(", ") : 'None requested')}</p>
                 </div>
               </div>
-            )}
-            {fieldErrors.logistics && (
-              <p className="mt-2 text-xs text-red-500">{fieldErrors.logistics.join(" ")}</p>
-            )}
-          </div>
+
+              {/* Required Amenities Selector */}
+              {Array.isArray(values.logistics?.amenities) && values.logistics.amenities.length > 0 && (
+                <div className="mt-2 border-t border-[#c49a22]/10 pt-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Required Amenities</p>
+                  <div className="flex flex-wrap gap-2">
+                    {((values.logistics.amenities as unknown[]) || []).map((a, idx) => {
+                      const key = String(a);
+                      const selected = Array.isArray(values.logistics?.selected_amenities) && (values.logistics.selected_amenities as unknown[]).includes(a);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            const current = Array.isArray(values.logistics?.selected_amenities) ? [...(values.logistics.selected_amenities as unknown[])] : [];
+                            const idxExist = current.findIndex((c) => String(c) === key);
+                            const next = idxExist === -1 ? [...current, key] : current.filter(c => String(c) !== key);
+                            updateField("logistics", { ...values.logistics, selected_amenities: next });
+                          }}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium transition-all border",
+                            selected 
+                              ? "bg-[#c49a22] border-[#c49a22] text-white shadow-sm" 
+                              : "bg-white border-gray-200 text-gray-600 hover:border-[#c49a22]/40"
+                          )}
+                        >
+                          {selected && <CheckCircle2 size={10} />}
+                          {key}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-[12px] border-2 border-dashed border-gray-200 p-10 text-center bg-gray-50/50">
+               <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-4">
+                 <LinkIcon size={24} />
+               </div>
+               <p className="text-base font-semibold text-gray-600">No Booking Linked</p>
+               <p className="text-sm text-gray-400 mt-1 mb-6">Select an approved venue booking above to automatically load the schedule and location details.</p>
+               {fieldErrors.start_date_time && <p className="text-xs text-red-500 mb-1">{fieldErrors.start_date_time.join(" ")}</p>}
+               {fieldErrors.max_capacity && <p className="text-xs text-red-500">{fieldErrors.max_capacity.join(" ")}</p>}
+            </div>
+          )}
         </div>
       </section>
 
@@ -900,9 +879,9 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
 
 
         {values.volunteers.length > 0 ? (
-          <div className="mt-4 overflow-x-auto rounded-[8px] border border-gray-100">
-            <table className="min-w-full text-sm">
-              <thead className="bg-[#fafbff]">
+          <div className="mt-4 max-h-[400px] overflow-auto rounded-[8px] border border-gray-100">
+            <table className="min-w-full text-sm border-collapse">
+              <thead className="sticky top-0 z-10 bg-[#fafbff] shadow-[inset_0_-1px_0_rgba(0,0,0,0.1)]">
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold text-gray-700">Full Name</th>
                   <th className="px-3 py-2 text-left font-semibold text-gray-700">ID</th>
@@ -930,7 +909,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
                         aria-label={`Edit ${item.full_name}`}
                       >
                         <span className="sr-only">Edit</span>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536M9 11l6 6M3 17.25V21h3.75l11.06-11.06a1.5 1.5 0 0 0-2.12-2.12L3 17.25z"/></svg>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536M9 11l6 6M3 17.25V21h3.75l11.06-11.06a1.5 1.5 0 0 0-2.12-2.12L3 17.25z" /></svg>
                       </button>
                       <button
                         type="button"

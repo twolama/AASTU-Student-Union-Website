@@ -51,7 +51,10 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0 flex-1">
                 <h1 className="text-xl font-bold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">{item.name}</h1>
-                <p className="max-w-2xl text-xs leading-relaxed text-white/90 sm:text-sm">{item.subtitle}</p>
+                <div 
+                  className="max-w-2xl text-xs leading-relaxed text-white/90 sm:text-sm prose prose-invert prose-sm"
+                  dangerouslySetInnerHTML={{ __html: item.subtitle }}
+                />
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/85">
                   <span className="inline-flex items-center gap-1">
                     <User size={12} />
@@ -114,15 +117,8 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
                 "[&_blockquote]:border-l-4 [&_blockquote]:border-[#c49a22] [&_blockquote]:pl-4 [&_blockquote]:italic",
                 "[&_a]:text-[#c49a22] [&_a]:underline"
               )}
-            >
-              {item.overview.map((paragraph, index) => (
-                paragraph.startsWith("<") ? (
-                  <div key={index} dangerouslySetInnerHTML={{ __html: paragraph }} />
-                ) : (
-                  <p key={`${item.id}-overview-${index}`}>{paragraph}</p>
-                )
-              ))}
-            </div>
+              dangerouslySetInnerHTML={{ __html: item.overview.join("") }}
+            />
           </article>
 
           <article className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm sm:p-6">

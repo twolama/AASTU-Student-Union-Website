@@ -123,6 +123,7 @@ export interface EventDetailItem {
   startDateLabel: string;
   locationName: string;
   locationWing: string;
+  description: string;
   aboutParagraphs: string[];
   attendance: {
     current: number;
