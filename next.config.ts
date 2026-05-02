@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: ".render.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: ".vercel.app",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "localhost",
         pathname: "/**",
       },
