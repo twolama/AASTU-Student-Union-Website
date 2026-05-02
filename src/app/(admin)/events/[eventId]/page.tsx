@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { EventDetailView } from "@/components/dashboard/events/EventDetailView";
 import type { EventDetailItem } from "@/types/dashboard";
 import { eventDetailItems, eventManagementItems } from "@/data/dummy";
@@ -210,7 +211,6 @@ async function fetchEventDetail(eventId: string): Promise<ApiEventDetail | null>
     });
 
     if (!response.ok) {
-      console.error(`Failed to fetch event ${eventId}: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -237,11 +237,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   const item = event ? formatEventDetail(event) : eventDetailItems[eventId] ?? buildFallbackEventDetail(eventId);
 
   if (!item) {
-    return (
-      <div className="rounded-[10px] border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">
-        Event was not found.
-      </div>
-    );
+    notFound();
   }
 
   return <EventDetailView item={item} />;

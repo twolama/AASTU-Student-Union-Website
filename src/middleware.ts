@@ -13,7 +13,10 @@ const PROTECTED_PATH_PREFIXES = [
   "/stats",
   "/settings",
   "/sign-out",
+  "/force-password-change",
 ];
+
+const FORCE_PASSWORD_CHANGE_PATH = "/force-password-change";
 
 function isProtectedPath(pathname: string) {
   return PROTECTED_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -66,6 +69,16 @@ export function middleware(request: NextRequest) {
 
   const accessToken = request.cookies.get("access_token")?.value;
   if (isAccessTokenUsable(accessToken)) {
+    const requiresPasswordChange = request.cookies.get("must_change_password")?.value === "1";
+
+    if (requiresPasswordChange && pathname !== FORCE_PASSWORD_CHANGE_PATH && pathname !== "/sign-out") {
+      return NextResponse.redirect(new URL(FORCE_PASSWORD_CHANGE_PATH, request.url));
+    }
+
+    if (!requiresPasswordChange && pathname === FORCE_PASSWORD_CHANGE_PATH) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+
     return NextResponse.next();
   }
 

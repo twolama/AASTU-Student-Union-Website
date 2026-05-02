@@ -7,60 +7,152 @@ import { FileUpload } from "@/components/ui/FileUpload";
 import { Input } from "@/components/ui/Input";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Button } from "@/components/ui/Button";
+import { useDepartments } from "@/hooks/useDepartments";
+import { useRoles } from "@/hooks/useRoles";
+import { useCreateUser, useUpdateUser } from "@/hooks/useUsers";
 import { cn } from "@/lib/utils";
-import type { UserManagementRole } from "@/types/dashboard";
+import { type CurrentUser } from "@/schemas/user.schema";
+import { useRouter } from "next/navigation";
 
-const departmentOptions = [
-  "Software Engineering",
-  "Architecture",
-  "Electrical Engineering",
-  "Civil Engineering",
-  "Computer Science",
-  "Mechanical Engineering",
-  "Chemical Engineering",
-  "Biomedical Engineering",
-];
+interface UserCreateFormProps {
+  user?: CurrentUser | null;
+  editMode?: boolean;
+}
 
-const departmentDropdownOptions = [
-  { value: "", label: "Select Department" },
-  ...departmentOptions.map((option) => ({ value: option, label: option })),
-];
+export function UserCreateForm({ user = null, editMode = false }: UserCreateFormProps) {
+  const { data: departments = [], isLoading: isDepartmentsLoading } = useDepartments();
+  const { data: rolesData, isLoading: isRolesLoading } = useRoles();
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const router = useRouter();
 
-const roleOptions: { value: UserManagementRole; label: string }[] = [
-  { value: "general-student", label: "General Student" },
-  { value: "club-president", label: "Club President" },
-  { value: "su-admin", label: "SU Admin" },
-];
-
-export function UserCreateForm() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [fullName, setFullName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<UserManagementRole>("general-student");
+  const [role, setRole] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusType, setStatusType] = useState<"success" | "error">("success");
 
   const avatarPreviewUrl = useMemo(() => {
-    if (!avatarFile) {
-      return undefined;
-    }
-
-    return URL.createObjectURL(avatarFile);
+    if (avatarFile) return URL.createObjectURL(avatarFile);
+    // If editing and user has avatar URL, we don't create object URL here — FileUpload can accept previewUrl prop externally
+    return undefined;
   }, [avatarFile]);
 
   useEffect(() => {
     return () => {
-      if (avatarPreviewUrl) {
-        URL.revokeObjectURL(avatarPreviewUrl);
-      }
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
     };
   }, [avatarPreviewUrl]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (!user) return;
+    setFullName(user.name || "");
+    setStudentId(user.studentId || "");
+    setEmail(user.email || "");
+    setDepartment(user.department || "");
+    setPhone(user.phoneNumber || "");
+    setRole(user.role || "");
+  }, [user]);
+
+  const departmentDropdownOptions = useMemo(
+    () => [
+      { value: "", label: isDepartmentsLoading ? "Loading departments..." : "Select Department" },
+      ...departments.map((dept) => ({ value: dept.id, label: dept.name })),
+    ],
+    [departments, isDepartmentsLoading]
+  );
+
+  const roleDropdownOptions = useMemo(
+    () => [
+      { value: "", label: isRolesLoading ? "Loading roles..." : "Select Role" },
+      ...(rolesData?.data || []).map((roleOption) => ({
+        value: roleOption.id,
+        label: roleOption.name,
+      })),
+    ],
+    [rolesData, isRolesLoading]
+  );
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatusMessage("User account created successfully. Invitation email will be sent shortly.");
+
+    if (!department) {
+      setStatusType("error");
+      setStatusMessage("Please select a department.");
+      return;
+    }
+
+    if (!role) {
+      setStatusType("error");
+      setStatusMessage("Please select a system role.");
+      return;
+    }
+
+    setStatusMessage(null);
+
+    try {
+      if (editMode && user) {
+        // Update
+        if (avatarFile) {
+          const formData = new FormData();
+          formData.append("name", fullName.trim());
+          formData.append("student_id", studentId.trim());
+          formData.append("department", department);
+          formData.append("role", role);
+          formData.append("email", email.trim());
+          if (phone.trim()) formData.append("phone_number", phone.trim());
+          formData.append("avatar", avatarFile);
+
+          await updateUserMutation.mutateAsync({ id: user.id, data: formData } as any);
+        } else {
+          await updateUserMutation.mutateAsync({
+            id: user.id,
+            data: {
+              name: fullName.trim(),
+              student_id: studentId.trim(),
+              department,
+              role,
+              email: email.trim(),
+              ...(phone.trim() ? { phone_number: phone.trim() } : {}),
+            },
+          });
+        }
+
+        setStatusType("success");
+        setStatusMessage("User profile updated successfully.");
+        router.push("/users");
+        return;
+      }
+
+      // Create
+      await createUserMutation.mutateAsync({
+        name: fullName.trim(),
+        student_id: studentId.trim(),
+        department,
+        role,
+        email: email.trim(),
+        ...(phone.trim() ? { phone_number: phone.trim() } : {}),
+        ...(avatarFile ? { avatar: avatarFile } : {}),
+      });
+
+      setStatusType("success");
+      setStatusMessage("User account created successfully. Temporary password email has been sent.");
+
+      setAvatarFile(null);
+      setFullName("");
+      setStudentId("");
+      setEmail("");
+      setDepartment("");
+      setPhone("");
+      setRole("");
+    } catch (error: any) {
+      setStatusType("error");
+      setStatusMessage(error?.message || "Failed to save user. Please try again.");
+    }
   }
 
   return (
@@ -146,6 +238,7 @@ export function UserCreateForm() {
                   value={department}
                   options={departmentDropdownOptions}
                   onValueChange={setDepartment}
+                  disabled={isDepartmentsLoading || createUserMutation.isPending}
                   className="[&>p]:hidden [&>div>button]:h-10 [&>div>button]:rounded-[10px]"
                 />
               </div>
@@ -164,35 +257,19 @@ export function UserCreateForm() {
               </div>
             </div>
 
-            <fieldset>
-              <legend className="mb-2 block text-sm font-semibold text-[#3b4660]">System Role</legend>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {roleOptions.map((option) => {
-                  const isActive = role === option.value;
-
-                  return (
-                    <label
-                      key={option.value}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-sm transition-colors",
-                        isActive
-                          ? "border-[#c49a22]/40 bg-[#fdf8ec] text-[#1f2a44]"
-                          : "border-gray-200 bg-white text-[#4f5f7c] hover:border-[#c49a22]/30"
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="user-role"
-                        checked={isActive}
-                        onChange={() => setRole(option.value)}
-                        className="h-4 w-4 border-gray-300 text-[#c49a22] focus:ring-[#c49a22]/30"
-                      />
-                      <span className="font-medium">{option.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
+            <div>
+              <label htmlFor="user-role" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+                System Role
+              </label>
+              <DropdownSelect
+                label=""
+                value={role}
+                options={roleDropdownOptions}
+                onValueChange={setRole}
+                disabled={isRolesLoading || createUserMutation.isPending}
+                className="[&>p]:hidden [&>div>button]:h-10 [&>div>button]:rounded-[10px]"
+              />
+            </div>
           </div>
         </div>
 
@@ -202,7 +279,13 @@ export function UserCreateForm() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" variant="goldSolid" className="h-10 w-full sm:w-auto">
+          <Button
+            type="submit"
+            variant="goldSolid"
+            className="h-10 w-full sm:w-auto"
+            isLoading={editMode ? updateUserMutation.isPending : createUserMutation.isPending}
+            disabled={editMode ? updateUserMutation.isPending : createUserMutation.isPending}
+          >
             Save User
           </Button>
         </div>
@@ -212,13 +295,20 @@ export function UserCreateForm() {
         <p className="inline-flex items-start gap-2">
           <AlertCircle size={16} className="mt-0.5 shrink-0 text-[#b48a1b]" />
           <span>
-            <span className="font-semibold text-[#3d3a32]">Note:</span> After saving, the student will receive an invitation email to set their portal password. Ensure the email address is correct.
+            <span className="font-semibold text-[#3d3a32]">Note:</span> After saving, the student will receive a temporary password by email and must change it immediately after first login.
           </span>
         </p>
       </article>
 
       {statusMessage ? (
-        <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div
+          className={cn(
+            "rounded-[10px] px-4 py-3 text-sm",
+            statusType === "success"
+              ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border border-red-200 bg-red-50 text-red-700"
+          )}
+        >
           {statusMessage}
         </div>
       ) : null}

@@ -12,6 +12,7 @@ const LoginUserSchema = z.object({
   studentId: z.string(),
   role: z.string().nullable(),
   email: z.string().email(),
+  mustChangePassword: z.boolean().optional().default(false),
   registrationDate: z.string(),
   status: z.string(),
 });

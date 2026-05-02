@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { UsersFilters } from "@/components/dashboard/users/UsersFilters";
 import { UsersStatsSection } from "@/components/dashboard/users/UsersStatsSection";
 import { UsersTable } from "@/components/dashboard/users/UsersTable";
-import { UserEditDialog } from "@/components/dashboard/users/UserEditDialog";
+import { useRouter } from "next/navigation";
 import { RolesManagement } from "@/components/dashboard/users/RolesManagement";
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { useUsers, useDeleteUser } from "@/hooks/useUsers";
 import { useRoles } from "@/hooks/useRoles";
 import { useDepartments } from "@/hooks/useDepartments";
@@ -36,7 +37,8 @@ export function UsersContent() {
   const [currentTab, setCurrentTab] = useState("students");
 
   // Selection states
-  const [editingUser, setEditingUser] = useState<CurrentUser | null>(null);
+  const router = useRouter();
+  const [deleteTarget, setDeleteTarget] = useState<CurrentUser | null>(null);
 
   // Fetch real data
   const { data: usersData, isLoading: isUsersLoading } = useUsers(currentPage, ITEMS_PER_PAGE, searchTerm, selectedRole, selectedDepartment);
@@ -66,10 +68,10 @@ export function UsersContent() {
   }, [departments]);
 
   const handleDeleteUser = async (user: CurrentUser) => {
-    if (!confirm(`Are you sure you want to delete ${user.name}? This action cannot be undone.`)) return;
     try {
       await deleteUserMutation.mutateAsync(user.id);
       toast.success("User deleted successfully.");
+      setDeleteTarget(null);
     } catch (error: any) {
       toast.error("Deletion failed", { description: error.message });
     }
@@ -138,8 +140,8 @@ export function UsersContent() {
               pageSize={ITEMS_PER_PAGE}
               departments={departments}
               roles={rolesData?.data}
-              onEdit={(user) => setEditingUser(user)}
-              onDelete={handleDeleteUser}
+              onEdit={(user) => router.push(`/users/${user.id}/edit`)}
+              onDelete={(user) => setDeleteTarget(user)}
             />
           </div>
         ) : (
@@ -149,10 +151,20 @@ export function UsersContent() {
         )}
       </div>
 
-      <UserEditDialog
-        user={editingUser}
-        isOpen={!!editingUser}
-        onClose={() => setEditingUser(null)}
+      {/* Edit handled on separate page */}
+
+      <ConfirmationDialog
+        open={deleteTarget !== null}
+        title="Delete User Account"
+        message={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
+        confirmLabel="Delete User"
+        onConfirm={() => {
+          if (deleteTarget) {
+            void handleDeleteUser(deleteTarget);
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={deleteUserMutation.isPending}
       />
     </div>
   );

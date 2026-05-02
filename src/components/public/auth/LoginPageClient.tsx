@@ -14,7 +14,12 @@ export function LoginPageClient() {
       username: values.username,
       password: values.password,
     }, {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        if (response.data.user.mustChangePassword) {
+          router.push("/force-password-change");
+          return;
+        }
+
         router.push("/dashboard");
       }
     });

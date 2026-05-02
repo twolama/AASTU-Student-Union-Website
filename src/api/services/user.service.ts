@@ -28,6 +28,20 @@ export interface RoleListResponse {
   data: Role[];
 }
 
+export interface CreateUserInput {
+  name: string;
+  student_id: string;
+  department: string;
+  role: string;
+  email: string;
+  phone_number?: string;
+  username?: string;
+  bio?: string;
+  dorm_block?: string;
+  dorm_room?: string;
+  avatar?: File;
+}
+
 export const userService = {
   // Users
   getUsers: async (page = 1, limit = 20, search?: string, role?: string, department?: string) => {
@@ -45,12 +59,57 @@ export const userService = {
     return response.data;
   },
 
-  createUser: async (data: any) => {
-    const response = await apiClient.post<{ success: boolean; data: CurrentUser }>(USER_ENDPOINTS.CREATE, data);
+  createUser: async (data: CreateUserInput) => {
+    const hasAvatar = data.avatar instanceof File;
+
+    if (hasAvatar) {
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("student_id", data.student_id);
+      formData.append("department", data.department);
+      formData.append("role", data.role);
+      formData.append("email", data.email);
+
+      if (data.phone_number) formData.append("phone_number", data.phone_number);
+      if (data.username) formData.append("username", data.username);
+      if (data.bio) formData.append("bio", data.bio);
+      if (data.dorm_block) formData.append("dorm_block", data.dorm_block);
+      if (data.dorm_room) formData.append("dorm_room", data.dorm_room);
+      if (data.avatar) formData.append("avatar", data.avatar);
+
+      const response = await apiClient.post<{ success: boolean; data: CurrentUser }>(USER_ENDPOINTS.CREATE, formData);
+      return response.data;
+    }
+
+    const payload = {
+      name: data.name,
+      student_id: data.student_id,
+      department: data.department,
+      role: data.role,
+      email: data.email,
+      ...(data.phone_number ? { phone_number: data.phone_number } : {}),
+      ...(data.username ? { username: data.username } : {}),
+      ...(data.bio ? { bio: data.bio } : {}),
+      ...(data.dorm_block ? { dorm_block: data.dorm_block } : {}),
+      ...(data.dorm_room ? { dorm_room: data.dorm_room } : {}),
+    };
+
+    const response = await apiClient.post<{ success: boolean; data: CurrentUser }>(USER_ENDPOINTS.CREATE, payload);
     return response.data;
   },
 
-  updateUser: async (id: string, data: Partial<CurrentUser>) => {
+  updateUser: async (id: string, data: Partial<CurrentUser> | FormData) => {
+    // If updating avatar or sending files, caller may pass a FormData
+    if (data instanceof FormData) {
+      const response = await apiClient.patch<{ success: boolean; data: CurrentUser }>(USER_ENDPOINTS.PATCH(id), data, {
+        headers: {
+          // Let axios set multipart/form-data boundary automatically
+          "Content-Type": undefined,
+        },
+      });
+      return response.data;
+    }
+
     const response = await apiClient.patch<{ success: boolean; data: CurrentUser }>(USER_ENDPOINTS.PATCH(id), data);
     return response.data;
   },

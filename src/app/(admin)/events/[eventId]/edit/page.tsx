@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { EventEditor } from "@/components/dashboard/events/EventEditor";
 import type { EventEditorValues } from "@/components/dashboard/events/EventEditor";
 import { eventManagementItems } from "@/data/dummy";
@@ -33,18 +34,21 @@ type ApiEventDetail = {
   status?: string;
   organizing_club?: { id: string; name: string };
   organizingClub?: { id: string; name: string };
-  volunteers?: any[];
+  volunteers?: Volunteer[];
   booking?: string;
   logistics?: Record<string, unknown>;
 };
 
-function toClubValue(rawClub: string) {
-  return rawClub.toLowerCase().replace(/\s+/g, "-").replace(/\./g, "");
-}
-
-function toVenueValue(rawVenue: string) {
-  return rawVenue.toLowerCase().replace(/\s+/g, "-").replace(/\./g, "");
-}
+type Volunteer = {
+  id: string;
+  full_name?: string;
+  fullName?: string;
+  student_id?: string;
+  studentId?: string;
+  phone?: string;
+  email?: string;
+  role?: string;
+};
 
 function buildInitialValues(event: ApiEventDetail): EventEditorValues {
   return {
@@ -64,7 +68,7 @@ function buildInitialValues(event: ApiEventDetail): EventEditorValues {
     attendance: {},
     organizing_club: event.organizing_club?.id || event.organizingClub?.id || "",
     volunteers:
-      event.volunteers?.map((volunteer: any) => ({
+      event.volunteers?.map((volunteer: Volunteer) => ({
         id: volunteer.id,
         full_name: volunteer.full_name || volunteer.fullName || "",
         student_id: volunteer.student_id || volunteer.studentId || "",
@@ -100,8 +104,7 @@ async function fetchEventDetail(eventId: string): Promise<ApiEventDetail | null>
     const payload = await response.json();
 
     return payload?.data ?? null;
-  } catch (error) {
-
+  } catch {
     return null;
   }
 }
@@ -154,4 +157,8 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
       initialValues={initialValues}
     />
   );
+
+  if (!event && !fallbackEvent) {
+    notFound();
+  }
 }

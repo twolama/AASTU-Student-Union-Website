@@ -5,9 +5,12 @@ import { X, Shield, User, Loader2 } from "lucide-react";
 import { type CurrentUser } from "@/schemas/user.schema";
 import { type Role } from "@/api/services/user.service";
 import { useRoles } from "@/hooks/useRoles";
+import { useDepartments } from "@/hooks/useDepartments";
 import { useUpdateUser } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { toast } from "sonner";
 
 interface UserEditDialogProps {
@@ -18,12 +21,29 @@ interface UserEditDialogProps {
 
 export function UserEditDialog({ user, isOpen, onClose }: UserEditDialogProps) {
   const { data: rolesData, isLoading: isRolesLoading } = useRoles();
+  const { data: departments = [], isLoading: isDepartmentsLoading } = useDepartments();
   const updateUserMutation = useUpdateUser();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [dormBlock, setDormBlock] = useState("");
+  const [dormRoom, setDormRoom] = useState("");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("");
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [bio, setBio] = useState("");
 
   useEffect(() => {
     if (user) {
+      setFullName(user.name || "");
+      setEmail(user.email || "");
+      setStudentId(user.studentId || "");
+      setPhoneNumber(user.phoneNumber || "");
+      setDormBlock(user.dormBlock || "");
+      setDormRoom(user.dormRoom || "");
+      setSelectedDepartmentId(user.department || "");
       setSelectedRoleId(user.role || "");
+      setBio(user.bio || "");
     }
   }, [user]);
 
@@ -33,18 +53,36 @@ export function UserEditDialog({ user, isOpen, onClose }: UserEditDialogProps) {
     try {
       await updateUserMutation.mutateAsync({
         id: user.id,
-        data: { role: selectedRoleId || null },
+        data: {
+          name: fullName.trim(),
+          email: email.trim(),
+          studentId: studentId.trim(),
+          phoneNumber: phoneNumber.trim() || null,
+          dormBlock: dormBlock.trim() || null,
+          dormRoom: dormRoom.trim() || null,
+          department: selectedDepartmentId || null,
+          role: selectedRoleId || null,
+          bio: bio.trim() || null,
+        },
       });
       toast.success("User Updated!", {
-        description: `Successfully updated roles for ${user.name}.`,
+        description: `Successfully updated profile for ${fullName || user.name}.`,
       });
       onClose();
     } catch (error: any) {
       toast.error("Update Failed", {
-        description: error.message || "Failed to update user role.",
+        description: error.message || "Failed to update user information.",
       });
     }
   };
+
+  const departmentOptions = [
+    { value: "", label: "No Department" },
+    ...departments.map((department) => ({
+      value: department.id,
+      label: department.name,
+    })),
+  ];
 
   const roleOptions = [
     { value: "", label: "No Role (Standard Member)" },
@@ -69,8 +107,8 @@ export function UserEditDialog({ user, isOpen, onClose }: UserEditDialogProps) {
               <Shield size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-[#1f2a44]">Manage Permissions</h2>
-              <p className="text-xs font-medium text-gray-500">Edit union roles and access levels</p>
+              <h2 className="text-lg font-bold text-[#1f2a44]">Edit User Profile</h2>
+              <p className="text-xs font-medium text-gray-500">Update student information and access level</p>
             </div>
           </div>
           <button 
@@ -99,23 +137,117 @@ export function UserEditDialog({ user, isOpen, onClose }: UserEditDialogProps) {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <DropdownSelect
-              label="Assigned Union Role"
-              value={selectedRoleId}
-              options={roleOptions}
-              onValueChange={setSelectedRoleId}
-              disabled={isRolesLoading}
-              className="[&>div>button]:h-12 [&>div>button]:rounded-xl"
-            />
-            
-            <div className="rounded-xl bg-[#fdf8ec]/50 p-4 border border-[#ead9a3]/30">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#8c6c14]">Role Impact</p>
-              <p className="mt-2 text-xs leading-relaxed text-[#8c6c14]/80">
-                Changing a user's role will immediately update their permissions across the platform. 
-                They may gain or lose access to specific dashboard features.
-              </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor="edit-user-name" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+                Full Name
+              </label>
+              <Input
+                id="edit-user-name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Student full name"
+              />
             </div>
+            <div>
+              <label htmlFor="edit-user-email" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+                Email
+              </label>
+              <Input
+                id="edit-user-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="student@aastu.edu.et"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="edit-user-student-id" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+                Student ID
+              </label>
+              <Input
+                id="edit-user-student-id"
+                value={studentId}
+                onChange={(event) => setStudentId(event.target.value)}
+                placeholder="ETS0000/12"
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-user-phone" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+                Phone Number
+              </label>
+              <Input
+                id="edit-user-phone"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                placeholder="+251 900 000 000"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="edit-user-dorm-block" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+                Dorm Block
+              </label>
+              <Input
+                id="edit-user-dorm-block"
+                value={dormBlock}
+                onChange={(event) => setDormBlock(event.target.value)}
+                placeholder="Block"
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-user-dorm-room" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+                Dorm Room
+              </label>
+              <Input
+                id="edit-user-dorm-room"
+                value={dormRoom}
+                onChange={(event) => setDormRoom(event.target.value)}
+                placeholder="Room"
+              />
+            </div>
+
+            <div>
+              <DropdownSelect
+                label="Department"
+                value={selectedDepartmentId}
+                options={departmentOptions}
+                onValueChange={setSelectedDepartmentId}
+                disabled={isDepartmentsLoading}
+                className="[&>div>button]:h-11 [&>div>button]:rounded-xl"
+              />
+            </div>
+            <div>
+              <DropdownSelect
+                label="Assigned Union Role"
+                value={selectedRoleId}
+                options={roleOptions}
+                onValueChange={setSelectedRoleId}
+                disabled={isRolesLoading}
+                className="[&>div>button]:h-11 [&>div>button]:rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="edit-user-bio" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
+              Bio
+            </label>
+            <Textarea
+              id="edit-user-bio"
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
+              placeholder="Short user bio or note"
+              className="min-h-24"
+            />
+          </div>
+
+          <div className="mt-4 rounded-xl bg-[#fdf8ec]/50 p-4 border border-[#ead9a3]/30">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#8c6c14]">Role Impact</p>
+            <p className="mt-2 text-xs leading-relaxed text-[#8c6c14]/80">
+              Changing a user's role will immediately update their permissions across the platform.
+            </p>
           </div>
         </div>
 

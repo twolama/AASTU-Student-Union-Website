@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { userService } from "@/api/services/user.service";
+import { userService, type CreateUserInput } from "@/api/services/user.service";
 import { type CurrentUser } from "@/schemas/user.schema";
 
 export function useUsers(page = 1, limit = 20, search?: string, role?: string, department?: string) {
@@ -15,6 +15,17 @@ export function useUser(id: string) {
     queryKey: ["user", id],
     queryFn: () => userService.getUser(id),
     enabled: !!id,
+  });
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateUserInput) => userService.createUser(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
   });
 }
 

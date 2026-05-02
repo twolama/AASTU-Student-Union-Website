@@ -14,6 +14,7 @@ const RESPONSE_HEADER_BLOCKLIST = new Set([
 
 const LOGIN_PATH = "/api/v1/auth/login";
 const LOGOUT_PATH = "/api/v1/auth/logout";
+const CHANGE_PASSWORD_PATH = "/api/v1/auth/change-password";
 
 type RouteContext = {
   params: Promise<{
@@ -177,6 +178,28 @@ async function handleLoginResponse(upstreamResponse: Response) {
     maxAge: getLoginCookieMaxAge(refreshToken.expires),
   });
 
+  if (payload?.data?.user?.mustChangePassword) {
+    response.cookies.set({
+      name: "must_change_password",
+      value: "1",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: getLoginCookieMaxAge(refreshToken.expires),
+    });
+  } else {
+    response.cookies.set({
+      name: "must_change_password",
+      value: "",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+  }
+
   return response;
 }
 
@@ -204,6 +227,16 @@ function handleLogoutResponse() {
 
   response.cookies.set({
     name: "refresh_token",
+    value: "",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+
+  response.cookies.set({
+    name: "must_change_password",
     value: "",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -270,6 +303,26 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
 
     if (method === "POST" && proxiedPath === LOGIN_PATH) {
       return await handleLoginResponse(upstreamResponse);
+    }
+
+    if (method === "POST" && proxiedPath === CHANGE_PASSWORD_PATH) {
+      const payload = await upstreamResponse.json();
+      const response = NextResponse.json(payload, { status: upstreamResponse.status });
+      response.cookies.set({
+        name: "must_change_password",
+        value: "",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
+      try {
+        response.headers.set("x-proxy-target", targetUrl);
+      } catch (e) {
+        /* ignore */
+      }
+      return response;
     }
 
     const responseHeaders = sanitizeHeaders(upstreamResponse.headers, RESPONSE_HEADER_BLOCKLIST);

@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import type { CurrentUser } from "@/schemas/user.schema";
 import { type Role } from "@/api/services/user.service";
-import { useState } from "react";
 
 interface UsersTableProps {
   items: CurrentUser[];
@@ -117,7 +116,7 @@ export function UsersTable({
                     <button
                       onClick={() => onEdit?.(item)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-[#ead9a3]/30 hover:text-[#c49a22]"
-                      title="Edit Permissions"
+                      title="Edit User"
                     >
                       <UserCog2 size={16} />
                     </button>
