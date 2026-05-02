@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { VenueDetailItem } from "@/types/dashboard";
 
 interface VenueDetailViewProps {
@@ -25,6 +26,18 @@ const scheduleStatusStyles = {
 
 export function VenueDetailView({ item }: VenueDetailViewProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const { hasPermission } = usePermissions();
+  const canViewVenues = hasPermission("venues.view") || hasPermission("venues.edit") || hasPermission("venues.create") || hasPermission("venues.delete");
+  const canEditVenues = hasPermission("venues.edit");
+  const canBookVenues = hasPermission("bookings.create");
+
+  if (!canViewVenues) {
+    return (
+      <div className="rounded-[22px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+        You do not have permission to view venues.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -72,27 +85,29 @@ export function VenueDetailView({ item }: VenueDetailViewProps) {
 
               <div className="w-full lg:w-auto">
                 <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:items-center">
-                  <Link href={`/venues/${item.id}/edit`} className="w-full lg:w-auto">
-                    <Button variant="outline" className="h-9 w-full whitespace-nowrap rounded-[10px] border-white/35 bg-white/10 px-3 text-xs text-white hover:bg-white/25 sm:px-4 sm:text-sm lg:min-w-[148px]">
-                      <Pencil size={14} />
-                      Edit Venue
-                    </Button>
-                  </Link>
-                  {item.status === "active" ? (
+                  {canEditVenues ? (
+                    <Link href={`/venues/${item.id}/edit`} className="w-full lg:w-auto">
+                      <Button variant="outline" className="h-9 w-full whitespace-nowrap rounded-[10px] border-white/35 bg-white/10 px-3 text-xs text-white hover:bg-white/25 sm:px-4 sm:text-sm lg:min-w-[148px]">
+                        <Pencil size={14} />
+                        Edit Venue
+                      </Button>
+                    </Link>
+                  ) : null}
+                  {item.status === "active" && canBookVenues ? (
                     <Link href={`/bookings/new?venueId=${item.id}`} className="w-full lg:w-auto">
                       <Button variant="goldSolid" className="h-9 w-full whitespace-nowrap rounded-[10px] px-3 text-xs sm:px-4 sm:text-sm lg:min-w-[148px]">
                         <CalendarDays size={14} />
                         Book Venue
                       </Button>
                     </Link>
-                  ) : (
+                  ) : item.status !== "active" ? (
                     <div className="w-full lg:w-auto" title="Venue is not available for booking">
                       <Button variant="goldSolid" disabled className="h-9 w-full whitespace-nowrap rounded-[10px] px-3 text-xs sm:px-4 sm:text-sm lg:min-w-[148px] opacity-50 cursor-not-allowed">
                         <CalendarDays size={14} />
                         Unavailable
                       </Button>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

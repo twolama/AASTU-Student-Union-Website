@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { useArchiveEvent, useDeleteEvent } from "@/hooks/useEvents";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { EventDetailItem } from "@/types/dashboard";
 
 interface EventDetailViewProps {
@@ -37,11 +38,14 @@ const statusVariantMap = {
 
 export function EventDetailView({ item }: EventDetailViewProps) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const [pendingArchive, setPendingArchive] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const archiveEvent = useArchiveEvent();
   const deleteEvent = useDeleteEvent();
   const attendancePercent = Math.min(100, Math.round((item.attendance.current / item.attendance.capacity) * 100));
+  const canEditEvent = hasPermission("events.edit");
+  const canDeleteEvent = hasPermission("events.delete");
 
   async function confirmArchive() {
     await archiveEvent.mutateAsync(item.id);
@@ -145,34 +149,42 @@ export function EventDetailView({ item }: EventDetailViewProps) {
         </div>
 
         <aside className="space-y-4">
-          <div className="grid grid-cols-3 gap-2">
-            <Link href={`/events/${item.id}/edit`}>
-              <Button variant="outline" size="md" className="h-9 w-full rounded-[10px] px-2 text-xs">
-                <Pencil size={14} />
-                Edit
-              </Button>
-            </Link>
-            <Button
-              type="button"
-              variant="outline"
-              size="md"
-              className="h-9 w-full rounded-[10px] px-2 text-xs"
-              onClick={() => setPendingArchive(true)}
-            >
-              <ShieldAlert size={14} />
-              Archive
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="md"
-              className="h-9 w-full rounded-[10px] border-red-200 px-2 text-xs text-red-600 hover:bg-red-50"
-              onClick={() => setPendingDelete(true)}
-            >
-              <Trash2 size={14} />
-              Delete
-            </Button>
-          </div>
+          {canEditEvent || canDeleteEvent ? (
+            <div className="grid grid-cols-3 gap-2">
+              {canEditEvent ? (
+                <Link href={`/events/${item.id}/edit`}>
+                  <Button variant="outline" size="md" className="h-9 w-full rounded-[10px] px-2 text-xs">
+                    <Pencil size={14} />
+                    Edit
+                  </Button>
+                </Link>
+              ) : null}
+              {canEditEvent ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="h-9 w-full rounded-[10px] px-2 text-xs"
+                  onClick={() => setPendingArchive(true)}
+                >
+                  <ShieldAlert size={14} />
+                  Archive
+                </Button>
+              ) : null}
+              {canDeleteEvent ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="h-9 w-full rounded-[10px] border-red-200 px-2 text-xs text-red-600 hover:bg-red-50"
+                  onClick={() => setPendingDelete(true)}
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           <article className="rounded-[10px] border border-[#223264] bg-[#1f2a44] p-4 text-white shadow-sm">
             <h2 className="text-base font-semibold">Attendance Stats</h2>
@@ -241,25 +253,29 @@ export function EventDetailView({ item }: EventDetailViewProps) {
         </aside>
       </section>
 
-      <ConfirmationDialog
-        open={pendingArchive}
-        title="Archive Event"
-        message={`Archive \"${item.title}\"? It will be marked as archived.`}
-        confirmLabel="Archive Event"
-        isLoading={archiveEvent.isPending}
-        onConfirm={confirmArchive}
-        onCancel={() => setPendingArchive(false)}
-      />
+      {canEditEvent ? (
+        <ConfirmationDialog
+          open={pendingArchive}
+          title="Archive Event"
+          message={`Archive \"${item.title}\"? It will be marked as archived.`}
+          confirmLabel="Archive Event"
+          isLoading={archiveEvent.isPending}
+          onConfirm={confirmArchive}
+          onCancel={() => setPendingArchive(false)}
+        />
+      ) : null}
 
-      <ConfirmationDialog
-        open={pendingDelete}
-        title="Delete Event"
-        message={`Delete \"${item.title}\"? This cannot be undone.`}
-        confirmLabel="Delete Event"
-        isLoading={deleteEvent.isPending}
-        onConfirm={confirmDelete}
-        onCancel={() => setPendingDelete(false)}
-      />
+      {canDeleteEvent ? (
+        <ConfirmationDialog
+          open={pendingDelete}
+          title="Delete Event"
+          message={`Delete \"${item.title}\"? This cannot be undone.`}
+          confirmLabel="Delete Event"
+          isLoading={deleteEvent.isPending}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(false)}
+        />
+      ) : null}
 
       <DashboardFooter />
     </div>

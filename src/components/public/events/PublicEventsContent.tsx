@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Clock3, MapPin, Search, ArrowRight, Loader2 
 import { useEffect, useMemo, useState } from "react";
 import { publicEventCategories,} from "@/lib/public/events";
 import { useEvents } from "@/hooks/useEvents";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { EventListItem } from "@/schemas/event.schema";
 import dayjs from "dayjs";
 
@@ -100,6 +101,8 @@ export function PublicEventsContent() {
   const [activeCategory, setActiveCategory] = useState<(typeof publicEventCategories)[number]>("All Events");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const { hasPermission } = usePermissions();
+  const canRegisterForEvents = hasPermission("events.create");
 
   const { data: eventsResponse, isLoading, isError } = useEvents(page, PAGE_SIZE);
 
@@ -183,12 +186,14 @@ export function PublicEventsContent() {
                 </p>
               </div>
 
-              <Link
-                href={`/public/events/${megaEvent.id}`}
-                className="inline-flex h-12 shrink-0 items-center justify-center rounded-[12px] bg-[#f1c44d] px-8 text-sm font-semibold text-[#0d1a45] transition-colors hover:bg-[#ffd668]"
-              >
-                Register Now
-              </Link>
+              {canRegisterForEvents ? (
+                <Link
+                  href={`/public/events/${megaEvent.id}`}
+                  className="inline-flex h-12 shrink-0 items-center justify-center rounded-[12px] bg-[#f1c44d] px-8 text-sm font-semibold text-[#0d1a45] transition-colors hover:bg-[#ffd668]"
+                >
+                  Register Now
+                </Link>
+              ) : null}
             </div>
           </div>
         </section>
@@ -246,7 +251,7 @@ export function PublicEventsContent() {
             {filteredEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
-            <ProposalCard />
+            {canRegisterForEvents ? <ProposalCard /> : null}
           </div>
         ) : (
           <div className="rounded-[14px] border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">

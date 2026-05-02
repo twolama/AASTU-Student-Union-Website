@@ -20,6 +20,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { VenueCategory } from "@/schemas/venue-category.schema";
 import type {
   BookingRequestDateRange,
@@ -78,6 +79,19 @@ export function BookingsContent() {
   const approveMutation = useApproveBooking();
   const cancelMutation = useCancelBooking();
   const deleteMutation = useDeleteBooking();
+  const { hasAnyPermission, hasPermission } = usePermissions();
+
+  const canViewBookings = hasAnyPermission([
+    "bookings.view",
+    "bookings.create",
+    "bookings.edit",
+    "bookings.delete",
+    "bookings.approve_booking",
+    "bookings.reject_booking",
+  ]);
+  const canCreateBookings = hasPermission("bookings.create");
+  const canApproveBookings = hasPermission("bookings.approve_booking") || hasPermission("bookings.reject_booking");
+  const canDeleteBookings = hasPermission("bookings.delete");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVenueType, setSelectedVenueType] = useState("all");
@@ -200,13 +214,19 @@ export function BookingsContent() {
   }, [bookingsData]);
 
   const dynamicTabs = useMemo(() => {
-    return bookingTabs.map(tab => {
+    return bookingTabs.filter((tab) => !tab.permissions || hasAnyPermission(tab.permissions)).map(tab => {
       if (tab.id === "approval-queue") {
         return { ...tab, badge: pendingCount > 0 ? pendingCount : undefined };
       }
       return tab;
     });
-  }, [pendingCount]);
+  }, [pendingCount, hasAnyPermission]);
+
+  useEffect(() => {
+    if (dynamicTabs.length > 0 && !dynamicTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(dynamicTabs[0].id);
+    }
+  }, [activeTab, dynamicTabs]);
 
   const dynamicStats = useMemo(() => {
     return bookingStats.map(stat => {
@@ -235,6 +255,14 @@ export function BookingsContent() {
       return matchesSearch && matchesVenueType && matchesRange;
     });
   }, [requests, searchTerm, selectedVenueType, selectedDateRange]);
+
+  if (!canViewBookings) {
+    return (
+      <div className="rounded-[22px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+        You do not have permission to view bookings.
+      </div>
+    );
+  }
 
 
   const handleApproveConfirm = async () => {
@@ -375,17 +403,17 @@ export function BookingsContent() {
                     totalCount={myBookings.length}
                     pageSize={MY_BOOKINGS_PAGE_SIZE}
                     onPageChange={setMyBookingsPage}
-                    onDelete={(bookingId) => {
+                    onDelete={canDeleteBookings ? (bookingId) => {
                       const booking = myBookings.find(b => b.id === bookingId);
                       if (booking) {
                         setDeleteConfirm({ id: booking.id, title: booking.eventTitle });
                       }
-                    }}
+                    } : undefined}
                   />
                 </>
               ) : null}
 
-              {activeTab === "approval-queue" ? (
+              {activeTab === "approval-queue" && canApproveBookings ? (
                 <ApprovalQueueSection
                   items={filteredApprovalRequests}
                   searchTerm={searchTerm}

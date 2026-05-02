@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { BookingsContent } from "@/components/dashboard/bookings/BookingsContent";
+import { BookingsPageActions } from "@/components/dashboard/bookings/BookingsPageActions";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 
 export const metadata: Metadata = {
@@ -25,13 +26,7 @@ export default function BookingsPage() {
           <p className="mt-1 text-sm text-gray-500">Manage venue discovery, requests, and approvals.</p>
         </div>
 
-        <Link
-          href="/bookings/new"
-          className="inline-flex h-9 items-center justify-center gap-2 self-start rounded-[10px] bg-[#c49a22] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#b18a1f] sm:self-auto"
-        >
-          <Plus size={15} />
-          New Booking Request
-        </Link>
+        <BookingsPageActions />
       </section>
 
       <BookingsContent />

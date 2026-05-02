@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Globe, Share2, User, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { ClubItem, ClubStatus } from "@/types/dashboard";
 
 const statusVariantMap: Record<ClubStatus, "success" | "warning" | "danger"> = {
@@ -21,6 +22,8 @@ interface ClubCardProps {
 }
 
 export function ClubCard({ item }: ClubCardProps) {
+  const { hasPermission } = usePermissions();
+  const canEditClub = hasPermission("clubs.edit");
   const actionLabel =
     item.status === "pending"
       ? "Review Details"
@@ -91,17 +94,19 @@ export function ClubCard({ item }: ClubCardProps) {
             </button>
           </div>
 
-          <Link
-            href={`/clubs/${item.id}/edit`}
-            className={cn(
-              "inline-flex h-8 items-center justify-center rounded-[8px] px-3 text-[11px] font-medium transition-colors",
-              item.status === "pending"
-                ? "border border-[#c49a22] bg-white text-[#c49a22] hover:bg-[#fdf8ec]"
-                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-            )}
-          >
-            {actionLabel}
-          </Link>
+          {canEditClub ? (
+            <Link
+              href={`/clubs/${item.id}/edit`}
+              className={cn(
+                "inline-flex h-8 items-center justify-center rounded-[8px] px-3 text-[11px] font-medium transition-colors",
+                item.status === "pending"
+                  ? "border border-[#c49a22] bg-white text-[#c49a22] hover:bg-[#fdf8ec]"
+                  : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              )}
+            >
+              {actionLabel}
+            </Link>
+          ) : null}
         </div>
       </div>
     </article>

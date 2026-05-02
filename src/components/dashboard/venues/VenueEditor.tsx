@@ -25,6 +25,7 @@ import { FileUpload } from "@/components/ui/FileUpload";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
 import { useVenueCategories, useCreateVenue, useUpdateVenue, useUploadVenueGalleryImage, useDeleteVenueGalleryImage } from "@/hooks/useVenues";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { VenueStatus } from "@/types/dashboard";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -103,6 +104,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
   const [deleteImageConfirm, setDeleteImageConfirm] = useState<string | null>(null);
 
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const { data: categoriesData } = useVenueCategories();
   const createVenue = useCreateVenue();
   const updateVenue = useUpdateVenue();
@@ -139,6 +141,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
 
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [values]);
+  const canAccessEditor = mode === "create" ? hasPermission("venues.create") : hasPermission("venues.edit");
 
 
   function updateField<K extends keyof VenueEditorValues>(key: K, value: VenueEditorValues[K]) {
@@ -417,6 +420,12 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {!canAccessEditor ? (
+        <div className="rounded-[22px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+          You do not have permission to {mode === "create" ? "create" : "edit"} venues.
+        </div>
+      ) : (
+      <>
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400">
         <Link href="/dashboard" className="font-medium text-[#c49a22] hover:underline">
           Dashboard
@@ -825,7 +834,7 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
               type="submit" 
               variant="goldSolid" 
               className="h-10 min-w-[220px] rounded-[10px] px-4"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !canAccessEditor}
             >
               {isSubmitting ? "Saving..." : mode === "create" ? "Save New Venue" : "Save Changes"}
             </Button>
@@ -885,6 +894,9 @@ export function VenueEditor({ mode, venueId, initialValues }: VenueEditorProps) 
         onCancel={() => setDeleteImageConfirm(null)}
         isLoading={deleteGalleryImage.isPending}
       />
+
+      </>
+      )}
     </form>
   );
 }

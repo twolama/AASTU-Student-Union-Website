@@ -1,6 +1,7 @@
 import { USER_ENDPOINTS, ROLE_ENDPOINTS } from "../endpoints";
 import { apiClient } from "../client";
 import { type CurrentUser } from "@/schemas/user.schema";
+import { UserPermissionsSchema, type UserPermissionsResponse } from "@/schemas/user.schema";
 
 export interface PaginationMeta {
   page: number;
@@ -57,6 +58,11 @@ export const userService = {
   getUser: async (id: string) => {
     const response = await apiClient.get<{ success: boolean; data: CurrentUser }>(USER_ENDPOINTS.DETAIL(id));
     return response.data;
+  },
+
+  getUserPermissions: async (id: string): Promise<UserPermissionsResponse> => {
+    const response = await apiClient.get(USER_ENDPOINTS.PERMISSIONS(id));
+    return UserPermissionsSchema.parse(response.data);
   },
 
   createUser: async (data: CreateUserInput) => {

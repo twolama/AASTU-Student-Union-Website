@@ -16,6 +16,8 @@ interface VenuesTableProps {
   onPageChange: (page: number) => void;
   totalCount: number;
   viewMode: "list" | "grid";
+  canEditVenues?: boolean;
+  canDeleteVenues?: boolean;
 }
 
 const statusVariantMap: Record<VenueStatus, "success" | "warning" | "default"> = {
@@ -37,6 +39,8 @@ export function VenuesTable({
   onPageChange,
   totalCount,
   viewMode,
+  canEditVenues = false,
+  canDeleteVenues = false,
 }: VenuesTableProps) {
   const deleteVenue = useDeleteVenue();
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
@@ -115,17 +119,21 @@ export function VenuesTable({
                         <Link href={`/venues/${item.id}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" aria-label={`View ${item.name}`}>
                           <Eye size={15} />
                         </Link>
-                        <Link href={`/venues/${item.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" aria-label={`Edit ${item.name}`}>
-                          <Pencil size={15} />
-                        </Link>
-                        <button 
-                          type="button" 
-                          onClick={() => setDeleteConfirm({ id: item.id, name: item.name })}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" 
-                          aria-label={`Delete ${item.name}`}
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {canEditVenues ? (
+                          <Link href={`/venues/${item.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" aria-label={`Edit ${item.name}`}>
+                            <Pencil size={15} />
+                          </Link>
+                        ) : null}
+                        {canDeleteVenues ? (
+                          <button 
+                            type="button" 
+                            onClick={() => setDeleteConfirm({ id: item.id, name: item.name })}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600" 
+                            aria-label={`Delete ${item.name}`}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -177,9 +185,11 @@ export function VenuesTable({
                       <Eye size={14} />
                       View
                     </Link>
-                    <Link href={`/venues/${item.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition-colors hover:bg-white hover:text-gray-700" aria-label={`Edit ${item.name}`}>
-                      <Pencil size={14} />
-                    </Link>
+                    {canEditVenues ? (
+                      <Link href={`/venues/${item.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition-colors hover:bg-white hover:text-gray-700" aria-label={`Edit ${item.name}`}>
+                        <Pencil size={14} />
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               </article>
@@ -208,6 +218,16 @@ export function VenuesTable({
             <Badge variant={statusVariantMap[item.status]} className="mt-2 rounded-full px-2 py-0.5 text-[10px] uppercase">
               {statusLabelMap[item.status]}
             </Badge>
+            <div className="mt-3 flex gap-2">
+              <Link href={`/venues/${item.id}`} className="inline-flex flex-1 items-center justify-center rounded-md bg-[#1f2a44] px-3 py-2 text-xs font-semibold text-white">
+                View
+              </Link>
+              {canEditVenues ? (
+                <Link href={`/venues/${item.id}/edit`} className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-500">
+                  <Pencil size={14} />
+                </Link>
+              ) : null}
+            </div>
           </article>
         ))}
       </div>

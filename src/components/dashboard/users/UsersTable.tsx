@@ -17,6 +17,8 @@ interface UsersTableProps {
   roles?: Role[];
   onEdit?: (user: CurrentUser) => void;
   onDelete?: (user: CurrentUser) => void;
+  canEditUsers?: boolean;
+  canDeleteUsers?: boolean;
 }
 
 export function UsersTable({
@@ -30,6 +32,8 @@ export function UsersTable({
   roles = [],
   onEdit,
   onDelete,
+  canEditUsers = false,
+  canDeleteUsers = false,
 }: UsersTableProps) {
   const start = items.length > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const end = (currentPage - 1) * pageSize + items.length;
@@ -129,20 +133,24 @@ export function UsersTable({
                 </td>
                 <td className="px-5 py-4 text-right">
                   <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      onClick={() => onEdit?.(item)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-[#ead9a3]/30 hover:text-[#c49a22]"
-                      title="Edit User"
-                    >
-                      <UserCog2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => onDelete?.(item)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-red-50 hover:text-red-500"
-                      title="Delete User"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canEditUsers ? (
+                      <button
+                        onClick={() => onEdit?.(item)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-[#ead9a3]/30 hover:text-[#c49a22]"
+                        title="Edit User"
+                      >
+                        <UserCog2 size={16} />
+                      </button>
+                    ) : null}
+                    {canDeleteUsers ? (
+                      <button
+                        onClick={() => onDelete?.(item)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-red-50 hover:text-red-500"
+                        title="Delete User"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    ) : null}
                   </div>
                 </td>
               </tr>
@@ -172,9 +180,11 @@ export function UsersTable({
                 </div>
               </div>
               
-              <button onClick={() => onEdit?.(item)} className="p-1 text-gray-400">
-                <MoreVertical size={18} />
-              </button>
+              {canEditUsers ? (
+                <button onClick={() => onEdit?.(item)} className="p-1 text-gray-400">
+                  <MoreVertical size={18} />
+                </button>
+              ) : null}
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-4">
@@ -192,9 +202,11 @@ export function UsersTable({
               <Badge className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]", getRoleClass(item))}>
                 {getRoleLabel(item)}
               </Badge>
-              <button className="text-xs font-bold text-red-500 hover:underline" onClick={() => onDelete?.(item)}>
-                Delete Account
-              </button>
+              {canDeleteUsers ? (
+                <button className="text-xs font-bold text-red-500 hover:underline" onClick={() => onDelete?.(item)}>
+                  Delete Account
+                </button>
+              ) : null}
             </div>
           </article>
         ))}

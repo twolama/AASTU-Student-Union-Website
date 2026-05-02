@@ -10,6 +10,7 @@ import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { useUsers, useDeleteUser } from "@/hooks/useUsers";
 import { useRoles } from "@/hooks/useRoles";
 import { useDepartments } from "@/hooks/useDepartments";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Tabs } from "@/components/ui/Tabs";
 import { Users, ShieldCheck, Loader2 } from "lucide-react";
 import { type CurrentUser } from "@/schemas/user.schema";
@@ -44,7 +45,12 @@ export function UsersContent() {
   const { data: usersData, isLoading: isUsersLoading } = useUsers(currentPage, ITEMS_PER_PAGE, searchTerm, selectedRole, selectedDepartment);
   const { data: rolesData, isLoading: isRolesLoading } = useRoles();
   const { data: departments = [], isLoading: isDeptsLoading } = useDepartments();
+  const { hasPermission } = usePermissions();
   const deleteUserMutation = useDeleteUser();
+  const canCreateUsers = hasPermission("users.create");
+  const canEditUsers = hasPermission("users.edit");
+  const canDeleteUsers = hasPermission("users.delete");
+  const canManageRoles = hasPermission("users.edit");
 
   const roleOptions = useMemo(() => {
     if (!rolesData?.data) return [{ value: "all", label: "All Roles" }];
@@ -140,14 +146,22 @@ export function UsersContent() {
               pageSize={ITEMS_PER_PAGE}
               departments={departments}
               roles={rolesData?.data}
+              canEditUsers={canEditUsers}
+              canDeleteUsers={canDeleteUsers}
               onEdit={(user) => router.push(`/users/${user.id}/edit`)}
               onDelete={(user) => setDeleteTarget(user)}
             />
           </div>
         ) : (
-          <div className="animate-in fade-in slide-in-from-right-2 duration-300">
-            <RolesManagement />
-          </div>
+          canManageRoles ? (
+            <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+              <RolesManagement />
+            </div>
+          ) : (
+            <div className="rounded-[22px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+              You do not have permission to manage roles.
+            </div>
+          )
         )}
       </div>
 

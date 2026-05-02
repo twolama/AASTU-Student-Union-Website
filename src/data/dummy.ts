@@ -20,13 +20,13 @@ import type {
 
 export const mainNavItems: NavItem[] = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
-  { id: "announcements", label: "Announcements", href: "/announcements", icon: "Megaphone" },
-  { id: "clubs", label: "Clubs", href: "/clubs", icon: "Users" },
-  { id: "events", label: "Events", href: "/events", icon: "CalendarDays" },
-  { id: "venues", label: "Venues", href: "/venues", icon: "Building2" },
-  { id: "bookings", label: "Bookings", href: "/bookings", icon: "BookOpen" },
-  { id: "users", label: "Users", href: "/users", icon: "UserCircle" },
-  { id: "stats", label: "Stats", href: "/stats", icon: "BarChart3" },
+  { id: "announcements", label: "Announcements", href: "/announcements", icon: "Megaphone", permissions: ["announcements.view"] },
+  { id: "clubs", label: "Clubs", href: "/clubs", icon: "Users", permissions: ["clubs.view"] },
+  { id: "events", label: "Events", href: "/events", icon: "CalendarDays", permissions: ["events.view"] },
+  { id: "venues", label: "Venues", href: "/venues", icon: "Building2", permissions: ["venues.view"] },
+  { id: "bookings", label: "Bookings", href: "/bookings", icon: "BookOpen", permissions: ["bookings.view"] },
+  { id: "users", label: "Users", href: "/users", icon: "UserCircle", permissions: ["users.view"] },
+  { id: "stats", label: "Stats", href: "/stats", icon: "BarChart3", permissions: ["analytics.view"] },
 ];
 
 export const bottomNavItems: NavItem[] = [
@@ -146,9 +146,9 @@ export const clubItems: ClubItem[] = [];
 export const clubDetailItems: Record<string, ClubDetailItem> = {};
 
 export const bookingTabs: BookingTab[] = [
-  { id: "browse-venues", label: "Browse Venues" },
-  { id: "my-bookings", label: "My Bookings" },
-  { id: "approval-queue", label: "Approval Queue", showAdminBadge: true },
+  { id: "browse-venues", label: "Browse Venues", permissions: ["bookings.view"] },
+  { id: "my-bookings", label: "My Bookings", permissions: ["bookings.view"] },
+  { id: "approval-queue", label: "Approval Queue", showAdminBadge: true, permissions: ["bookings.edit"] },
 ];
 
 export const bookingStats: BookingStat[] = [

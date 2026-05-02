@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { BookingVenueCard } from "@/types/dashboard";
 import type { Club } from "@/schemas/club.schema";
 import type { Venue } from "@/schemas/venue.schema";
@@ -256,9 +257,12 @@ export function BookingRequestForm({
   const router = useRouter();
   const createMutation = useCreateBooking();
   const updateMutation = useUpdateBooking();
+  const { hasPermission } = usePermissions();
 
   const isEditMode = mode === "edit";
   const pageTitle = isEditMode ? "Edit Booking Request" : "New Booking Request";
+  const canViewForm = isEditMode ? hasPermission("bookings.edit") : hasPermission("bookings.create");
+  const canSubmitBooking = canViewForm;
   const [currentStep, setCurrentStep] = useState<StepId>(1);
 
   const [eventTitle, setEventTitle] = useState(initialData?.eventTitle ?? "");
@@ -520,6 +524,14 @@ export function BookingRequestForm({
 
   return (
     <div className="space-y-5">
+      {!canViewForm ? (
+        <div className="rounded-[22px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+          You do not have permission to {isEditMode ? "edit" : "create"} bookings.
+        </div>
+      ) : null}
+
+      {canViewForm ? (
+      <>
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400">
         <Link href="/dashboard" className="font-medium text-[#c49a22] hover:underline">
           Dashboard
@@ -993,7 +1005,7 @@ export function BookingRequestForm({
               <Button type="button" variant="outline" className="h-10 w-full sm:w-auto">
                 Save Draft
               </Button>
-              <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={handleSubmit} disabled={!guidelinesChecked}>
+              <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={handleSubmit} disabled={!guidelinesChecked || !canSubmitBooking}>
                 {isEditMode ? "Update Booking" : "Submit"}
                 <ArrowRight size={14} />
               </Button>
@@ -1015,6 +1027,8 @@ export function BookingRequestForm({
       ) : null}
 
       <DashboardFooter />
+      </>
+      ) : null}
     </div>
   );
 }

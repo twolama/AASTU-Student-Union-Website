@@ -8,11 +8,15 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { type Role } from "@/api/services/user.service";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export function RolesManagement() {
   const { data: rolesData, isLoading } = useRoles();
   const deleteRoleMutation = useDeleteRole();
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canEditRoles = hasPermission("users.edit");
+  const canDeleteRoles = hasPermission("users.delete");
 
   if (isLoading) {
     return (
@@ -41,10 +45,12 @@ export function RolesManagement() {
           <h3 className="text-lg font-bold text-[#1f2a44]">Union Roles</h3>
           <p className="text-sm text-gray-500">Manage definitions and permissions for all union staff and members.</p>
         </div>
-        <Button variant="goldSolid" className="gap-2 rounded-xl h-10 shadow-lg shadow-[#c49a22]/10" onClick={() => toast.info("Role editor coming soon!")}>
-          <Plus size={16} />
-          Create New Role
-        </Button>
+        {canEditRoles ? (
+          <Button variant="goldSolid" className="gap-2 rounded-xl h-10 shadow-lg shadow-[#c49a22]/10" onClick={() => toast.info("Role editor coming soon!") }>
+            <Plus size={16} />
+            Create New Role
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -61,15 +67,19 @@ export function RolesManagement() {
                 <Shield size={24} />
               </div>
               <div className="flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <button className="rounded-lg p-2 text-gray-400 hover:bg-gray-50 hover:text-[#c49a22]">
-                  <Edit3 size={16} />
-                </button>
-                <button 
-                  onClick={() => handleDelete(role.id)}
-                  className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {canEditRoles ? (
+                  <button className="rounded-lg p-2 text-gray-400 hover:bg-gray-50 hover:text-[#c49a22]">
+                    <Edit3 size={16} />
+                  </button>
+                ) : null}
+                {canDeleteRoles ? (
+                  <button 
+                    onClick={() => handleDelete(role.id)}
+                    className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                ) : null}
               </div>
             </div>
 

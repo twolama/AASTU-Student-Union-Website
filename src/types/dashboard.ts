@@ -4,6 +4,7 @@ export interface NavItem {
   label: string;
   href: string;
   icon: string; // lucide icon name
+  permissions?: string[];
 }
 
 // ─── Stats Cards ──────────────────────────────────────────────────────────────
@@ -357,6 +358,7 @@ export interface BookingTab {
   label: string;
   showAdminBadge?: boolean;
   badge?: string | number;
+  permissions?: string[];
 }
 
 export interface BookingStat {

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mainNavItems, bottomNavItems } from "@/data/dummy";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { NavItem } from "@/types/dashboard";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -130,6 +131,10 @@ export function Sidebar({ isCollapsed, isMobileOpen, onCloseMobile }: SidebarPro
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const effectiveCollapsed = isMobileOpen ? false : isCollapsed;
+  const { hasAnyPermission } = usePermissions();
+
+  const visibleMainNavItems = mainNavItems.filter((item) => !item.permissions || hasAnyPermission(item.permissions));
+  const visibleBottomNavItems = bottomNavItems.filter((item) => !item.permissions || hasAnyPermission(item.permissions));
 
   return (
     <>
@@ -209,7 +214,7 @@ export function Sidebar({ isCollapsed, isMobileOpen, onCloseMobile }: SidebarPro
         {/* ── Main navigation ────────────────────────────── */}
         <nav className={cn("flex-1 overflow-y-auto overflow-x-hidden py-5", effectiveCollapsed ? "px-2" : "px-3")}>
           <ul className="flex flex-col gap-1">
-            {mainNavItems.map((item) => (
+            {visibleMainNavItems.map((item) => (
               <li key={item.id} className={cn(effectiveCollapsed && "flex justify-center")}>
                 <NavLink
                   item={item}
@@ -225,7 +230,7 @@ export function Sidebar({ isCollapsed, isMobileOpen, onCloseMobile }: SidebarPro
         {/* ── Bottom navigation ──────────────────────────── */}
         <div className={cn("border-t border-white/10 py-5", effectiveCollapsed ? "px-2" : "px-3")}>
           <ul className="flex flex-col gap-2.5">
-            {bottomNavItems.map((item) => (
+            {visibleBottomNavItems.map((item) => (
               <li key={item.id} className={cn(effectiveCollapsed && "flex justify-center")}>
                 <NavLink
                   item={item}

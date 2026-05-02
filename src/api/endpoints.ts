@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `${API_V1_PREFIX}/users/${id}/`,
     ME: `${API_V1_PREFIX}/users/me/`,
     ME_PATCH: `${API_V1_PREFIX}/users/me/`,
+    PERMISSIONS: (id: string) => `${API_V1_PREFIX}/permissions/${id}/`,
   },
   ROLES: {
     LIST: `${API_V1_PREFIX}/roles/`,

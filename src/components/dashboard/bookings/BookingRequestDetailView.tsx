@@ -25,6 +25,7 @@ import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
 import type { BookingDetail } from "@/schemas/booking.schema";
 import { useApproveBooking, useCancelBooking } from "@/hooks/useBookings";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 
 interface BookingRequestDetailViewProps {
@@ -34,6 +35,20 @@ interface BookingRequestDetailViewProps {
 export function BookingRequestDetailView({ booking }: BookingRequestDetailViewProps) {
   const approveMutation = useApproveBooking();
   const cancelMutation = useCancelBooking();
+  const { hasPermission } = usePermissions();
+  const canViewBookings = hasPermission("bookings.view") || hasPermission("bookings.edit") || hasPermission("bookings.create") || hasPermission("bookings.delete") || hasPermission("bookings.approve_booking") || hasPermission("bookings.reject_booking");
+  const canApproveBookings = hasPermission("bookings.approve_booking");
+  const canRejectBookings = hasPermission("bookings.reject_booking");
+  const canCreateBookings = hasPermission("bookings.create");
+  const canDeleteBookings = hasPermission("bookings.delete");
+
+  if (!canViewBookings) {
+    return (
+      <div className="rounded-[22px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+        You do not have permission to view booking details.
+      </div>
+    );
+  }
 
   const handleApprove = async () => {
     try {
@@ -135,7 +150,7 @@ export function BookingRequestDetailView({ booking }: BookingRequestDetailViewPr
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-2 pt-1">
-            {booking.status === "pending" && (
+            {booking.status === "pending" && (canApproveBookings || canRejectBookings) && (
               <>
                 <Link href={`/bookings/${booking.id}/edit`}>
                   <Button 
@@ -145,26 +160,30 @@ export function BookingRequestDetailView({ booking }: BookingRequestDetailViewPr
                     Edit Request
                   </Button>
                 </Link>
-                <Button 
-                  onClick={handleApprove}
-                  disabled={approveMutation.isPending}
-                  className="h-10 rounded-[10px] bg-[#c49a22] px-5 font-bold text-white hover:bg-[#b18a1f]"
-                >
-                  {approveMutation.isPending ? "Approving..." : "Approve Request"}
-                </Button>
-                <Button 
-                  onClick={handleCancel}
-                  disabled={cancelMutation.isPending}
-                  variant="outline" 
-                  className="h-10 rounded-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                >
-                  Reject Request
-                </Button>
+                {canApproveBookings ? (
+                  <Button 
+                    onClick={handleApprove}
+                    disabled={approveMutation.isPending}
+                    className="h-10 rounded-[10px] bg-[#c49a22] px-5 font-bold text-white hover:bg-[#b18a1f]"
+                  >
+                    {approveMutation.isPending ? "Approving..." : "Approve Request"}
+                  </Button>
+                ) : null}
+                {canRejectBookings ? (
+                  <Button 
+                    onClick={handleCancel}
+                    disabled={cancelMutation.isPending}
+                    variant="outline" 
+                    className="h-10 rounded-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                  >
+                    Reject Request
+                  </Button>
+                ) : null}
               </>
             )}
-            {booking.status === "approved" && (
+            {booking.status === "approved" && (canCreateBookings || canEditBookings || canDeleteBookings) && (
               <div className="flex gap-2">
-                {!booking.event ? (
+                {!booking.event && canCreateBookings ? (
                   <Link href={`/events/new?bookingId=${booking.id}`}>
                     <Button 
                       className="h-10 rounded-[10px] bg-[#1f2a44] px-5 font-bold text-white hover:bg-[#161f33]"
@@ -183,14 +202,16 @@ export function BookingRequestDetailView({ booking }: BookingRequestDetailViewPr
                     </Button>
                   </Link>
                 )}
-                <Button 
-                  onClick={handleCancel}
-                  disabled={cancelMutation.isPending}
-                  variant="outline" 
-                  className="h-10 rounded-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                >
-                  Cancel Booking
-                </Button>
+                {canRejectBookings ? (
+                  <Button 
+                    onClick={handleCancel}
+                    disabled={cancelMutation.isPending}
+                    variant="outline" 
+                    className="h-10 rounded-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                  >
+                    Cancel Booking
+                  </Button>
+                ) : null}
               </div>
             )}
           </div>

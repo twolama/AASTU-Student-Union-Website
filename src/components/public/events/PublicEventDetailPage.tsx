@@ -15,6 +15,7 @@ import {
 import { PublicFooter } from "@/components/public/layout/PublicFooter";
 import { PublicHeader } from "@/components/public/layout/PublicHeader";
 import { useEvent, useEvents } from "@/hooks/useEvents";
+import { usePermissions } from "@/hooks/usePermissions";
 import dayjs from "dayjs";
 
 interface PublicEventDetailPageProps {
@@ -22,6 +23,8 @@ interface PublicEventDetailPageProps {
 }
 
 export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
+  const { hasPermission } = usePermissions();
+  const canRegisterForEvents = hasPermission("events.create");
   const { data: event, isLoading, isError, error } = useEvent(eventId);
   const { data: relatedResponse } = useEvents(1, 4);
 
@@ -203,7 +206,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
                 </div>
               </div>
 
-              {event.registration_link && (
+              {event.registration_link && canRegisterForEvents ? (
                 <a
                   href={event.registration_link}
                   target="_blank"

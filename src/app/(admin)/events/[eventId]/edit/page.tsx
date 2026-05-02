@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { EventEditor } from "@/components/dashboard/events/EventEditor";
 import type { EventEditorValues } from "@/components/dashboard/events/EventEditor";
 import { eventManagementItems } from "@/data/dummy";
@@ -150,15 +151,24 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
 
 
 
-  return (
-    <EventEditor
-      mode="edit"
-      eventId={eventId}
-      initialValues={initialValues}
-    />
-  );
-
   if (!event && !fallbackEvent) {
     notFound();
   }
+
+  return (
+    <PermissionGate
+      anyOf={["events.edit"]}
+      fallback={
+        <div className="rounded-[10px] border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+          You do not have permission to edit events.
+        </div>
+      }
+    >
+      <EventEditor
+        mode="edit"
+        eventId={eventId}
+        initialValues={initialValues}
+      />
+    </PermissionGate>
+  );
 }

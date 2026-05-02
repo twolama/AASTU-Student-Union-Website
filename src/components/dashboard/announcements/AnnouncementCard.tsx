@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { type Announcement } from "@/schemas/announcement.schema";
 import { useDeleteAnnouncement } from "@/hooks/useAnnouncements";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -19,11 +20,14 @@ interface AnnouncementCardProps {
 }
 
 export function AnnouncementCard({ item }: AnnouncementCardProps) {
+  const { hasPermission } = usePermissions();
   const normalizedItem = item as { isPublished?: boolean; is_published?: boolean };
   const isPublished = normalizedItem.isPublished ?? normalizedItem.is_published ?? false;
   const publishedAt = item.publishedDate || dayjs(item.createdAt).fromNow();
   const deleteMutation = useDeleteAnnouncement();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const canEditAnnouncement = hasPermission("announcements.edit");
+  const canDeleteAnnouncement = hasPermission("announcements.delete");
 
   const handleDelete = async () => {
     try {
@@ -117,35 +121,41 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
             >
               <Eye size={16} />
             </Link>
-            <Link
-              href={`/announcements/${item.id}/edit`}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-blue-50 hover:text-blue-600"
-              title="Edit Announcement"
-            >
-              <Edit3 size={16} />
-            </Link>
-            <button
-              onClick={() => setIsDeleteDialogOpen(true)}
-              disabled={deleteMutation.isPending}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-              title="Delete Announcement"
-            >
-              <Trash2 size={16} />
-            </button>
+            {canEditAnnouncement ? (
+              <Link
+                href={`/announcements/${item.id}/edit`}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-blue-50 hover:text-blue-600"
+                title="Edit Announcement"
+              >
+                <Edit3 size={16} />
+              </Link>
+            ) : null}
+            {canDeleteAnnouncement ? (
+              <button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                disabled={deleteMutation.isPending}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-all hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                title="Delete Announcement"
+              >
+                <Trash2 size={16} />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
 
-      <ConfirmationDialog
-        open={isDeleteDialogOpen}
-        title="Delete Announcement"
-        message="Are you sure you want to delete this announcement? This action cannot be undone."
-        confirmLabel="Delete Announcement"
-        cancelLabel="Cancel"
-        isLoading={deleteMutation.isPending}
-        onCancel={() => setIsDeleteDialogOpen(false)}
-        onConfirm={handleDelete}
-      />
+      {canDeleteAnnouncement ? (
+        <ConfirmationDialog
+          open={isDeleteDialogOpen}
+          title="Delete Announcement"
+          message="Are you sure you want to delete this announcement? This action cannot be undone."
+          confirmLabel="Delete Announcement"
+          cancelLabel="Cancel"
+          isLoading={deleteMutation.isPending}
+          onCancel={() => setIsDeleteDialogOpen(false)}
+          onConfirm={handleDelete}
+        />
+      ) : null}
     </article>
   );
 }

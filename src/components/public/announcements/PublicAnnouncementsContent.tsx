@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Badge } from "@/components/ui/Badge";
 import { announcementService } from "@/api/services/announcement.service";
+import { usePermissions } from "@/hooks/usePermissions";
 
 dayjs.extend(relativeTime);
 import { getPublicAnnouncementCategoryLabel, publicAnnouncementTabs } from "@/lib/public/announcements";
@@ -100,6 +101,8 @@ export function PublicAnnouncementsContent() {
   const [activeTab, setActiveTab] = useState("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const { hasPermission } = usePermissions();
+  const canSubmitRequest = hasPermission("announcements.create");
 
   const { data: announcementsResponse } = useQuery({
     queryKey: ["public-announcements"],
@@ -288,7 +291,7 @@ export function PublicAnnouncementsContent() {
           {visibleAnnouncements.map((announcement) => (
             <AnnouncementCard key={announcement.id} announcement={announcement} />
           ))}
-          <AnnouncementCalloutCard />
+          {canSubmitRequest ? <AnnouncementCalloutCard /> : null}
         </div>
 
         {totalPages > 1 ? (

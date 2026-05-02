@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PublicClubCard } from "@/components/public/clubs/PublicClubCard";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import type { ClubItem } from "@/types/dashboard";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface PublicClubsContentProps {
   clubs: ClubItem[];
@@ -28,6 +29,8 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeCategory, setActiveCategory] = useState("All");
   const [query, setQuery] = useState("");
+  const { hasPermission } = usePermissions();
+  const canProposeClub = hasPermission("clubs.create");
 
   const categories = useMemo(() => {
     const unique = Array.from(new Set(clubs.map((club) => club.categoryLabel)));
@@ -218,37 +221,39 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
             ))}
           </div>
 
-          <section className="overflow-hidden rounded-[20px] bg-[#14213d] text-white shadow-sm">
-            <div className="grid gap-0 lg:grid-cols-[1fr_0.54fr]">
-              <div className="p-8 sm:p-10 lg:p-12">
-                <h3 className="text-3xl font-black leading-tight sm:text-4xl">
-                  Can&apos;t find your community?
-                </h3>
-                <p className="mt-4 max-w-[54ch] text-sm leading-7 text-[#b9c4df] sm:text-base">
-                  The Student Union supports the birth of new ideas. If you have a passion
-                  that is not represented, we&apos;ll help you build it from the ground up with
-                  resources and guidance.
-                </p>
-                <button
-                  type="button"
-                  onClick={openModal}
-                  className="mt-7 inline-flex rounded-[10px] bg-[#f1c54c] px-6 py-3 text-sm font-semibold text-[#0d183b] transition-colors hover:bg-[#ffd66a]"
-                >
-                  Start a New Club
-                </button>
-              </div>
+          {canProposeClub ? (
+            <section className="overflow-hidden rounded-[20px] bg-[#14213d] text-white shadow-sm">
+              <div className="grid gap-0 lg:grid-cols-[1fr_0.54fr]">
+                <div className="p-8 sm:p-10 lg:p-12">
+                  <h3 className="text-3xl font-black leading-tight sm:text-4xl">
+                    Can&apos;t find your community?
+                  </h3>
+                  <p className="mt-4 max-w-[54ch] text-sm leading-7 text-[#b9c4df] sm:text-base">
+                    The Student Union supports the birth of new ideas. If you have a passion
+                    that is not represented, we&apos;ll help you build it from the ground up with
+                    resources and guidance.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openModal}
+                    className="mt-7 inline-flex rounded-[10px] bg-[#f1c54c] px-6 py-3 text-sm font-semibold text-[#0d183b] transition-colors hover:bg-[#ffd66a]"
+                  >
+                    Start a New Club
+                  </button>
+                </div>
 
-              <div className="relative min-h-[250px]">
-                <Image
-                  src="/aastu_hero.png"
-                  alt="Students collaborating on a club initiative"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 38vw"
-                  className="object-cover"
-                />
+                <div className="relative min-h-[250px]">
+                  <Image
+                    src="/aastu_hero.png"
+                    alt="Students collaborating on a club initiative"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 38vw"
+                    className="object-cover"
+                  />
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </section>
       ) : (
         <section className="mt-8 rounded-[14px] border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">

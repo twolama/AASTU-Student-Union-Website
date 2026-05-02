@@ -46,6 +46,8 @@ export const CurrentUserDataSchema = z
     role: z.string().nullable().optional(),
     rolesDetails: z.array(RoleDetailsSchema).optional(),
     roleDetails: RoleDetailsSchema.nullable().optional(),
+    permissions: z.array(z.string()).optional(),
+    djangoPermissions: z.array(z.string()).optional(),
     initials: z.string().optional(),
     bio: z.string().nullable().optional(),
   })
@@ -71,6 +73,20 @@ export const ProfileUpdateSchema = z.object({
 });
 
 export type ProfileUpdate = z.infer<typeof ProfileUpdateSchema>;
+
+export const UserPermissionsSchema = z
+  .object({
+    success: z.boolean(),
+    message: z.string().optional(),
+    data: z.object({
+      userId: z.string(),
+      permissions: z.array(z.string()),
+      djangoPermissions: z.array(z.string()).optional(),
+    }),
+  })
+  .passthrough();
+
+export type UserPermissionsResponse = z.infer<typeof UserPermissionsSchema>;
 
 export const ChangePasswordSchema = z
   .object({

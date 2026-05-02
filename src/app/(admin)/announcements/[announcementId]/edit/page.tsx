@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { AnnouncementEditor } from "@/components/dashboard/announcements/AnnouncementEditor";
 import { useAnnouncement } from "@/hooks/useAnnouncements";
 import { Loader2 } from "lucide-react";
@@ -58,10 +59,19 @@ export default function EditAnnouncementPage({ params }: EditAnnouncementPagePro
   };
 
   return (
-    <AnnouncementEditor
-      mode="edit"
-      announcementId={announcementId}
-      initialValues={initialValues}
-    />
+    <PermissionGate
+      anyOf={["announcements.edit"]}
+      fallback={
+        <div className="rounded-[10px] border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+          You do not have permission to edit announcements.
+        </div>
+      }
+    >
+      <AnnouncementEditor
+        mode="edit"
+        announcementId={announcementId}
+        initialValues={initialValues}
+      />
+    </PermissionGate>
   );
 }

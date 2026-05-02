@@ -7,6 +7,7 @@ import { VenuesFilters } from "@/components/dashboard/venues/VenuesFilters";
 import { VenuesStatsSection } from "@/components/dashboard/venues/VenuesStatsSection";
 import { VenuesTable } from "@/components/dashboard/venues/VenuesTable";
 import { useVenues, useVenueCategories } from "@/hooks/useVenues";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { VenueItem } from "@/types/dashboard";
 import type { Venue } from "@/schemas/venue.schema";
 
@@ -21,6 +22,10 @@ export function VenuesContent() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const { hasPermission, hasAnyPermission } = usePermissions();
+  const canViewVenues = hasAnyPermission(["venues.view", "venues.create", "venues.edit", "venues.delete", "venues.manage_venue", "venues.manage_venue_gallery"]);
+  const canEditVenues = hasPermission("venues.edit");
+  const canDeleteVenues = hasPermission("venues.delete");
 
   const { data: categoriesData } = useVenueCategories();
   const { data: venuesResponse, isLoading } = useVenues(
@@ -97,6 +102,14 @@ export function VenuesContent() {
     return <div className="flex h-64 items-center justify-center">Loading venues...</div>;
   }
 
+  if (!canViewVenues) {
+    return (
+      <div className="rounded-[22px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+        You do not have permission to view venues.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-5">
       <VenuesStatsSection items={liveVenueStats ?? venueStats} />
@@ -124,6 +137,8 @@ export function VenuesContent() {
         onPageChange={setCurrentPage}
         totalCount={totalCount}
         viewMode={viewMode}
+        canEditVenues={canEditVenues}
+        canDeleteVenues={canDeleteVenues}
       />
     </div>
   );

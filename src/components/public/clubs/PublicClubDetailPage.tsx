@@ -19,6 +19,7 @@ import {
 import { PublicFooter } from "@/components/public/layout/PublicFooter";
 import { PublicHeader } from "@/components/public/layout/PublicHeader";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { ClubDetailItem } from "@/types/dashboard";
 
 interface PublicClubDetailPageProps {
@@ -26,6 +27,8 @@ interface PublicClubDetailPageProps {
 }
 
 export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
+  const { hasPermission } = usePermissions();
+  const canJoinClub = hasPermission("clubs.create");
   const president = club.contacts.find((contact) =>
     contact.roleLabel.toLowerCase().includes("president")
   );
@@ -84,16 +87,18 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                   </div>
                 </div>
 
-                <div className="glow-border-wrapper rounded-[18px] bg-[#02081d]">
-                  <a
-                    href={club.links.membership}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="glow-border-inner flex h-20 items-center justify-center rounded-[16px] px-10 text-base font-bold text-white transition-colors hover:bg-white/10"
-                  >
-                    Apply for Membership
-                  </a>
-                </div>
+                {canJoinClub ? (
+                  <div className="glow-border-wrapper rounded-[18px] bg-[#02081d]">
+                    <a
+                      href={club.links.membership}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="glow-border-inner flex h-20 items-center justify-center rounded-[16px] px-10 text-base font-bold text-white transition-colors hover:bg-white/10"
+                    >
+                      Apply for Membership
+                    </a>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -244,26 +249,28 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
             </div>
           </article>
 
-          <article className="rounded-[16px] bg-[#041347] p-5 text-white shadow-sm sm:p-6">
-            <h3 className="text-2xl font-black">Join Us</h3>
-            <ul className="mt-4 space-y-3">
-              <li className="inline-flex items-start gap-2 text-sm text-[#d3dcf6]">
-                <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#f1c44d]" />
-                {`Do you want to join ${club.name}?`}
-              </li>
-            </ul>
+          {canJoinClub ? (
+            <article className="rounded-[16px] bg-[#041347] p-5 text-white shadow-sm sm:p-6">
+              <h3 className="text-2xl font-black">Join Us</h3>
+              <ul className="mt-4 space-y-3">
+                <li className="inline-flex items-start gap-2 text-sm text-[#d3dcf6]">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#f1c44d]" />
+                  {`Do you want to join ${club.name}?`}
+                </li>
+              </ul>
 
-            <div className="glow-border-wrapper mt-6 rounded-[12px] bg-[#041347]">
-              <a
-                href={club.links.membership}
-                target="_blank"
-                rel="noreferrer"
-                className="glow-border-inner flex w-full items-center justify-center rounded-[10px] py-4 text-base font-black text-white transition-colors hover:bg-white/10"
-              >
-                REGISTER NOW
-              </a>
-            </div>
-          </article>
+              <div className="glow-border-wrapper mt-6 rounded-[12px] bg-[#041347]">
+                <a
+                  href={club.links.membership}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="glow-border-inner flex w-full items-center justify-center rounded-[10px] py-4 text-base font-black text-white transition-colors hover:bg-white/10"
+                >
+                  REGISTER NOW
+                </a>
+              </div>
+            </article>
+          ) : null}
         </aside>
       </div>
 

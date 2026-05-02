@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { ClubDetailItem } from "@/types/dashboard";
 import { useDeleteClub, useUpdateClub } from "@/hooks/useClubs";
 import { toast } from "sonner";
@@ -48,11 +49,14 @@ const statusLabelMap = {
 
 export function ClubDetailView({ item }: ClubDetailViewProps) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const deleteMutation = useDeleteClub();
   const updateMutation = useUpdateClub();
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const canEditClub = hasPermission("clubs.edit");
+  const canDeleteClub = hasPermission("clubs.delete");
 
   const handleDelete = async () => {
     try {
@@ -132,59 +136,71 @@ export function ClubDetailView({ item }: ClubDetailViewProps) {
               </span>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Link href={`/clubs/${item.id}/edit`}>
-                <Button variant="outline" size="md" className="h-9 rounded-[10px] px-4">
-                  <Pencil size={14} />
-                  Edit Club
-                </Button>
-              </Link>
+            {canEditClub || canDeleteClub ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {canEditClub ? (
+                  <Link href={`/clubs/${item.id}/edit`}>
+                    <Button variant="outline" size="md" className="h-9 rounded-[10px] px-4">
+                      <Pencil size={14} />
+                      Edit Club
+                    </Button>
+                  </Link>
+                ) : null}
 
-              <Button
-                type="button"
-                variant="gold"
-                size="md"
-                className="h-9 rounded-[10px] px-4"
-                onClick={() => setIsStatusModalOpen(true)}
-              >
-                <ShieldAlert size={14} />
-                Change Status
-              </Button>
+                {canEditClub ? (
+                  <Button
+                    type="button"
+                    variant="gold"
+                    size="md"
+                    className="h-9 rounded-[10px] px-4"
+                    onClick={() => setIsStatusModalOpen(true)}
+                  >
+                    <ShieldAlert size={14} />
+                    Change Status
+                  </Button>
+                ) : null}
 
-              <Button
-                type="button"
-                variant="primary"
-                size="md"
-                className="h-9 rounded-[10px] bg-[#dc2626] px-4 hover:bg-[#b91c1c] active:bg-[#991b1b]"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                {deleteMutation.isPending ? "Deleting..." : "Delete"}
-              </Button>
-            </div>
+                {canDeleteClub ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    className="h-9 rounded-[10px] bg-[#dc2626] px-4 hover:bg-[#b91c1c] active:bg-[#991b1b]"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
-      <ConfirmationDialog
-        open={isDeleteDialogOpen}
-        title="Delete Club"
-        message={`Are you sure you want to delete "${item.name}"? This action cannot be undone and all club data will be permanently removed.`}
-        confirmLabel="Delete Club"
-        cancelLabel="Cancel"
-        isLoading={deleteMutation.isPending}
-        onCancel={() => setIsDeleteDialogOpen(false)}
-        onConfirm={handleDelete}
-      />
+      {canDeleteClub ? (
+        <ConfirmationDialog
+          open={isDeleteDialogOpen}
+          title="Delete Club"
+          message={`Are you sure you want to delete "${item.name}"? This action cannot be undone and all club data will be permanently removed.`}
+          confirmLabel="Delete Club"
+          cancelLabel="Cancel"
+          isLoading={deleteMutation.isPending}
+          onCancel={() => setIsDeleteDialogOpen(false)}
+          onConfirm={handleDelete}
+        />
+      ) : null}
 
-      <StatusChangeModal
-        open={isStatusModalOpen}
-        currentStatus={item.status as ClubStatus}
-        isLoading={updateMutation.isPending}
-        onCancel={() => setIsStatusModalOpen(false)}
-        onConfirm={handleStatusChange}
-      />
+      {canEditClub ? (
+        <StatusChangeModal
+          open={isStatusModalOpen}
+          currentStatus={item.status as ClubStatus}
+          isLoading={updateMutation.isPending}
+          onCancel={() => setIsStatusModalOpen(false)}
+          onConfirm={handleStatusChange}
+        />
+      ) : null}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {item.stats.map((stat) => (
