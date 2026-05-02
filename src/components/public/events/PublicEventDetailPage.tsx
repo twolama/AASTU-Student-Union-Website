@@ -206,7 +206,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
                 </div>
               </div>
 
-              {event.registration_link && canRegisterForEvents ? (
+              {event.registration_link && canRegisterForEvents && (
                 <a
                   href={event.registration_link}
                   target="_blank"

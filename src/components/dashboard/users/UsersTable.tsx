@@ -58,7 +58,7 @@ export function UsersTable({
     if (user.roles?.length && roles.length > 0) {
       const resolved = user.roles
         .map((roleId) => roles.find((roleItem) => roleItem.id === roleId))
-        .filter(Boolean);
+        .filter((role): role is NonNullable<typeof role> => role !== null && role !== undefined);
       if (resolved.length > 0) return resolved;
     }
 

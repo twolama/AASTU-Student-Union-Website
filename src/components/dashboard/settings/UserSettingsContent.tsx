@@ -165,7 +165,7 @@ export function UserSettingsContent() {
                 {user?.departmentDetails?.name ? `Department of ${user.departmentDetails.name}, AASTU` : "AASTU Student"}
               </p>
               <p className="mt-1 text-xs text-gray-400">
-                Member since {user?.registrationDate ? new Date(user.registrationDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : "unknown"} • ID: {user?.studentId}
+                Member since {user?.registrationDate && typeof user.registrationDate === 'string' ? new Date(user.registrationDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : "unknown"} • ID: {user?.studentId}
               </p>
             </div>
           </div>

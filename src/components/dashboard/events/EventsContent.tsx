@@ -8,7 +8,7 @@ import { VenueOccupancyTrends } from "@/components/dashboard/events/VenueOccupan
 import { eventManagementStats, venueOccupancyTrends } from "@/data/dummy";
 import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import { useEvents } from "@/hooks/useEvents";
-import type { EventManagementItem } from "@/types/dashboard";
+import type { EventManagementItem, VenueOccupancyPoint, StatsTrendPoint } from "@/types/dashboard";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -105,7 +105,7 @@ export function EventsContent() {
   const totalCount = searchTerm || selectedVenue !== "all" ? filteredItems.length : totalCountFromServer;
 
   const [liveEventStats, setLiveEventStats] = useState<typeof eventManagementStats | null>(null);
-  const [liveVenueOccupancy, setLiveVenueOccupancy] = useState<typeof venueOccupancyTrends | null>(null);
+  const [liveVenueOccupancy, setLiveVenueOccupancy] = useState<Array<VenueOccupancyPoint | StatsTrendPoint> | null>(null);
 
   useEffect(() => {
     let mounted = true;

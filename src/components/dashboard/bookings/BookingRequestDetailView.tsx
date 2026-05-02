@@ -40,6 +40,7 @@ export function BookingRequestDetailView({ booking }: BookingRequestDetailViewPr
   const canApproveBookings = hasPermission("bookings.approve_booking");
   const canRejectBookings = hasPermission("bookings.reject_booking");
   const canCreateBookings = hasPermission("bookings.create");
+  const canEditBookings = hasPermission("bookings.edit");
   const canDeleteBookings = hasPermission("bookings.delete");
 
   if (!canViewBookings) {

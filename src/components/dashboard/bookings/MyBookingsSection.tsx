@@ -11,7 +11,7 @@ interface MyBookingsSectionProps {
   totalCount: number;
   pageSize: number;
   onPageChange: (page: number) => void;
-  onDelete: (bookingId: string) => void;
+  onDelete?: (bookingId: string) => void;
 }
 
 const statusLabelMap: Record<BookingStatus, string> = {
@@ -98,13 +98,15 @@ export function MyBookingsSection({
                       </Link>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={() => onDelete(item.id)}
-                      className="inline-flex h-8 items-center rounded-[8px] border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
-                    >
-                      Delete
-                    </button>
+                    {onDelete && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(item.id)}
+                        className="inline-flex h-8 items-center rounded-[8px] border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -159,13 +161,15 @@ export function MyBookingsSection({
                 </Link>
               )}
 
-              <button
-                type="button"
-                onClick={() => onDelete(item.id)}
-                className="inline-flex h-8 items-center rounded-[8px] border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
-              >
-                Delete
-              </button>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(item.id)}
+                  className="inline-flex h-8 items-center rounded-[8px] border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                >
+                  Delete
+                </button>
+              )}
             </div>
 
           </article>

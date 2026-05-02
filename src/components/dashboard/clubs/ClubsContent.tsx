@@ -27,7 +27,7 @@ const mapClubToItem = (club: Club): ClubItem => ({
   status: (club.status as ClubStatus) || "active",
   presidentName: club.presidentName || "N/A",
   advisorName: club.advisorName || "N/A",
-  headerGradient: getGradientForCategory(club.categoryName),
+  headerGradient: getGradientForCategory(club.categoryName || undefined),
   logoLabel: club.logoLabel || club.name.charAt(0),
   logo: club.logo,
   coverImage: club.coverImage,

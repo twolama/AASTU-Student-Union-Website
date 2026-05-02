@@ -28,7 +28,7 @@ export function PublicClubsPage() {
     logoLabel: club.logoLabel || club.name.charAt(0),
     coverImage: club.coverImage,
     description: club.description || "",
-    memberCount: club.member_count || 0,
+    memberCount: (club as any).member_count || 0,
     presidentName: club.presidentName || "Unknown",
     advisorName: club.advisorName || "Unknown",
     headerGradient: "bg-linear-to-r from-[#1f2a44] to-[#2d3b5a]",

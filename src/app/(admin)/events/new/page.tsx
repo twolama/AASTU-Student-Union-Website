@@ -39,6 +39,7 @@ export default function CreateEventPage() {
             vips: 0
           },
           volunteers: [],
+          organizing_club: "",
         }}
       />
     </PermissionGate>
