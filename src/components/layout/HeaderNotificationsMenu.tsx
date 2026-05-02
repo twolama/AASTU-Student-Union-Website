@@ -3,47 +3,37 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
+  AlertCircle,
   Bell,
   CalendarClock,
   CheckCheck,
+  Info,
   Megaphone,
   ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotifications,
+} from "@/hooks/useNotifications";
 
-const notificationItems = [
-  {
-    id: "notif-1",
-    title: "New booking request",
-    description: "Robotics Club submitted a request for Main Auditorium.",
-    timeLabel: "2 min ago",
-    href: "/bookings",
-    icon: CalendarClock,
-    unread: true,
-  },
-  {
-    id: "notif-2",
-    title: "Announcement published",
-    description: "Final exam announcement is now visible to students.",
-    timeLabel: "1 hour ago",
-    href: "/announcements",
-    icon: Megaphone,
-    unread: true,
-  },
-  {
-    id: "notif-3",
-    title: "Security reminder",
-    description: "Enable 2FA for all SU executive accounts.",
-    timeLabel: "Yesterday",
-    href: "/settings",
-    icon: ShieldAlert,
-    unread: false,
-  },
-];
+const notificationIconMap = {
+  booking: CalendarClock,
+  announcement: Megaphone,
+  security: ShieldAlert,
+  alert: AlertCircle,
+  system: Info,
+} as const;
 
 export function HeaderNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const notificationsQuery = useNotifications(1, 10);
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
+
+  const notificationItems = notificationsQuery.data?.data ?? [];
   const unreadCount = notificationItems.filter((item) => item.unread).length;
 
   useEffect(() => {
@@ -100,6 +90,8 @@ export function HeaderNotificationsMenu() {
             </div>
             <button
               type="button"
+              onClick={() => markAllReadMutation.mutate()}
+              disabled={unreadCount === 0 || markAllReadMutation.isPending}
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-[#8c6c14] transition-colors hover:bg-[#fdf8ec]"
             >
               <CheckCheck size={13} />
@@ -108,14 +100,29 @@ export function HeaderNotificationsMenu() {
           </div>
 
           <ul className="max-h-[320px] overflow-y-auto p-2">
-            {notificationItems.map((item) => {
-              const Icon = item.icon;
+            {notificationsQuery.isLoading ? (
+              <li className="px-3 py-4 text-sm text-gray-500">Loading notifications...</li>
+            ) : null}
+
+            {!notificationsQuery.isLoading && notificationItems.length === 0 ? (
+              <li className="px-3 py-4 text-sm text-gray-500">No notifications yet.</li>
+            ) : null}
+
+            {!notificationsQuery.isLoading && notificationItems.map((item) => {
+              const Icon =
+                notificationIconMap[item.notificationType as keyof typeof notificationIconMap] ?? Info;
+              const href = item.href || "/announcements";
 
               return (
                 <li key={item.id}>
                   <Link
-                    href={item.href}
-                    onClick={() => setOpen(false)}
+                    href={href}
+                    onClick={() => {
+                      if (item.unread) {
+                        markReadMutation.mutate(item.id);
+                      }
+                      setOpen(false);
+                    }}
                     className="flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[#fdf8ec]"
                   >
                     <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fdf8ec] text-[#c49a22]">

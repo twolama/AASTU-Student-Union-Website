@@ -138,6 +138,16 @@ export const API_ENDPOINTS = {
     CANCEL: (id: string) => `${API_V1_PREFIX}/bookings/${id}/cancel/`,
     AVAILABILITY: `${API_V1_PREFIX}/bookings/availability/`,
   },
+  NOTIFICATIONS: {
+    LIST: `${API_V1_PREFIX}/notifications/`,
+    CREATE: `${API_V1_PREFIX}/notifications/`,
+    DETAIL: (id: string) => `${API_V1_PREFIX}/notifications/${id}/`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/notifications/${id}/`,
+    PATCH: (id: string) => `${API_V1_PREFIX}/notifications/${id}/`,
+    DELETE: (id: string) => `${API_V1_PREFIX}/notifications/${id}/`,
+    MARK_READ: (id: string) => `${API_V1_PREFIX}/notifications/${id}/read/`,
+    MARK_ALL_READ: `${API_V1_PREFIX}/notifications/mark-all-read/`,
+  },
 } as const;
 
 export const AUTH_ENDPOINTS = API_ENDPOINTS.AUTHENTICATION;
@@ -154,3 +164,4 @@ export const VENUE_ENDPOINTS = API_ENDPOINTS.VENUES;
 export const VENUE_CATEGORY_ENDPOINTS = API_ENDPOINTS.VENUE_CATEGORIES;
 export const VENUE_GALLERY_ENDPOINTS = API_ENDPOINTS.VENUE_GALLERY;
 export const BOOKING_ENDPOINTS = API_ENDPOINTS.BOOKINGS;
+export const NOTIFICATION_ENDPOINTS = API_ENDPOINTS.NOTIFICATIONS;
