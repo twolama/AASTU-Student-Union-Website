@@ -132,7 +132,10 @@ export function UserSettingsContent() {
     label: dept.name,
   }));
 
-  const userRoleDisplay = user?.roleDetails?.name || user?.role || "Member";
+  const userRoleDisplay =
+    user?.rolesDetails?.length
+      ? user.rolesDetails.map((roleItem) => roleItem.name).join(", ")
+      : user?.roleDetails?.name || user?.role || "Member";
 
   return (
     <div className="space-y-4 sm:space-y-5 pb-10">

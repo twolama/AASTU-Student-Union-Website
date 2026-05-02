@@ -93,7 +93,7 @@ export function UsersContent() {
 
   const stats: UserManagementStat[] = [
     { ...userManagementStats[0], value: meta.total.toString() },
-    { ...userManagementStats[1], value: users.filter(u => u.role).length.toString() },
+    { ...userManagementStats[1], value: users.filter((u) => (u.roles?.length ?? 0) > 0 || !!u.role).length.toString() },
     { ...userManagementStats[2], value: rolesCount.toString() },
   ];
 

@@ -32,7 +32,7 @@ export interface CreateUserInput {
   name: string;
   student_id: string;
   department: string;
-  role: string;
+  roles: string[];
   email: string;
   phone_number?: string;
   username?: string;
@@ -67,7 +67,7 @@ export const userService = {
       formData.append("name", data.name);
       formData.append("student_id", data.student_id);
       formData.append("department", data.department);
-      formData.append("role", data.role);
+      data.roles.forEach((roleId) => formData.append("roles", roleId));
       formData.append("email", data.email);
 
       if (data.phone_number) formData.append("phone_number", data.phone_number);
@@ -85,7 +85,7 @@ export const userService = {
       name: data.name,
       student_id: data.student_id,
       department: data.department,
-      role: data.role,
+      roles: data.roles,
       email: data.email,
       ...(data.phone_number ? { phone_number: data.phone_number } : {}),
       ...(data.username ? { username: data.username } : {}),

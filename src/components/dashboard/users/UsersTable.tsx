@@ -47,22 +47,38 @@ export function UsersTable({
     return "Unassigned";
   };
 
-  const getMatchedRole = (user: CurrentUser) => {
-    if (user.roleDetails) return user.roleDetails;
-    if (user.role && roles.length > 0) {
-      return roles.find(r => r.id === user.role);
+  const getMatchedRoles = (user: CurrentUser) => {
+    if (user.rolesDetails?.length) return user.rolesDetails;
+    if (user.roleDetails) return [user.roleDetails];
+
+    if (user.roles?.length && roles.length > 0) {
+      const resolved = user.roles
+        .map((roleId) => roles.find((roleItem) => roleItem.id === roleId))
+        .filter(Boolean);
+      if (resolved.length > 0) return resolved;
     }
-    return null;
+
+    if (user.role && roles.length > 0) {
+      const byId = roles.find((roleItem) => roleItem.id === user.role);
+      if (byId) return [byId];
+      const bySlug = roles.find((roleItem) => roleItem.slug === user.role);
+      if (bySlug) return [bySlug];
+    }
+
+    return [];
   };
 
   const getRoleLabel = (user: CurrentUser) => {
-    const matchedRole = getMatchedRole(user);
-    return matchedRole?.name || "Member";
+    const matchedRoles = getMatchedRoles(user);
+    if (matchedRoles.length === 0) return "Member";
+    if (matchedRoles.length <= 2) return matchedRoles.map((roleItem) => roleItem.name).join(", ");
+    const firstTwo = matchedRoles.slice(0, 2).map((roleItem) => roleItem.name).join(", ");
+    return `${firstTwo} +${matchedRoles.length - 2}`;
   };
 
   const getRoleClass = (user: CurrentUser) => {
-    const matchedRole = getMatchedRole(user);
-    if (matchedRole?.isStaffRole) return "bg-[#fbf1d8] text-[#9a7618]";
+    const matchedRoles = getMatchedRoles(user);
+    if (matchedRoles.some((roleItem) => roleItem.isStaffRole)) return "bg-[#fbf1d8] text-[#9a7618]";
     return "bg-[#eef2f7] text-[#4f5f79]";
   };
 
@@ -75,7 +91,7 @@ export function UsersTable({
               <th className="px-5 py-4">Student Details</th>
               <th className="px-5 py-4">Student ID</th>
               <th className="px-5 py-4">Department</th>
-              <th className="px-5 py-4">Union Role</th>
+              <th className="px-5 py-4">Union Roles</th>
               <th className="px-5 py-4 text-right">Actions</th>
             </tr>
           </thead>

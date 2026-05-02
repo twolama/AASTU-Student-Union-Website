@@ -32,15 +32,14 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error">("success");
 
   const avatarPreviewUrl = useMemo(() => {
     if (avatarFile) return URL.createObjectURL(avatarFile);
-    // If editing and user has avatar URL, we don't create object URL here — FileUpload can accept previewUrl prop externally
-    return undefined;
-  }, [avatarFile]);
+    return user?.avatar || undefined;
+  }, [avatarFile, user?.avatar]);
 
   useEffect(() => {
     return () => {
@@ -55,7 +54,13 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
     setEmail(user.email || "");
     setDepartment(user.department || "");
     setPhone(user.phoneNumber || "");
-    setRole(user.role || "");
+    if (user.roles?.length) {
+      setSelectedRoles(user.roles);
+    } else if (user.roleDetails?.id) {
+      setSelectedRoles([user.roleDetails.id]);
+    } else {
+      setSelectedRoles([]);
+    }
   }, [user]);
 
   const departmentDropdownOptions = useMemo(
@@ -66,16 +71,19 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
     [departments, isDepartmentsLoading]
   );
 
-  const roleDropdownOptions = useMemo(
-    () => [
-      { value: "", label: isRolesLoading ? "Loading roles..." : "Select Role" },
-      ...(rolesData?.data || []).map((roleOption) => ({
-        value: roleOption.id,
-        label: roleOption.name,
-      })),
-    ],
-    [rolesData, isRolesLoading]
+  const roleOptions = useMemo(
+    () => (rolesData?.data || []).map((roleOption) => ({
+      value: roleOption.id,
+      label: roleOption.name,
+    })),
+    [rolesData]
   );
+
+  function toggleRole(roleId: string) {
+    setSelectedRoles((prev) =>
+      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
+    );
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,9 +94,9 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
       return;
     }
 
-    if (!role) {
+    if (selectedRoles.length === 0) {
       setStatusType("error");
-      setStatusMessage("Please select a system role.");
+      setStatusMessage("Please select at least one system role.");
       return;
     }
 
@@ -102,7 +110,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
           formData.append("name", fullName.trim());
           formData.append("student_id", studentId.trim());
           formData.append("department", department);
-          formData.append("role", role);
+          selectedRoles.forEach((roleId) => formData.append("roles", roleId));
           formData.append("email", email.trim());
           if (phone.trim()) formData.append("phone_number", phone.trim());
           formData.append("avatar", avatarFile);
@@ -115,7 +123,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
               name: fullName.trim(),
               student_id: studentId.trim(),
               department,
-              role,
+              roles: selectedRoles,
               email: email.trim(),
               ...(phone.trim() ? { phone_number: phone.trim() } : {}),
             },
@@ -133,7 +141,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
         name: fullName.trim(),
         student_id: studentId.trim(),
         department,
-        role,
+        roles: selectedRoles,
         email: email.trim(),
         ...(phone.trim() ? { phone_number: phone.trim() } : {}),
         ...(avatarFile ? { avatar: avatarFile } : {}),
@@ -148,7 +156,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
       setEmail("");
       setDepartment("");
       setPhone("");
-      setRole("");
+      setSelectedRoles([]);
     } catch (error: any) {
       setStatusType("error");
       setStatusMessage(error?.message || "Failed to save user. Please try again.");
@@ -258,17 +266,32 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
             </div>
 
             <div>
-              <label htmlFor="user-role" className="mb-1.5 block text-sm font-semibold text-[#3b4660]">
-                System Role
-              </label>
-              <DropdownSelect
-                label=""
-                value={role}
-                options={roleDropdownOptions}
-                onValueChange={setRole}
-                disabled={isRolesLoading || createUserMutation.isPending}
-                className="[&>p]:hidden [&>div>button]:h-10 [&>div>button]:rounded-[10px]"
-              />
+              <label className="mb-1.5 block text-sm font-semibold text-[#3b4660]">System Roles</label>
+              <div className="rounded-[10px] border border-gray-200 bg-gray-50/50 p-3">
+                {isRolesLoading ? (
+                  <p className="text-xs text-[#8a95a8]">Loading roles...</p>
+                ) : roleOptions.length === 0 ? (
+                  <p className="text-xs text-[#8a95a8]">No roles available.</p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {roleOptions.map((roleOption) => (
+                      <label
+                        key={roleOption.value}
+                        className="flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 py-1.5 text-sm text-[#3b4660] hover:border-[#ead9a3] hover:bg-white"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedRoles.includes(roleOption.value)}
+                          onChange={() => toggleRole(roleOption.value)}
+                          className="h-4 w-4 rounded border-gray-300 text-[#c49a22] focus:ring-[#c49a22]"
+                          disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                        />
+                        <span>{roleOption.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
