@@ -12,12 +12,17 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: ".render.com",
+        hostname: "**.render.com",
         pathname: "/**",
       },
       {
         protocol: "https",
-        hostname: ".vercel.app",
+        hostname: "**.vercel.app",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
         pathname: "/**",
       },
       {
