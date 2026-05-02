@@ -9,20 +9,22 @@ export function LoginPageClient() {
   const router = useRouter();
   const loginMutation = useAuthLogin();
 
-  function handleSubmit(values: LoginValues) {
-    loginMutation.mutate({
-      username: values.username,
-      password: values.password,
-    }, {
-      onSuccess: (response) => {
-        if (response.data.user.mustChangePassword) {
-          router.push("/force-password-change");
-          return;
-        }
+  async function handleSubmit(values: LoginValues) {
+    try {
+      const response = await loginMutation.mutateAsync({
+        username: values.username,
+        password: values.password,
+      });
 
-        router.push("/dashboard");
+      if (response.data.user.mustChangePassword) {
+        router.push("/force-password-change");
+        return;
       }
-    });
+
+      router.push("/dashboard");
+    } catch {
+      // Error state is exposed via loginMutation.error and shown by LoginForm.
+    }
   }
 
   return <LoginForm onSubmit={handleSubmit} submissionError={loginMutation.error?.message ?? null} />;
