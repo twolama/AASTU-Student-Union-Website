@@ -12,6 +12,7 @@ export function ClubStatsSection() {
     getAnalyticsDashboard("last-8-months")
       .then((res) => {
         if (!mounted) return;
+        if (res?.forbidden || !res?.data) return;
         const data = res?.data || {};
         const clubStats = data.club_stats || data.clubStats || null;
         if (Array.isArray(clubStats)) {

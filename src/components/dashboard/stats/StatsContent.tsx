@@ -24,6 +24,10 @@ export function StatsContent() {
     getAnalyticsDashboard(selectedPeriod)
       .then((data) => {
         if (!mounted) return;
+        if (data?.forbidden || !data?.data) {
+          setDashboard(null);
+          return;
+        }
         setDashboard(data.data);
       })
       .catch(() => {

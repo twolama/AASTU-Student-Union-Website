@@ -2,10 +2,24 @@ import { apiClient, ApiError } from "@/api/client";
 import { API_ENDPOINTS } from "@/api/endpoints";
 
 export async function getAnalyticsDashboard(period = "last-8-months") {
-  const response = await apiClient.get(API_ENDPOINTS.CORE.ANALYTICS.DASHBOARD, {
-    params: { period },
-  });
-  return response.data;
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.CORE.ANALYTICS.DASHBOARD, {
+      params: { period },
+    });
+    return response.data;
+  } catch (error) {
+    if (error instanceof ApiError && error.statusCode === 403) {
+      return {
+        success: false,
+        data: null,
+        statusCode: 403,
+        forbidden: true,
+        message: "You do not have permission to view analytics.",
+      };
+    }
+
+    throw error;
+  }
 }
 
 export async function exportAnalytics(period = "last-8-months") {

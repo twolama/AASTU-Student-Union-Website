@@ -67,6 +67,7 @@ export function VenuesContent() {
     getAnalyticsDashboard("last-8-months")
       .then((res) => {
         if (!mounted) return;
+        if (res?.forbidden || !res?.data) return;
         // Support both wrapped and unwrapped API payload shapes.
         const payload = res?.data && typeof res.data === "object" ? res.data : res;
         const stats =

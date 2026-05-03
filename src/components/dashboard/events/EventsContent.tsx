@@ -112,6 +112,7 @@ export function EventsContent() {
     getAnalyticsDashboard("last-8-months")
       .then((res) => {
         if (!mounted) return;
+        if (res?.forbidden || !res?.data) return;
         const data = res?.data || {};
         const distribution = data.event_distribution || data.eventDistribution || [];
         const occupancy = data.occupancy_trends || data.occupancyTrends || [];
