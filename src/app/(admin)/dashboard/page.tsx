@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { StatsSection } from "@/components/dashboard/StatsSection";
 import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
@@ -86,11 +87,20 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Stats Row ───────────────────────────────────────── */}
-      {overviewItems ? (
-        <StatsSection items={overviewItems} className="xl:grid-cols-4" />
-      ) : (
-        <StatsSection className="xl:grid-cols-4" />
-      )}
+      <PermissionGate
+        anyOf={['analytics.view']}
+        fallback={
+          <div className="rounded-[10px] border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+            You do not have permission to view the dashboard overview statistics.
+          </div>
+        }
+      >
+        {overviewItems ? (
+          <StatsSection items={overviewItems} className="xl:grid-cols-4" />
+        ) : (
+          <StatsSection className="xl:grid-cols-4" />
+        )}
+      </PermissionGate>
 
       {/* ── Latest Announcements ──────────────────────────────── */}
       <RecentAnnouncements />
