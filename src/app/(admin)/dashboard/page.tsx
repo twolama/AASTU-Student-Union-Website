@@ -7,15 +7,16 @@ import { UpcomingEvents } from "@/components/dashboard/UpcomingEvents";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { RecentAnnouncements } from "@/components/dashboard/RecentAnnouncements";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
+import type { Activity, Event, StatCard, TrendDirection } from "@/types/dashboard";
 
 export const metadata: Metadata = {
   title: "Dashboard Overview",
 };
 
 export default async function DashboardPage() {
-  let overviewItems = undefined;
-  let recentActivityItems = undefined;
-  let upcomingMegaEvents = undefined;
+  let overviewItems: StatCard[] | undefined;
+  let recentActivityItems: Activity[] | undefined;
+  let upcomingMegaEvents: Event[] | undefined;
   try {
     const baseUrl = process.env.API_BASE_URL || "http://localhost:8000";
     const res = await fetch(`${baseUrl}/api/v1/analytics/dashboard/?period=last-8-months`, { cache: "no-store" });
@@ -23,45 +24,65 @@ export default async function DashboardPage() {
       const json = await res.json();
       const data = json?.data || {};
 
+      const toStringValue = (value: unknown, fallback = ""): string => {
+        if (typeof value === "string" || typeof value === "number") return String(value);
+        return fallback;
+      };
+
+      const toNumberValue = (value: unknown, fallback = 0): number => {
+        const parsed = typeof value === "number" ? value : Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      };
+
+      const toTrendDirection = (value: unknown): TrendDirection => {
+        if (value === "down" || value === "neutral") return value;
+        return "up";
+      };
+
       const overview = data.overview;
       if (Array.isArray(overview)) {
-        overviewItems = overview.map((it: any) => ({
-          id: it.id,
-          title: it.title,
-          value: it.value,
-          trend: it.trend,
-          trendDirection: it.trend_direction ?? it.trendDirection,
-          icon: it.icon,
-          iconBg: it.icon_bg ?? it.iconBg,
-          requiresAttention: it.requiresAttention ?? it.requires_attention,
+        overviewItems = overview.map((it: Record<string, unknown>) => ({
+          id: toStringValue(it.id),
+          title: toStringValue(it.title),
+          value: typeof it.value === "number" ? it.value : toStringValue(it.value),
+          trend: toStringValue(it.trend),
+          trendDirection: toTrendDirection(it.trend_direction ?? it.trendDirection),
+          icon: toStringValue(it.icon),
+          iconBg: toStringValue(it.icon_bg ?? it.iconBg),
+          requiresAttention: Boolean(it.requiresAttention ?? it.requires_attention),
         }));
       }
 
       const recentActivity = data.recent_activity ?? data.recentActivity;
       if (Array.isArray(recentActivity)) {
-        recentActivityItems = recentActivity.map((it: any) => ({
-          id: it.id,
-          type: it.type,
-          boldLabel: it.bold_label ?? it.boldLabel,
-          description: it.description,
-          timestamp: it.timestamp,
+        recentActivityItems = recentActivity.map((it: Record<string, unknown>) => ({
+          id: toStringValue(it.id),
+          type: toStringValue(it.type) as Activity["type"],
+          boldLabel: toStringValue(it.bold_label ?? it.boldLabel),
+          description: toStringValue(it.description),
+          timestamp: toStringValue(it.timestamp),
         }));
       }
 
       const upcomingMega = data.upcoming_mega_events ?? data.upcomingMegaEvents;
       if (Array.isArray(upcomingMega)) {
-        upcomingMegaEvents = upcomingMega.map((it: any) => ({
-          id: it.id,
-          title: it.title,
-          venue: it.venue,
-          imageUrl: it.image_url ?? it.imageUrl,
-          dateLabel: it.date_label ?? it.dateLabel,
-          attendeeCount: it.attendee_count ?? it.attendeeCount ?? 0,
-          attendees: (it.attendees || []).map((a: any) => ({ id: a.id, name: a.name })),
+        upcomingMegaEvents = upcomingMega.map((it: Record<string, unknown>) => ({
+          id: toStringValue(it.id),
+          title: toStringValue(it.title),
+          venue: toStringValue(it.venue),
+          imageUrl: toStringValue(it.image_url ?? it.imageUrl),
+          dateLabel: toStringValue(it.date_label ?? it.dateLabel),
+          attendeeCount: toNumberValue(it.attendee_count ?? it.attendeeCount),
+          attendees: Array.isArray(it.attendees)
+            ? it.attendees.map((attendee) => ({
+                id: toStringValue((attendee as Record<string, unknown>).id),
+                name: toStringValue((attendee as Record<string, unknown>).name),
+              }))
+            : [],
         }));
       }
     }
-  } catch (e) {
+  } catch {
     // ignore and fall back to defaults
   }
 

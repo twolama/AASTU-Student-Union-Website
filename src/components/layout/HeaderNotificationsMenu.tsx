@@ -29,7 +29,7 @@ const notificationIconMap = {
 export function HeaderNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const notificationsQuery = useNotifications(1, 10);
+  const notificationsQuery = useNotifications(1, 10, open);
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
 

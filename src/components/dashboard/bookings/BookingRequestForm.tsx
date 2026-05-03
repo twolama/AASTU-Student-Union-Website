@@ -23,6 +23,8 @@ import {
 import dayjs from "dayjs";
 import { useVenues, useVenue } from "@/hooks/useVenues";
 import { useClubs, useClubUpcomingEvents } from "@/hooks/useClubs";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Input } from "@/components/ui/Input";
@@ -186,7 +188,9 @@ export function BookingRequestForm({
   const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100, undefined, "active");
   const { data: fullVenueData, isLoading: isFullVenueLoading } = useVenue(selectedVenueId);
   const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100, undefined, "active");
+  const queryClient = useQueryClient();
   const { data: upcomingEventsData, isLoading: isUpcomingEventsLoading } = useClubUpcomingEvents(clubAssociation);
+  const queryClient = useQueryClient();
   
   const [startDate, setStartDate] = useState(initialData?.startDate ?? "");
   const [endDate, setEndDate] = useState(initialData?.endDate ?? "");
@@ -253,6 +257,7 @@ export function BookingRequestForm({
       }))
     ];
   }, [clubsData]);
+
 
   const router = useRouter();
   const createMutation = useCreateBooking();
@@ -667,6 +672,18 @@ export function BookingRequestForm({
                   </div>
                 )}
                 <FieldError name="clubAssociation" />
+                {!isClubsLoading && (!clubsData || !(clubsData.data && clubsData.data.length > 0)) ? (
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    <p className="text-rose-600">No clubs available.</p>
+                    <button
+                      type="button"
+                      onClick={() => queryClient.invalidateQueries({ queryKey: ["clubs"] })}
+                      className="text-[#b48a1b] underline"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
               <div>

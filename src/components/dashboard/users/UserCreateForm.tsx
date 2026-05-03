@@ -13,6 +13,7 @@ import { useCreateUser, useUpdateUser } from "@/hooks/useUsers";
 import { cn } from "@/lib/utils";
 import { type CurrentUser } from "@/schemas/user.schema";
 import { useRouter } from "next/navigation";
+import type { Role } from "@/api/services/user.service";
 
 interface UserCreateFormProps {
   user?: CurrentUser | null;
@@ -27,12 +28,13 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
   const router = useRouter();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [fullName, setFullName] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [email, setEmail] = useState("");
-  const [department, setDepartment] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState(() => user?.name || "");
+  const [studentId, setStudentId] = useState(() => user?.studentId || "");
+  const [email, setEmail] = useState(() => user?.email || "");
+  const [department, setDepartment] = useState(() => user?.department || "");
+  const [phone, setPhone] = useState(() => user?.phoneNumber || "");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [memberRoleCleared, setMemberRoleCleared] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error">("success");
 
@@ -47,21 +49,18 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
     };
   }, [avatarPreviewUrl]);
 
-  useEffect(() => {
-    if (!user) return;
-    setFullName(user.name || "");
-    setStudentId(user.studentId || "");
-    setEmail(user.email || "");
-    setDepartment(user.department || "");
-    setPhone(user.phoneNumber || "");
-    if (user.roles?.length) {
-      setSelectedRoles(user.roles);
-    } else if (user.roleDetails?.id) {
-      setSelectedRoles([user.roleDetails.id]);
-    } else {
-      setSelectedRoles([]);
-    }
-  }, [user]);
+  const memberRoleId = useMemo(() => {
+    const memberRole = rolesData?.data?.find(
+      (role: Role) => role.slug.toLowerCase() === "member" || role.name.toLowerCase() === "member"
+    );
+    return memberRole?.id ?? "";
+  }, [rolesData]);
+
+  const effectiveSelectedRoles = useMemo(() => {
+    if (editMode || !memberRoleId || memberRoleCleared) return selectedRoles;
+    if (selectedRoles.includes(memberRoleId)) return selectedRoles;
+    return [memberRoleId, ...selectedRoles];
+  }, [editMode, memberRoleCleared, memberRoleId, selectedRoles]);
 
   const departmentDropdownOptions = useMemo(
     () => [
@@ -80,6 +79,20 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
   );
 
   function toggleRole(roleId: string) {
+    if (!editMode && roleId === memberRoleId) {
+      if (selectedRoles.includes(roleId)) {
+        setSelectedRoles((prev) => prev.filter((id) => id !== roleId));
+        setMemberRoleCleared(true);
+        return;
+      }
+
+      if (memberRoleCleared) {
+        setSelectedRoles((prev) => [...prev, roleId]);
+        setMemberRoleCleared(false);
+        return;
+      }
+    }
+
     setSelectedRoles((prev) =>
       prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
     );
@@ -94,7 +107,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
       return;
     }
 
-    if (selectedRoles.length === 0) {
+    if (effectiveSelectedRoles.length === 0) {
       setStatusType("error");
       setStatusMessage("Please select at least one system role.");
       return;
@@ -110,12 +123,12 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
           formData.append("name", fullName.trim());
           formData.append("student_id", studentId.trim());
           formData.append("department", department);
-          selectedRoles.forEach((roleId) => formData.append("roles", roleId));
+          effectiveSelectedRoles.forEach((roleId) => formData.append("roles", roleId));
           formData.append("email", email.trim());
           if (phone.trim()) formData.append("phone_number", phone.trim());
           formData.append("avatar", avatarFile);
 
-          await updateUserMutation.mutateAsync({ id: user.id, data: formData } as any);
+          await updateUserMutation.mutateAsync({ id: user.id, data: formData });
         } else {
           await updateUserMutation.mutateAsync({
             id: user.id,
@@ -123,7 +136,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
               name: fullName.trim(),
               student_id: studentId.trim(),
               department,
-              roles: selectedRoles,
+              roles: effectiveSelectedRoles,
               email: email.trim(),
               ...(phone.trim() ? { phone_number: phone.trim() } : {}),
             },
@@ -141,7 +154,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
         name: fullName.trim(),
         student_id: studentId.trim(),
         department,
-        roles: selectedRoles,
+        roles: effectiveSelectedRoles,
         email: email.trim(),
         ...(phone.trim() ? { phone_number: phone.trim() } : {}),
         ...(avatarFile ? { avatar: avatarFile } : {}),
@@ -157,9 +170,10 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
       setDepartment("");
       setPhone("");
       setSelectedRoles([]);
-    } catch (error: any) {
+      setMemberRoleCleared(false);
+    } catch (error: unknown) {
       setStatusType("error");
-      setStatusMessage(error?.message || "Failed to save user. Please try again.");
+      setStatusMessage(error instanceof Error ? error.message : "Failed to save user. Please try again.");
     }
   }
 
@@ -281,7 +295,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
                       >
                         <input
                           type="checkbox"
-                          checked={selectedRoles.includes(roleOption.value)}
+                          checked={selectedRoles.includes(roleOption.value) || (!editMode && roleOption.value === memberRoleId && !memberRoleCleared)}
                           onChange={() => toggleRole(roleOption.value)}
                           className="h-4 w-4 rounded border-gray-300 text-[#c49a22] focus:ring-[#c49a22]"
                           disabled={createUserMutation.isPending || updateUserMutation.isPending}
