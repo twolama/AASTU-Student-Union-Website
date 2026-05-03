@@ -18,8 +18,160 @@ import { useEvent, useEvents } from "@/hooks/useEvents";
 import { usePermissions } from "@/hooks/usePermissions";
 import dayjs from "dayjs";
 
+type PublicVenueDetails = {
+  name?: string;
+  location?: string;
+  campus_block?: string;
+  floor_level?: string;
+  nearby_landmarks?: string;
+  short_description?: string;
+  full_description?: string;
+  google_maps_url?: string;
+  hero_image?: string | null;
+  thumbnail?: string | null;
+  image_url?: string | null;
+  map_coordinates?: { lat?: number | null; lng?: number | null } | null;
+  gallery?: Array<{
+    id?: string;
+    image?: string | null;
+    image_url?: string | null;
+    url?: string | null;
+    alt_text?: string | null;
+  }>;
+};
+
+function resolveMediaUrl(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  if (value.startsWith("/api/proxy/")) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return `/api/proxy${value}`;
+  }
+
+  return `/api/proxy/${value}`;
+}
+
+function extractGoogleMapsCoordinates(url?: string | null) {
+  if (!url) {
+    return null;
+  }
+
+  const patterns = [
+    /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+    /[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+    /[?&]ll=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return {
+        lat: Number.parseFloat(match[1]),
+        lng: Number.parseFloat(match[2]),
+      };
+    }
+  }
+
+  return null;
+}
+
 interface PublicEventDetailPageProps {
   eventId: string;
+}
+
+function formatVenueLocationLabel(venue?: PublicVenueDetails | null, fallback?: string) {
+  if (!venue) {
+    return fallback || "AASTU Campus";
+  }
+
+  const locationParts = [
+    venue.location,
+    venue.campus_block ? `Block ${venue.campus_block}` : "",
+    venue.floor_level ? `Floor ${venue.floor_level}` : "",
+  ].filter(Boolean);
+
+  if (locationParts.length > 0) {
+    return locationParts.join(" · ");
+  }
+
+  return fallback || venue.name || "AASTU Campus";
+}
+
+function getVenueMapEmbedUrl(venue?: PublicVenueDetails | null, locationLabel?: string) {
+  const parsedCoordinates = extractGoogleMapsCoordinates(venue?.google_maps_url);
+  const coordinates = venue?.map_coordinates ?? parsedCoordinates;
+
+  if (coordinates?.lat != null && coordinates?.lng != null) {
+    return `https://www.google.com/maps/@${coordinates.lat},${coordinates.lng},18z/data=!3m1!1e3?output=embed`;
+  }
+
+  if (venue?.google_maps_url) {
+    if (venue.google_maps_url.includes("/embed")) {
+      return venue.google_maps_url;
+    }
+
+    return `https://www.google.com/maps?q=${encodeURIComponent(locationLabel || venue.name || "AASTU Campus")}&t=k&z=18&output=embed`;
+  }
+
+  return `https://www.google.com/maps?q=${encodeURIComponent(locationLabel || venue?.name || "AASTU Campus")}&output=embed`;
+}
+
+function getVenueGallery(venue?: PublicVenueDetails | null) {
+  const galleryImages = (venue?.gallery || [])
+    .map((image) => resolveMediaUrl(image.image_url || image.url || image.image || ""))
+    .filter(Boolean);
+
+  const fallbackImages = [
+    resolveMediaUrl(venue?.hero_image),
+    resolveMediaUrl(venue?.thumbnail),
+    resolveMediaUrl(venue?.image_url),
+  ].filter(Boolean);
+
+  return Array.from(new Set([...galleryImages, ...fallbackImages]));
+}
+
+function getBookingTimeLabel(bookingDetails?: { time_label?: string | null; selected_slots?: string[] | null; time_range?: string | null } | null) {
+  if (!bookingDetails) {
+    return null;
+  }
+
+  if (bookingDetails.time_label) {
+    return bookingDetails.time_label;
+  }
+
+  if (bookingDetails.time_range) {
+    return bookingDetails.time_range;
+  }
+
+  if (bookingDetails.selected_slots && bookingDetails.selected_slots.length > 0) {
+    const sortedSlots = [...bookingDetails.selected_slots].sort();
+
+    const format12h = (slot: string) => {
+      const [hours, minutes = "00"] = slot.split(":");
+      const hourNumber = Number.parseInt(hours, 10);
+      if (Number.isNaN(hourNumber)) return slot;
+      const suffix = hourNumber >= 12 ? "PM" : "AM";
+      const normalizedHour = hourNumber % 12 === 0 ? 12 : hourNumber % 12;
+      return minutes === "00" ? `${normalizedHour} ${suffix}` : `${normalizedHour}:${minutes} ${suffix}`;
+    };
+
+    if (sortedSlots.length === 1) {
+      return format12h(sortedSlots[0]);
+    }
+
+    return `${format12h(sortedSlots[0])} - ${format12h(sortedSlots[sortedSlots.length - 1])}`;
+  }
+
+  return null;
 }
 
 export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
@@ -27,6 +179,8 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
   const canRegisterForEvents = hasPermission("events.create");
   const { data: event, isLoading, isError, error } = useEvent(eventId);
   const { data: relatedResponse } = useEvents(1, 4);
+  const venue = event?.venue_details as PublicVenueDetails | undefined;
+  const bookingDetails = (event as typeof event & { booking_details?: { time_label?: string | null; time_range?: string | null; selected_slots?: string[] | null; date_label?: string | null } | null })?.booking_details;
 
   const relatedEvents = relatedResponse?.data
     ? relatedResponse.data.filter((e) => e.id !== eventId).slice(0, 3)
@@ -65,13 +219,18 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
   }
 
   const dateLabel = event.start_date_time ? dayjs(event.start_date_time).format("MMMM DD, YYYY") : "Date TBD";
-  const timeLabel = event.start_date_time && event.end_date_time 
+  const bookingTimeLabel = getBookingTimeLabel(bookingDetails);
+  const timeLabel = bookingTimeLabel || (event.start_date_time && event.end_date_time && !dayjs(event.start_date_time).isSame(dayjs(event.end_date_time))
     ? `${dayjs(event.start_date_time).format("hh:mm A")} - ${dayjs(event.end_date_time).format("hh:mm A")}`
-    : "Time TBD";
+    : "Time TBD");
 
   // Find coordinator from volunteers if available
   const coordinator = event.volunteers?.find(v => v.role?.toLowerCase() === "host" || v.role?.toLowerCase() === "coordinator")?.full_name 
     || "Student Union Coordinator";
+  const venueLocationLabel = formatVenueLocationLabel(venue, event.physical_location_details || event.venue || "AASTU Campus");
+  const venueGallery = getVenueGallery(venue);
+  const venueMapEmbedUrl = getVenueMapEmbedUrl(venue, venueLocationLabel);
+  const venueHeroImage = resolveMediaUrl(venue?.hero_image || venue?.thumbnail || venue?.image_url || event.cover_image) || "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200";
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[#f3f3f3] text-[#14213d]">
@@ -142,6 +301,83 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
               <blockquote className="mt-6 rounded-[12px] border-l-4 border-[#d2ab42] bg-[#edf0f5] px-5 py-5 text-lg leading-8 text-[#1f2b4e]">
                 &quot;The summit represents the spirit of AASTU: where curiosity meets practical engineering and students lead meaningful change.&quot;
               </blockquote>
+            </article>
+
+            <article className="rounded-[14px] bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-4xl font-black leading-tight text-[#0f1d49]">Venue &amp; Location</h2>
+                {venue?.google_maps_url ? (
+                  <a
+                    href={venue.google_maps_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#f8f3e1] px-3 py-1 text-xs font-semibold text-[#8c6c14] transition-colors hover:bg-[#f3e7bf]"
+                  >
+                    Open Maps
+                    <ArrowRight size={12} />
+                  </a>
+                ) : null}
+              </div>
+
+              <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-slate-100">
+                  <div className="relative h-[280px]">
+                    <iframe
+                      title={`${event.title} venue map`}
+                      src={venueMapEmbedUrl}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      className="h-full w-full border-0"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-sm text-slate-600">
+                  <div className="overflow-hidden rounded-[14px] bg-[#f8fafc]">
+                    <div className="relative h-40">
+                      <Image src={venueHeroImage} alt={event.venue || "Venue"} fill sizes="(max-width: 1024px) 100vw, 420px" className="object-cover" />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[14px] bg-[#f8fafc] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Venue Name</p>
+                    <p className="mt-1 text-lg font-semibold text-[#0f1d49]">{venue?.name || event.venue || "Venue TBA"}</p>
+                    <p className="mt-1">{venueLocationLabel}</p>
+                  </div>
+
+                  <div className="rounded-[14px] bg-[#f8fafc] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Nearby Landmarks</p>
+                    <p className="mt-1">{venue?.nearby_landmarks || event.physical_location_details || "AASTU Campus"}</p>
+                  </div>
+
+                  {(venue?.short_description || venue?.full_description) ? (
+                    <div className="rounded-[14px] bg-[#f8fafc] p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Venue Notes</p>
+                      <p className="mt-1 leading-7">{venue?.short_description || venue?.full_description}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-[14px] bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-4xl font-black leading-tight text-[#0f1d49]">Venue Gallery</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{venueGallery.length} photos</p>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {venueGallery.map((image, index) => (
+                  <div key={`${event.id}-venue-gallery-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-[12px] bg-slate-100">
+                    <Image src={image} alt={`${event.title} venue gallery ${index + 1}`} fill sizes="(max-width: 1280px) 50vw, 33vw" className="object-cover transition-transform duration-300 hover:scale-105" />
+                  </div>
+                ))}
+                {venueGallery.length === 0 ? (
+                  <div className="rounded-[12px] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
+                    Venue photos are not available for this event yet.
+                  </div>
+                ) : null}
+              </div>
             </article>
 
             {event.logistics && event.logistics.length > 0 && (
@@ -231,8 +467,8 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
               <div className="mt-4 overflow-hidden rounded-[10px] bg-[#eff2f8]">
                 <div className="relative h-[150px]">
                   <Image
-                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800"
-                    alt={event.venue || "Venue"}
+                    src={venueHeroImage}
+                    alt={venue?.name || event.venue || "Venue"}
                     fill
                     sizes="300px"
                     className="object-cover"
@@ -240,16 +476,20 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
                 </div>
               </div>
 
-              <p className="mt-4 text-sm font-semibold text-[#0f1d49]">{event.venue || "Venue TBA"}</p>
-              <p className="mt-1 text-xs text-slate-500">{event.physical_location_details || "AASTU Campus"}</p>
+              <p className="mt-4 text-sm font-semibold text-[#0f1d49]">{venue?.name || event.venue || "Venue TBA"}</p>
+              <p className="mt-1 text-xs text-slate-500">{venueLocationLabel}</p>
 
-              <Link
-                href="#"
-                className="mt-3 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-[#b6861f] transition-colors hover:text-[#9f7418]"
-              >
-                Get Directions
-                <ArrowRight size={13} />
-              </Link>
+              {venue?.google_maps_url ? (
+                <Link
+                  href={venue.google_maps_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-[#b6861f] transition-colors hover:text-[#9f7418]"
+                >
+                  Get Directions
+                  <ArrowRight size={13} />
+                </Link>
+              ) : null}
             </article>
           </aside>
         </div>

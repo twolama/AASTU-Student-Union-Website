@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
+  ExternalLink,
   ChevronRight,
   Clock3,
   MapPin,
@@ -36,6 +38,24 @@ const statusVariantMap = {
   archived: "default",
 } as const;
 
+function getVenueMapEmbedUrl(item: EventDetailItem) {
+  const coordinates = (item as EventDetailItem & { venueMapCoordinates?: { lat?: number | null; lng?: number | null } | null }).venueMapCoordinates;
+
+  if (coordinates?.lat != null && coordinates?.lng != null) {
+    return `https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}&z=18&t=k&output=embed`;
+  }
+
+  if (item.venueGoogleMapsUrl) {
+    if (item.venueGoogleMapsUrl.includes("/embed")) {
+      return item.venueGoogleMapsUrl;
+    }
+
+    return `https://www.google.com/maps?q=${encodeURIComponent(item.venueLocationLabel || item.locationName)}&t=k&z=18&output=embed`;
+  }
+
+  return `https://www.google.com/maps?q=${encodeURIComponent(item.venueLocationLabel || item.locationName)}&output=embed`;
+}
+
 export function EventDetailView({ item }: EventDetailViewProps) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
@@ -46,6 +66,8 @@ export function EventDetailView({ item }: EventDetailViewProps) {
   const attendancePercent = Math.min(100, Math.round((item.attendance.current / item.attendance.capacity) * 100));
   const canEditEvent = hasPermission("events.edit");
   const canDeleteEvent = hasPermission("events.delete");
+  const venueGallery = item.venueGallery?.length ? item.venueGallery : [item.venueImageUrl || item.coverImageUrl].filter(Boolean);
+  const mapEmbedUrl = getVenueMapEmbedUrl(item);
 
   async function confirmArchive() {
     await archiveEvent.mutateAsync(item.id);
@@ -138,6 +160,68 @@ export function EventDetailView({ item }: EventDetailViewProps) {
               <p className="mt-1 text-xs text-gray-500">{item.locationWing}</p>
             </article>
           </div>
+
+          <article className="rounded-[10px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold text-[#1f2a44]">Venue &amp; Location</h2>
+              {item.venueGoogleMapsUrl ? (
+                <a
+                  href={item.venueGoogleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full bg-[#f8f3e1] px-3 py-1 text-xs font-semibold text-[#8c6c14] transition-colors hover:bg-[#f3e7bf]"
+                >
+                  Open Maps
+                  <ExternalLink size={12} />
+                </a>
+              ) : null}
+            </div>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="overflow-hidden rounded-[10px] border border-gray-200 bg-[#f8fafc]">
+                <div className="relative h-64 sm:h-72">
+                  <iframe
+                    title={`${item.title} venue map`}
+                    src={mapEmbedUrl}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="h-full w-full border-0"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-[10px] bg-[#f8fafc] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">Venue Name</p>
+                  <p className="mt-1 text-lg font-bold text-[#1f2a44]">{item.venueTitle}</p>
+                  <p className="mt-1 text-sm text-gray-600">{item.venueLocationLabel || item.locationName}</p>
+                </div>
+
+                <div className="rounded-[10px] bg-[#f8fafc] p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">Landmarks</p>
+                  <p className="mt-1 text-sm text-gray-600">{item.venueNearbyLandmarks || item.locationWing || "AASTU Campus"}</p>
+                </div>
+
+                {item.venueDescription ? (
+                  <div className="rounded-[10px] bg-[#f8fafc] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">Venue Notes</p>
+                    <p className="mt-1 text-sm leading-6 text-gray-600">{item.venueDescription}</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-[10px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-2xl font-bold text-[#1f2a44]">Venue Gallery</h2>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {venueGallery.map((image, index) => (
+                <div key={`${item.id}-venue-gallery-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-[10px] bg-gray-100">
+                  <Image src={image} alt={`${item.title} venue gallery ${index + 1}`} fill className="object-cover transition-transform duration-300 hover:scale-105" />
+                </div>
+              ))}
+            </div>
+          </article>
 
           <article className="rounded-[10px] border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="text-2xl font-bold text-[#1f2a44]">About the Event</h2>
@@ -241,13 +325,15 @@ export function EventDetailView({ item }: EventDetailViewProps) {
           <article className="overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm">
             <div
               className="h-28 bg-cover bg-center"
-              style={{ backgroundImage: `linear-gradient(180deg, rgba(10,14,20,0.2), rgba(10,14,20,0.45)), url(${item.mapImageUrl})` }}
+              style={{ backgroundImage: `linear-gradient(180deg, rgba(10,14,20,0.2), rgba(10,14,20,0.45)), url(${item.venueImageUrl || item.mapImageUrl})` }}
             />
             <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
-              <span className="font-medium text-gray-600">AASTU North Campus</span>
-              <a href="https://maps.google.com" target="_blank" rel="noreferrer" className="text-[#c49a22] hover:underline">
-                Open Maps
-              </a>
+              <span className="font-medium text-gray-600">{item.venueLocationLabel || item.locationWing}</span>
+              {item.venueGoogleMapsUrl ? (
+                <a href={item.venueGoogleMapsUrl} target="_blank" rel="noreferrer" className="text-[#c49a22] hover:underline">
+                  Open Maps
+                </a>
+              ) : null}
             </div>
           </article>
         </aside>

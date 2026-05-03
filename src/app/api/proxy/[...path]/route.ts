@@ -13,6 +13,7 @@ const RESPONSE_HEADER_BLOCKLIST = new Set([
 ]);
 
 const LOGIN_PATH = "/api/v1/auth/login";
+const REFRESH_PATH = "/api/v1/auth/refresh";
 const LOGOUT_PATH = "/api/v1/auth/logout";
 const CHANGE_PASSWORD_PATH = "/api/v1/auth/change-password";
 
@@ -53,6 +54,27 @@ function getLoginCookieMaxAge(expiresAt: string) {
   return seconds > 0 ? seconds : undefined;
 }
 
+function getJwtCookieMaxAge(token: string) {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return undefined;
+
+    let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4 !== 0) {
+      base64 += "=";
+    }
+
+    const payload = JSON.parse(atob(base64));
+    const exp = typeof payload?.exp === "number" ? payload.exp : null;
+    if (!exp) return undefined;
+
+    const seconds = exp - Math.floor(Date.now() / 1000);
+    return seconds > 0 ? seconds : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function buildProxyUrl(
   baseUrl: string,
   pathSegments: string[],
@@ -84,23 +106,44 @@ async function normalizeErrorResponse(upstreamResponse: Response) {
   let message = fallbackMessage;
   let upstreamError: unknown = null;
 
+  function extractValidationMessage(details: unknown): string | undefined {
+    if (typeof details !== "object" || details === null) return undefined;
+
+    for (const value of Object.values(details as Record<string, unknown>)) {
+      if (Array.isArray(value) && value.length > 0) {
+        const first = value[0];
+        if (typeof first === "string" && first.trim()) return first;
+      }
+
+      if (typeof value === "string" && value.trim()) {
+        return value;
+      }
+    }
+
+    return undefined;
+  }
+
   const contentType = upstreamResponse.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     try {
       const payload = await upstreamResponse.json();
       upstreamError = payload;
-      if (
-        typeof payload?.message === "string" &&
-        payload.message.trim().length > 0
-      ) {
+      const errorPayload = payload?.error;
+
+      if (typeof payload?.message === "string" && payload.message.trim().length > 0) {
         message = payload.message;
-      } else if (payload?.error) {
-        message =
-          typeof payload.error === "string"
-            ? payload.error
-            : JSON.stringify(payload.error);
+      } else if (typeof errorPayload === "string" && errorPayload.trim().length > 0) {
+        message = errorPayload;
+      } else if (errorPayload && typeof errorPayload === "object") {
+        const nestedMessage =
+          typeof (errorPayload as { message?: unknown }).message === "string"
+            ? String((errorPayload as { message?: unknown }).message)
+            : extractValidationMessage((errorPayload as { details?: unknown }).details) ||
+              extractValidationMessage(errorPayload);
+
+        message = nestedMessage || "Validation error";
       } else if (typeof payload === "object") {
-        message = "Validation Error: " + JSON.stringify(payload);
+        message = extractValidationMessage(payload) || "Validation error";
       }
     } catch {
       message = fallbackMessage;
@@ -244,6 +287,49 @@ function handleLogoutResponse() {
   return response;
 }
 
+async function refreshAccessToken(baseUrl: string, request: NextRequest) {
+  const refreshToken = request.cookies.get("refresh_token")?.value;
+  if (!refreshToken) {
+    return null;
+  }
+
+  const response = await fetch(`${baseUrl}${REFRESH_PATH}/`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refresh: refreshToken }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await response.json().catch(() => null);
+  const accessToken =
+    typeof payload?.access === "string"
+      ? payload.access
+      : typeof payload?.data?.accessToken?.token === "string"
+        ? payload.data.accessToken.token
+        : null;
+
+  if (!accessToken) {
+    return null;
+  }
+
+  return {
+    accessToken,
+    refreshToken:
+      typeof payload?.refresh === "string"
+        ? payload.refresh
+        : typeof payload?.data?.refreshToken?.token === "string"
+          ? payload.data.refreshToken.token
+          : null,
+  };
+}
+
 async function proxyRequest(request: NextRequest, context: RouteContext) {
   const method = request.method.toUpperCase();
   const { path } = await context.params;
@@ -308,13 +394,78 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     const hasBody = !["GET", "HEAD"].includes(method);
     const body = hasBody ? await request.arrayBuffer() : undefined;
 
-    const upstreamResponse = await fetch(targetUrl, {
+    let upstreamResponse = await fetch(targetUrl, {
       method,
       headers,
       body,
       cache: "no-store",
       redirect: "follow",
     });
+
+    const shouldTryRefresh =
+      upstreamResponse.status === 401 &&
+      proxiedPath !== LOGIN_PATH &&
+      proxiedPath !== REFRESH_PATH &&
+      proxiedPath !== LOGOUT_PATH &&
+      proxiedPath !== CHANGE_PASSWORD_PATH;
+
+    if (shouldTryRefresh) {
+      const refreshed = await refreshAccessToken(baseUrl, request);
+
+      if (refreshed?.accessToken) {
+        headers.set("authorization", `Bearer ${refreshed.accessToken}`);
+        upstreamResponse = await fetch(targetUrl, {
+          method,
+          headers,
+          body,
+          cache: "no-store",
+          redirect: "follow",
+        });
+
+        if (upstreamResponse.ok) {
+          const responseHeaders = sanitizeHeaders(
+            upstreamResponse.headers,
+            RESPONSE_HEADER_BLOCKLIST
+          );
+          try {
+            responseHeaders.set("x-proxy-target", targetUrl);
+          } catch {
+            /* ignore */
+          }
+
+          const response = new NextResponse(upstreamResponse.body, {
+            status: upstreamResponse.status,
+            statusText: upstreamResponse.statusText,
+            headers: responseHeaders,
+          });
+
+          const isProd = process.env.NODE_ENV === "production";
+          response.cookies.set({
+            name: "access_token",
+            value: refreshed.accessToken,
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "lax",
+            path: "/",
+            maxAge: getJwtCookieMaxAge(refreshed.accessToken),
+          });
+
+          if (refreshed.refreshToken) {
+            response.cookies.set({
+              name: "refresh_token",
+              value: refreshed.refreshToken,
+              httpOnly: true,
+              secure: isProd,
+              sameSite: "lax",
+              path: "/",
+              maxAge: getJwtCookieMaxAge(refreshed.refreshToken),
+            });
+          }
+
+          return response;
+        }
+      }
+    }
 
     if (!upstreamResponse.ok) {
       const err = await normalizeErrorResponse(upstreamResponse);

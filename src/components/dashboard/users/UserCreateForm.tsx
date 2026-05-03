@@ -295,7 +295,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
                       >
                         <input
                           type="checkbox"
-                          checked={selectedRoles.includes(roleOption.value) || (!editMode && roleOption.value === memberRoleId && !memberRoleCleared)}
+                          checked={effectiveSelectedRoles.includes(roleOption.value)}
                           onChange={() => toggleRole(roleOption.value)}
                           className="h-4 w-4 rounded border-gray-300 text-[#c49a22] focus:ring-[#c49a22]"
                           disabled={createUserMutation.isPending || updateUserMutation.isPending}

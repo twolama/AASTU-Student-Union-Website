@@ -60,6 +60,10 @@ function isAccessTokenUsable(token: string | undefined) {
   }
 }
 
+function hasRefreshToken(request: NextRequest) {
+  return Boolean(request.cookies.get("refresh_token")?.value);
+}
+
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
@@ -68,7 +72,9 @@ export function middleware(request: NextRequest) {
   }
 
   const accessToken = request.cookies.get("access_token")?.value;
-  if (isAccessTokenUsable(accessToken)) {
+  const refreshTokenPresent = hasRefreshToken(request);
+
+  if (isAccessTokenUsable(accessToken) || refreshTokenPresent) {
     const requiresPasswordChange = request.cookies.get("must_change_password")?.value === "1";
 
     if (requiresPasswordChange && pathname !== FORCE_PASSWORD_CHANGE_PATH && pathname !== "/sign-out") {
@@ -87,8 +93,10 @@ export function middleware(request: NextRequest) {
   loginUrl.searchParams.set("next", returnTo);
 
   const response = NextResponse.redirect(loginUrl);
-  response.cookies.delete("access_token");
-  response.cookies.delete("refresh_token");
+  if (!hasRefreshToken(request)) {
+    response.cookies.delete("access_token");
+    response.cookies.delete("refresh_token");
+  }
   return response;
 }
 

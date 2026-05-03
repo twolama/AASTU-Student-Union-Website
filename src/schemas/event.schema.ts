@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VenueCategorySchema } from "@/schemas/venue-category.schema";
 
 export const normalizeKeys = (value: any): any => {
   if (!value || typeof value !== "object") {
@@ -30,6 +31,8 @@ export const normalizeKeys = (value: any): any => {
     date_month: value.dateMonth ?? value.date_month,
     registration_link: value.registrationLink ?? value.registration_link,
     attendee_count: value.attendeeCount ?? value.attendee_count,
+    venue_details: value.venueDetails ?? value.venue_details,
+    booking_details: value.bookingDetails ?? value.booking_details,
   };
 
   // Recursively normalize known object fields to ensure nested keys are handled
@@ -39,6 +42,10 @@ export const normalizeKeys = (value: any): any => {
   
   if (normalized.volunteers && Array.isArray(normalized.volunteers)) {
     normalized.volunteers = normalized.volunteers.map(normalizeKeys);
+  }
+
+  if (normalized.venue_details && typeof normalized.venue_details === "object") {
+    normalized.venue_details = normalizeKeys(normalized.venue_details);
   }
 
   return normalized;
@@ -116,6 +123,71 @@ export const EventDetailSchema = z.object({
   attendance: z.any().nullable().optional().default({ current: 0, capacity: 0, waitlist: 0, vips: 0 }),
   volunteers: z.array(EventVolunteerSchema).nullable().optional().default([]),
   attendees: z.array(z.any()).nullable().optional().default([]),
+  booking_details: z
+    .object({
+      id: z.string().uuid().optional(),
+      id_label: z.string().nullable().optional(),
+      venue_name: z.string().nullable().optional(),
+      date_label: z.string().nullable().optional(),
+      time_label: z.string().nullable().optional(),
+      start_date: z.string().nullable().optional(),
+      end_date: z.string().nullable().optional(),
+      selected_slots: z.array(z.string()).nullable().optional(),
+      requested_date_iso: z.string().nullable().optional(),
+      time_range: z.string().nullable().optional(),
+    })
+    .passthrough()
+    .nullable()
+    .optional(),
+  venue_details: z
+    .object({
+      id: z.string().uuid().optional(),
+      name: z.string().nullable().optional(),
+      category: VenueCategorySchema.nullable().optional(),
+      status: z.enum(["active", "maintenance", "inactive"]).optional(),
+      max_capacity: z.number().nullable().optional(),
+      capacity_label: z.string().nullable().optional(),
+      campus_block: z.string().nullable().optional(),
+      floor_level: z.string().nullable().optional(),
+      location: z.string().nullable().optional(),
+      nearby_landmarks: z.string().nullable().optional(),
+      short_description: z.string().nullable().optional(),
+      full_description: z.string().nullable().optional(),
+      is_publicly_available: z.boolean().nullable().optional(),
+      hero_image: z.string().nullable().optional(),
+      thumbnail: z.string().nullable().optional(),
+      image_url: z.string().nullable().optional(),
+      amenities: z.array(z.string()).nullable().optional(),
+      manager_name: z.string().nullable().optional(),
+      manager_phone: z.string().nullable().optional(),
+      manager_email: z.string().nullable().optional(),
+      google_maps_url: z.string().nullable().optional(),
+      map_coordinates: z
+        .object({
+          lat: z.number().nullable().optional(),
+          lng: z.number().nullable().optional(),
+        })
+        .nullable()
+        .optional(),
+      gallery: z
+        .array(
+          z
+            .object({
+              id: z.string().uuid().optional(),
+              venue: z.string().uuid().optional(),
+              image: z.string().nullable().optional(),
+              alt_text: z.string().nullable().optional(),
+            })
+            .passthrough()
+        )
+        .nullable()
+        .optional(),
+      created_at: z.string().nullable().optional(),
+      updated_at: z.string().nullable().optional(),
+    })
+    .passthrough()
+    .nullable()
+    .optional(),
 }).passthrough();
 
 export const EventListResponseSchema = z.object({

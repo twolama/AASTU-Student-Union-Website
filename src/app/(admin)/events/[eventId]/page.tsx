@@ -49,6 +49,28 @@ type ApiEventDetail = {
     avatar?: string;
     initials?: string;
   }>;
+  venue_details?: {
+    id?: string;
+    name?: string;
+    location?: string;
+    campus_block?: string;
+    floor_level?: string;
+    nearby_landmarks?: string;
+    short_description?: string;
+    full_description?: string;
+    google_maps_url?: string;
+    hero_image?: string | null;
+    thumbnail?: string | null;
+    image_url?: string | null;
+    map_coordinates?: { lat?: number | null; lng?: number | null } | null;
+    gallery?: Array<{
+      id?: string;
+      image?: string | null;
+      image_url?: string | null;
+      url?: string | null;
+      alt_text?: string | null;
+    }>;
+  };
   volunteers?: Array<{
     id: string;
     user: {
@@ -95,11 +117,34 @@ function formatTimeRange(start?: string, end?: string) {
   })}`;
 }
 
+function formatVenueLocationLabel(event: ApiEventDetail) {
+  const venue = event.venue_details;
+  const locationParts = [
+    venue?.location,
+    venue?.campus_block ? `Block ${venue.campus_block}` : "",
+    venue?.floor_level ? `Floor ${venue.floor_level}` : "",
+  ].filter(Boolean);
+
+  if (locationParts.length > 0) {
+    return locationParts.join(" · ");
+  }
+
+  return event.physicalLocationDetails || event.venue || "AASTU Campus";
+}
+
+function formatVenueGallery(event: ApiEventDetail) {
+  return (event.venue_details?.gallery || [])
+    .map((image) => image.image_url || image.url || image.image || "")
+    .filter(Boolean);
+}
+
 function formatEventDetail(event: ApiEventDetail): EventDetailItem {
   const startDate = event.startDateTime ? new Date(event.startDateTime) : null;
   const dateDay = event.dateDay || (startDate ? String(startDate.getDate()).padStart(2, "0") : "--");
   const dateMonth = event.dateMonth || (startDate ? startDate.toLocaleString("en-US", { month: "short" }).toUpperCase() : "TBD");
   const venueTitle = event.venue || "Campus Venue";
+  const venueDetails = event.venue_details;
+  const venueGallery = formatVenueGallery(event);
   const status = ["live-now", "upcoming", "archived"].includes(event.status || "")
     ? (event.status as EventDetailItem["status"])
     : "upcoming";
@@ -116,11 +161,11 @@ function formatEventDetail(event: ApiEventDetail): EventDetailItem {
     dateDay,
     dateMonth,
     venueTitle,
-    venueSubtitle: event.physicalLocationDetails || "AASTU Campus",
+    venueSubtitle: formatVenueLocationLabel(event),
     timeRange: formatTimeRange(event.startDateTime, event.endDateTime),
     startDateLabel: formatDateLabel(event.startDateTime),
-    locationName: event.physicalLocationDetails || venueTitle,
-    locationWing: "AASTU North Campus",
+    locationName: formatVenueLocationLabel(event),
+    locationWing: venueDetails?.nearby_landmarks || event.physicalLocationDetails || "AASTU North Campus",
     description: event.description || "",
     aboutParagraphs:
       event.description?.split(/\r?\n/).filter(Boolean) || ["This event profile was generated from the backend event record."],
@@ -147,7 +192,14 @@ function formatEventDetail(event: ApiEventDetail): EventDetailItem {
             { id: "status", label: "Status", value: status },
           ],
     mapImageUrl:
-      "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop",
+      venueDetails?.hero_image || venueDetails?.thumbnail || venueDetails?.image_url || "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop",
+    venueImageUrl: venueDetails?.hero_image || venueDetails?.thumbnail || venueDetails?.image_url || event.coverImage || undefined,
+    venueGallery,
+    venueGoogleMapsUrl: venueDetails?.google_maps_url || "",
+    venueMapCoordinates: venueDetails?.map_coordinates || null,
+    venueLocationLabel: formatVenueLocationLabel(event),
+    venueNearbyLandmarks: venueDetails?.nearby_landmarks || event.physicalLocationDetails || "",
+    venueDescription: venueDetails?.short_description || venueDetails?.full_description || "",
   };
 }
 
@@ -196,6 +248,17 @@ function buildFallbackEventDetail(eventId: string) {
     ],
     mapImageUrl:
       "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop",
+    venueImageUrl:
+      "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop",
+    venueGallery: [
+      "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1494526585095-c41746248156?w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=1200&auto=format&fit=crop",
+    ],
+    venueGoogleMapsUrl: "https://www.google.com/maps?q=AASTU%20Campus&output=embed",
+    venueLocationLabel: "AASTU Campus",
+    venueNearbyLandmarks: "Main Campus",
+    venueDescription: "This preview card was generated from event summary data.",
   };
 }
 

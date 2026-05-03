@@ -139,6 +139,16 @@ export interface EventDetailItem {
   };
   logistics: EventLogisticsPoint[];
   mapImageUrl: string;
+  venueImageUrl?: string;
+  venueGallery?: string[];
+  venueGoogleMapsUrl?: string;
+  venueMapCoordinates?: {
+    lat?: number | null;
+    lng?: number | null;
+  } | null;
+  venueLocationLabel?: string;
+  venueNearbyLandmarks?: string;
+  venueDescription?: string;
 }
 
 // ─── Venues ──────────────────────────────────────────────────────────────────

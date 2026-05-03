@@ -24,7 +24,6 @@ import dayjs from "dayjs";
 import { useVenues, useVenue } from "@/hooks/useVenues";
 import { useClubs, useClubUpcomingEvents } from "@/hooks/useClubs";
 import { useQueryClient } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { Input } from "@/components/ui/Input";
@@ -187,10 +186,9 @@ export function BookingRequestForm({
   
   const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100, undefined, "active");
   const { data: fullVenueData, isLoading: isFullVenueLoading } = useVenue(selectedVenueId);
-  const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100, undefined, "active");
+  const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100);
   const queryClient = useQueryClient();
   const { data: upcomingEventsData, isLoading: isUpcomingEventsLoading } = useClubUpcomingEvents(clubAssociation);
-  const queryClient = useQueryClient();
   
   const [startDate, setStartDate] = useState(initialData?.startDate ?? "");
   const [endDate, setEndDate] = useState(initialData?.endDate ?? "");
