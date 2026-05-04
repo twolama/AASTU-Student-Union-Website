@@ -3,6 +3,7 @@ import { z } from "zod";
 export const LoginRequestSchema = z.object({
   username: z.string().trim().min(1, "Enter your username, student ID, or email."),
   password: z.string().min(1, "Enter your password."),
+  remember: z.boolean().optional(),
 });
 
 const LoginUserSchema = z.object({
