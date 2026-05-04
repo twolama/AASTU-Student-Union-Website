@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react";
 import { AuthPasswordField } from "@/components/public/auth/AuthPasswordField";
 import { Button } from "@/components/ui/Button";
 import { useChangePassword } from "@/hooks/useChangePassword";
+import { parseApiFormError } from "@/lib/api-errors";
 
 export function ForcePasswordChangeForm() {
   const router = useRouter();
@@ -16,6 +17,18 @@ export function ForcePasswordChangeForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,37 +60,28 @@ export function ForcePasswordChangeForm() {
 
       router.push("/dashboard");
       router.refresh();
-    } catch (error: any) {
-      // Attempt to parse field-level errors coming from the backend (Zod/DRF array)
-      const respData = error?.response?.data ?? error?.data ?? null;
+    } catch (error: unknown) {
+      const parsed = parseApiFormError(error);
 
-      // If backend returned an array of zod-like errors
-      if (Array.isArray(respData)) {
-        const parsed: Record<string, string> = {};
-        respData.forEach((it: any) => {
-          const path = it?.path?.[0];
-          const msg = it?.message || it?.msg || JSON.stringify(it);
-          if (path) parsed[path] = msg;
-          else setLocalError((prev) => prev ? `${prev}; ${msg}` : msg);
-        });
-        if (Object.keys(parsed).length > 0) setFieldErrors(parsed);
+      const relevantFieldErrors: Record<string, string> = {};
+      ["current_password", "new_password", "confirm_password"].forEach((field) => {
+        if (parsed.fieldErrors[field]) {
+          relevantFieldErrors[field] = parsed.fieldErrors[field];
+        }
+      });
+
+      if (Object.keys(relevantFieldErrors).length > 0) {
+        setFieldErrors(relevantFieldErrors);
+      }
+
+      if (parsed.nonFieldErrors.length > 0) {
+        setLocalError(parsed.nonFieldErrors[0]);
         return;
       }
 
-      // If backend returned object with field keys
-      if (respData && typeof respData === "object") {
-        const parsed: Record<string, string> = {};
-        Object.entries(respData).forEach(([k, v]) => {
-          if (Array.isArray(v)) parsed[k] = String(v[0]);
-          else parsed[k] = String(v);
-        });
-        if (Object.keys(parsed).length > 0) {
-          setFieldErrors(parsed);
-          return;
-        }
+      if (Object.keys(relevantFieldErrors).length === 0) {
+        setLocalError(parsed.message || "Unable to change password. Please try again.");
       }
-
-      setLocalError(error?.message || "Unable to change password. Please try again.");
     }
   }
 
@@ -96,7 +100,10 @@ export function ForcePasswordChangeForm() {
         id="temp-password"
         label="Temporary Password"
         value={currentPassword}
-        onChange={(event) => setCurrentPassword(event.target.value)}
+        onChange={(event) => {
+          setCurrentPassword(event.target.value);
+          clearFieldError("current_password");
+        }}
         placeholder="Enter temporary password"
         autoComplete="current-password"
         error={fieldErrors.current_password}
@@ -106,7 +113,10 @@ export function ForcePasswordChangeForm() {
         id="new-password"
         label="New Password"
         value={newPassword}
-        onChange={(event) => setNewPassword(event.target.value)}
+        onChange={(event) => {
+          setNewPassword(event.target.value);
+          clearFieldError("new_password");
+        }}
         placeholder="Enter new password"
         autoComplete="new-password"
         error={fieldErrors.new_password}
@@ -116,7 +126,10 @@ export function ForcePasswordChangeForm() {
         id="confirm-new-password"
         label="Confirm New Password"
         value={confirmPassword}
-        onChange={(event) => setConfirmPassword(event.target.value)}
+        onChange={(event) => {
+          setConfirmPassword(event.target.value);
+          clearFieldError("confirm_password");
+        }}
         placeholder="Confirm new password"
         autoComplete="new-password"
         error={fieldErrors.confirm_password}

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { type CurrentUser } from "@/schemas/user.schema";
 import { useRouter } from "next/navigation";
 import type { Role } from "@/api/services/user.service";
+import { parseApiFormError } from "@/lib/api-errors";
 
 interface UserCreateFormProps {
   user?: CurrentUser | null;
@@ -33,10 +34,29 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
   const [email, setEmail] = useState(() => user?.email || "");
   const [department, setDepartment] = useState(() => user?.department || "");
   const [phone, setPhone] = useState(() => user?.phoneNumber || "");
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(() => {
+    if (user?.roles && user.roles.length) return user.roles;
+    if (user?.rolesDetails && user.rolesDetails.length) return user.rolesDetails.map((r) => r.id as string);
+    return [];
+  });
+  
+  
   const [memberRoleCleared, setMemberRoleCleared] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusType, setStatusType] = useState<"success" | "error">("success");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  function clearFieldError(field: string) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   const avatarPreviewUrl = useMemo(() => {
     if (avatarFile) return URL.createObjectURL(avatarFile);
@@ -79,6 +99,8 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
   );
 
   function toggleRole(roleId: string) {
+    clearFieldError("roles");
+
     if (!editMode && roleId === memberRoleId) {
       if (selectedRoles.includes(roleId)) {
         setSelectedRoles((prev) => prev.filter((id) => id !== roleId));
@@ -100,20 +122,23 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setFieldErrors({});
+    setStatusMessage(null);
+
+    const localFieldErrors: Record<string, string> = {};
 
     if (!department) {
-      setStatusType("error");
-      setStatusMessage("Please select a department.");
-      return;
+      localFieldErrors.department = "Please select a department.";
     }
 
     if (effectiveSelectedRoles.length === 0) {
-      setStatusType("error");
-      setStatusMessage("Please select at least one system role.");
-      return;
+      localFieldErrors.roles = "Please select at least one system role.";
     }
 
-    setStatusMessage(null);
+    if (Object.keys(localFieldErrors).length > 0) {
+      setFieldErrors(localFieldErrors);
+      return;
+    }
 
     try {
       if (editMode && user) {
@@ -162,6 +187,7 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
 
       setStatusType("success");
       setStatusMessage("User account created successfully. Temporary password email has been sent.");
+      setFieldErrors({});
 
       setAvatarFile(null);
       setFullName("");
@@ -172,8 +198,82 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
       setSelectedRoles([]);
       setMemberRoleCleared(false);
     } catch (error: unknown) {
-      setStatusType("error");
-      setStatusMessage(error instanceof Error ? error.message : "Failed to save user. Please try again.");
+      const parsed = parseApiFormError(error, {
+        fieldAliases: {
+          phone: "phone_number",
+          role: "roles",
+        },
+      });
+
+      const knownFieldKeys = new Set([
+        "name",
+        "student_id",
+        "email",
+        "department",
+        "phone_number",
+        "roles",
+        "avatar",
+      ]);
+
+      const inlineErrors: Record<string, string> = {};
+      const nonFieldMessages = [...parsed.nonFieldErrors];
+
+      Object.entries(parsed.fieldErrors).forEach(([key, value]) => {
+        if (knownFieldKeys.has(key)) {
+          inlineErrors[key] = value;
+          return;
+        }
+
+        nonFieldMessages.push(`${key}: ${value}`);
+      });
+
+      // Fallback: try to safely traverse nested payload -> error -> upstream -> error -> details
+      let upstreamDetailsObj: Record<string, unknown> | undefined;
+      if (typeof error === "object" && error !== null) {
+        const errObj = error as Record<string, unknown>;
+        let payloadObj: Record<string, unknown> | undefined;
+
+        if (errObj.payload && typeof errObj.payload === "object" && errObj.payload !== null) {
+          payloadObj = errObj.payload as Record<string, unknown>;
+        } else if (errObj.response && typeof errObj.response === "object" && errObj.response !== null) {
+          const resp = errObj.response as Record<string, unknown>;
+          if (resp.data && typeof resp.data === "object" && resp.data !== null) {
+            payloadObj = resp.data as Record<string, unknown>;
+          }
+        }
+
+        if (
+          payloadObj &&
+          payloadObj.error &&
+          typeof payloadObj.error === "object" &&
+          (payloadObj.error as Record<string, unknown>).upstream &&
+          typeof (payloadObj.error as Record<string, unknown>).upstream === "object"
+        ) {
+          const up = (payloadObj.error as Record<string, unknown>).upstream as Record<string, unknown>;
+          if (up.error && typeof up.error === "object") {
+            const ue = up.error as Record<string, unknown>;
+            if (ue.details && typeof ue.details === "object") upstreamDetailsObj = ue.details as Record<string, unknown>;
+            else if (ue.detail && typeof ue.detail === "object") upstreamDetailsObj = ue.detail as Record<string, unknown>;
+          }
+        }
+      }
+
+      if (upstreamDetailsObj) {
+        for (const [key, value] of Object.entries(upstreamDetailsObj)) {
+          if (knownFieldKeys.has(key) && !inlineErrors[key]) {
+            inlineErrors[key] = Array.isArray(value) ? String(value[0]) : String(value);
+          }
+        }
+      }
+
+      if (Object.keys(inlineErrors).length > 0) {
+        setFieldErrors(inlineErrors);
+      }
+
+      if (nonFieldMessages.length > 0 || Object.keys(inlineErrors).length === 0) {
+        setStatusType("error");
+        setStatusMessage(nonFieldMessages[0] || parsed.message || "Failed to save user. Please try again.");
+      }
     }
   }
 
@@ -191,10 +291,19 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
               previewUrl={avatarPreviewUrl}
               fileName={avatarFile?.name}
               accept="image/png,image/jpeg,image/jpg"
-              onChange={setAvatarFile}
-              onClear={() => setAvatarFile(null)}
+              onChange={(file) => {
+                setAvatarFile(file);
+                clearFieldError("avatar");
+              }}
+              onClear={() => {
+                setAvatarFile(null);
+                clearFieldError("avatar");
+              }}
               className="[&>p]:hidden [&_label]:min-h-0"
             />
+            {fieldErrors.avatar ? (
+              <p className="mt-1.5 px-1 text-xs font-medium text-red-500">{fieldErrors.avatar}</p>
+            ) : null}
 
             {!avatarFile ? (
               <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#8a95a8]">
@@ -212,9 +321,13 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
               <Input
                 id="user-full-name"
                 value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
+                onChange={(event) => {
+                  setFullName(event.target.value);
+                  clearFieldError("name");
+                }}
                 placeholder="e.g. Abebe Bikila"
                 className="h-10 rounded-[10px]"
+                error={fieldErrors.name}
                 required
               />
             </div>
@@ -227,9 +340,13 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
                 <Input
                   id="user-student-id"
                   value={studentId}
-                  onChange={(event) => setStudentId(event.target.value)}
+                  onChange={(event) => {
+                    setStudentId(event.target.value);
+                    clearFieldError("student_id");
+                  }}
                   placeholder="ETS0000/12"
                   className="h-10 rounded-[10px]"
+                  error={fieldErrors.student_id}
                   required
                 />
               </div>
@@ -242,9 +359,13 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
                   id="user-email"
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    clearFieldError("email");
+                  }}
                   placeholder="name@aastu.edu.et"
                   className="h-10 rounded-[10px]"
+                  error={fieldErrors.email}
                   required
                 />
               </div>
@@ -259,8 +380,12 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
                   label=""
                   value={department}
                   options={departmentDropdownOptions}
-                  onValueChange={setDepartment}
+                  onValueChange={(value) => {
+                    setDepartment(value);
+                    clearFieldError("department");
+                  }}
                   disabled={isDepartmentsLoading || createUserMutation.isPending}
+                  error={fieldErrors.department}
                   className="[&>p]:hidden [&>div>button]:h-10 [&>div>button]:rounded-[10px]"
                 />
               </div>
@@ -272,9 +397,13 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
                 <Input
                   id="user-phone"
                   value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
+                  onChange={(event) => {
+                    setPhone(event.target.value);
+                    clearFieldError("phone_number");
+                  }}
                   placeholder="+251 900 000 000"
                   className="h-10 rounded-[10px]"
+                  error={fieldErrors.phone_number}
                 />
               </div>
             </div>
@@ -306,6 +435,9 @@ export function UserCreateForm({ user = null, editMode = false }: UserCreateForm
                   </div>
                 )}
               </div>
+              {fieldErrors.roles ? (
+                <p className="mt-1.5 px-1 text-xs font-medium text-red-500">{fieldErrors.roles}</p>
+              ) : null}
             </div>
           </div>
         </div>

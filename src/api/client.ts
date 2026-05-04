@@ -6,6 +6,7 @@ export interface ApiErrorPayload {
   data?: unknown;
   statusCode?: number;
   error?: unknown;
+  [key: string]: unknown;
 }
 
 export class ApiError extends Error {
@@ -38,11 +39,28 @@ function getNestedErrorMessage(value: unknown): string | undefined {
   return typeof message === "string" ? message : undefined;
 }
 
+function getErrorCode(payload?: ApiErrorPayload): string | undefined {
+  if (!payload || typeof payload !== "object") {
+    return undefined;
+  }
+
+  const errorValue = payload.error;
+  if (typeof errorValue === "object" && errorValue !== null) {
+    const code = (errorValue as { code?: unknown }).code;
+    if (typeof code === "string" && code.trim().length > 0) {
+      return code;
+    }
+  }
+
+  return undefined;
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorPayload>) => {
     const payload = error.response?.data;
     const status = error.response?.status;
+    const errorCode = getErrorCode(payload);
     const requestUrl = error.config?.url || "";
 
     // Automatically log out and redirect to login if we get a 401 Unauthorized
@@ -59,8 +77,13 @@ apiClient.interceptors.response.use(
       }
     }
     
-    // Prioritize descriptive error messages from the payload
+    const backendUnavailableMessage =
+      "The backend service is unavailable right now. Please try again shortly.";
+
     const message =
+      (status === 503 && errorCode === "BACKEND_UNAVAILABLE"
+        ? backendUnavailableMessage
+        : undefined) ||
       (typeof payload?.error === "string" ? payload.error : undefined) ||
       getNestedErrorMessage(payload?.error) ||
       payload?.message ||

@@ -17,11 +17,49 @@ const REFRESH_PATH = "/api/v1/auth/refresh";
 const LOGOUT_PATH = "/api/v1/auth/logout";
 const CHANGE_PASSWORD_PATH = "/api/v1/auth/change-password";
 
+const UPSTREAM_UNAVAILABLE_ERROR_CODES = new Set([
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+
 type RouteContext = {
   params: Promise<{
     path: string[];
   }>;
 };
+
+function extractErrorCode(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+
+  const directCode = (value as { code?: unknown }).code;
+  if (typeof directCode === "string" && directCode.trim()) {
+    return directCode;
+  }
+
+  const nestedCause = (value as { cause?: unknown }).cause;
+  if (nestedCause) {
+    const nestedCode = extractErrorCode(nestedCause);
+    if (nestedCode) {
+      return nestedCode;
+    }
+
+    if (nestedCause instanceof AggregateError) {
+      for (const inner of nestedCause.errors) {
+        const innerCode = extractErrorCode(inner);
+        if (innerCode) {
+          return innerCode;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
 
 function normalizeBaseUrl(rawBaseUrl: string | undefined): string {
   if (!rawBaseUrl) {
@@ -522,19 +560,38 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     // FIX: Log the actual error so it's visible in server logs.
     console.error("[proxy] Upstream fetch failed →", targetUrl, error);
 
+    const errorCode = extractErrorCode(error);
+    const isBackendUnavailable =
+      typeof errorCode === "string" &&
+      UPSTREAM_UNAVAILABLE_ERROR_CODES.has(errorCode);
+
+    const statusCode = isBackendUnavailable ? 503 : 500;
+    const message = isBackendUnavailable
+      ? "Backend service is currently unavailable. Please try again shortly."
+      : process.env.NODE_ENV !== "production" && error instanceof Error
+        ? error.message
+        : "Proxy request failed";
+
+    const upstreamError =
+      process.env.NODE_ENV !== "production"
+        ? {
+            code: errorCode,
+            message: error instanceof Error ? error.message : String(error),
+          }
+        : null;
+
     return NextResponse.json(
       {
         success: false,
-        // FIX: Surface the actual error message in non-production environments.
-        message:
-          process.env.NODE_ENV !== "production" && error instanceof Error
-            ? error.message
-            : "Proxy request failed",
+        message,
         data: null,
-        statusCode: 500,
-        error: { code: "PROXY_INTERNAL_ERROR" },
+        statusCode,
+        error: {
+          code: isBackendUnavailable ? "BACKEND_UNAVAILABLE" : "PROXY_INTERNAL_ERROR",
+          ...(upstreamError ? { upstream: upstreamError } : {}),
+        },
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
