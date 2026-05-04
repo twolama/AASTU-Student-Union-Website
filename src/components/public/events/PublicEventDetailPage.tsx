@@ -15,7 +15,6 @@ import {
 import { PublicFooter } from "@/components/public/layout/PublicFooter";
 import { PublicHeader } from "@/components/public/layout/PublicHeader";
 import { useEvent, useEvents } from "@/hooks/useEvents";
-import { usePermissions } from "@/hooks/usePermissions";
 import dayjs from "dayjs";
 
 type PublicVenueDetails = {
@@ -175,8 +174,6 @@ function getBookingTimeLabel(bookingDetails?: { time_label?: string | null; sele
 }
 
 export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
-  const { hasPermission } = usePermissions();
-  const canRegisterForEvents = hasPermission("events.create");
   const { data: event, isLoading, isError, error } = useEvent(eventId);
   const { data: relatedResponse } = useEvents(1, 4);
   const venue = event?.venue_details as PublicVenueDetails | undefined;
@@ -442,7 +439,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
                 </div>
               </div>
 
-              {event.registration_link && canRegisterForEvents && (
+              {event.registration_link && (
                 <a
                   href={event.registration_link}
                   target="_blank"
@@ -527,7 +524,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
 
                 <div className="p-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {e.date_month || (e.start_date_time ? dayjs(e.start_date_time).format("MMM") : "???")} {e.date_day || (e.start_date_time ? dayjs(e.start_date_time).format("DD") : "??")}, 2024
+                    {e.date_month || (e.start_date_time ? dayjs(e.start_date_time).format("MMM") : "???")} {e.date_day || (e.start_date_time ? dayjs(e.start_date_time).format("DD") : "??")}{e.start_date_time ? `, ${dayjs(e.start_date_time).format("YYYY")}` : ''}
                   </p>
                   <h3 className="mt-2 text-2xl font-black leading-tight text-[#0f1d49] line-clamp-1">{e.title}</h3>
                   <p className="mt-2 text-sm text-slate-500 line-clamp-1">{e.venue || "TBA"}</p>

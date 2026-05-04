@@ -4,6 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Clock3, MapPin, Search, ArrowRight, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { publicEventCategories,} from "@/lib/public/events";
 import { useEvents } from "@/hooks/useEvents";
@@ -13,7 +14,29 @@ import dayjs from "dayjs";
 
 const PAGE_SIZE = 5;
 
+function getCategoryName(event: EventListItem) {
+  const organizingClub = event.organizing_club as
+    | (EventListItem["organizing_club"] & {
+        categoryName?: string;
+        category_details?: { name?: string };
+      })
+    | undefined;
+
+  return (
+    organizingClub?.category_name ||
+    organizingClub?.categoryName ||
+    organizingClub?.category_details?.name ||
+    "General"
+  );
+}
+
+function excerpt(text?: string, length = 120) {
+  if (!text) return "";
+  return text.length <= length ? text : `${text.slice(0, length).trimEnd()}...`;
+}
+
 function EventCard({ event }: { event: EventListItem }) {
+  const router = useRouter();
   const dateDay = event.date_day || (event.start_date_time ? dayjs(event.start_date_time).format("DD") : "??");
   const dateMonth = event.date_month || (event.start_date_time ? dayjs(event.start_date_time).format("MMM") : "???");
   
@@ -22,7 +45,13 @@ function EventCard({ event }: { event: EventListItem }) {
     : "Time TBD";
 
   return (
-    <article className="group overflow-hidden rounded-[20px] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => router.push(`/public/events/${event.id}`)}
+      onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/public/events/${event.id}`); }}
+      className="group cursor-pointer overflow-hidden rounded-[20px] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)]"
+    >
       <div className="relative h-36 overflow-hidden sm:h-44">
         <Image
           src={event.cover_image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800"}
@@ -42,11 +71,15 @@ function EventCard({ event }: { event: EventListItem }) {
 
       <div className="p-5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b6861f]">
-          {event.organizing_club.category_name || "General"}
+          {getCategoryName(event)}
         </p>
         <h3 className="mt-3 text-[1.4rem] font-black leading-[1.2] text-[#0f1d49] sm:text-[1.55rem] line-clamp-2 min-h-[3rem]">
           {event.title}
         </h3>
+
+        <p className="mt-2 text-sm leading-6 text-slate-500 line-clamp-2 min-h-[3rem]">
+          {excerpt(event.short_description || event.title, 140)}
+        </p>
 
         <div className="mt-4 space-y-2 text-sm text-slate-500">
           <p className="inline-flex items-center gap-2">
@@ -59,13 +92,26 @@ function EventCard({ event }: { event: EventListItem }) {
           </p>
         </div>
 
-        <Link
-          href={`/public/events/${event.id}`}
-          className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0f1d49] transition-colors hover:text-[#b6861f]"
-        >
-          Details
-          <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-        </Link>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          {event.registration_link ? (
+            <a
+              href={event.registration_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-2 rounded-[10px] bg-[#f1c44d] px-4 py-2 text-sm font-semibold text-[#0d1a45] transition-colors hover:bg-[#ffd668]"
+            >
+              Register
+            </a>
+          ) : (
+            <span className="text-sm font-medium text-slate-500">&nbsp;</span>
+          )}
+
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0f1d49] transition-colors group-hover:text-[#b6861f]">
+            Details
+            <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+          </span>
+        </div>
       </div>
     </article>
   );
@@ -114,13 +160,13 @@ export function PublicEventsContent() {
     return eventsResponse.data.filter((event) => {
       const categoryMatches =
         activeCategory === "All Events" ||
-        (event.organizing_club.category_name?.toLowerCase() === activeCategory.toLowerCase());
+        (getCategoryName(event).toLowerCase() === activeCategory.toLowerCase());
 
       const queryMatches =
         normalized.length === 0 ||
         event.title.toLowerCase().includes(normalized) ||
         (event.venue?.toLowerCase().includes(normalized) ?? false) ||
-        (event.organizing_club.category_name?.toLowerCase().includes(normalized) ?? false);
+        getCategoryName(event).toLowerCase().includes(normalized);
 
       return categoryMatches && queryMatches;
     });
@@ -186,13 +232,15 @@ export function PublicEventsContent() {
                 </p>
               </div>
 
-              {canRegisterForEvents ? (
-                <Link
-                  href={`/public/events/${megaEvent.id}`}
+              {megaEvent.registration_link ? (
+                <a
+                  href={megaEvent.registration_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex h-12 shrink-0 items-center justify-center rounded-[12px] bg-[#f1c44d] px-8 text-sm font-semibold text-[#0d1a45] transition-colors hover:bg-[#ffd668]"
                 >
                   Register Now
-                </Link>
+                </a>
               ) : null}
             </div>
           </div>

@@ -72,13 +72,23 @@ export default function ClubDetailPage() {
         avatarUrl: club.advisorDetails.avatar,
       }] : []),
     ],
-    upcomingEvents: (upcomingEventsData || []).map((ev: any) => ({
-      id: ev.id,
-      day: dayjs(ev.start_date_time).format("DD"),
-      month: dayjs(ev.start_date_time).format("MMM"),
-      title: ev.title,
-      timeVenue: `${dayjs(ev.start_date_time).format("HH:mm")} @ ${ev.venue_name || ev.location || "AASTU"}`,
-    })),
+    upcomingEvents: (upcomingEventsData || []).map((ev: any) => {
+      const startDateTime = ev.startDateTime || ev.start_date_time;
+      const dateDay = ev.dateDay || ev.date_day;
+      const dateMonth = ev.dateMonth || ev.date_month;
+      const venueName = ev.venueName || ev.venue_name || ev.venue || ev.location;
+
+      const start = startDateTime ? dayjs(startDateTime) : null;
+      const timeLabel = start ? start.format("HH:mm") : "TBD";
+
+      return {
+        id: ev.id,
+        day: dateDay || (start ? start.format("DD") : "--"),
+        month: dateMonth || (start ? start.format("MMM") : "TBD"),
+        title: ev.title,
+        timeVenue: `${timeLabel} @ ${venueName || "AASTU"}`,
+      };
+    }),
     recentActivities: [],
   };
 
