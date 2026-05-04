@@ -12,7 +12,8 @@ import { announcementService } from "@/api/services/announcement.service";
 import { usePermissions } from "@/hooks/usePermissions";
 
 dayjs.extend(relativeTime);
-import { getPublicAnnouncementCategoryLabel, publicAnnouncementTabs } from "@/lib/public/announcements";
+import { getPublicAnnouncementCategoryLabel /*, publicAnnouncementTabs*/ } from "@/lib/public/announcements";
+import { useAnnouncementCategories } from "@/hooks/useAnnouncementCategories";
 import type { AnnouncementItem, AnnouncementCategory } from "@/types/dashboard";
 
 const PAGE_SIZE = 5;
@@ -25,7 +26,9 @@ function getPublicAnnouncementSourceLabel(announcement: AnnouncementItem) {
   return announcement.authorName || "Official Notice";
 }
 
-function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) {
+type LocalAnnouncement = AnnouncementItem & { categoryLabel?: string };
+
+function AnnouncementCard({ announcement }: { announcement: LocalAnnouncement }) {
   return (
     <Link href={`/public/announcements/${announcement.id}`}>
       <article className="group flex h-full flex-col overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)] cursor-pointer">
@@ -39,7 +42,7 @@ function AnnouncementCard({ announcement }: { announcement: AnnouncementItem }) 
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,18,63,0.08),rgba(4,18,63,0.18))]" />
           <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold text-[#0f1d49] shadow-sm">
-            {categoryLabel(announcement.category)}
+            {announcement.categoryLabel || categoryLabel(announcement.category)}
           </span>
           <span className="absolute right-3 top-3 text-[10px] font-medium uppercase tracking-[0.08em] text-white/90 drop-shadow-sm">
             {announcement.publishedAgo}
@@ -110,6 +113,13 @@ export function PublicAnnouncementsContent() {
     staleTime: 1000 * 60 * 2,
   });
 
+  const { data: categoriesResponse } = useAnnouncementCategories();
+
+  interface AnnouncementCategoryItem {
+    id: string;
+    slug?: string;
+    name: string;
+  }
   const announcements = useMemo(() => {
     if (announcementsResponse?.data) {
       return announcementsResponse.data.map((item) => ({
@@ -119,7 +129,8 @@ export function PublicAnnouncementsContent() {
         imageUrl:
           item.image ||
           "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&auto=format&fit=crop",
-        category: item.categoryDetails?.slug || "all",
+        category: item.categoryDetails?.slug || item.category || "all",
+        categoryLabel: item.categoryDetails?.name || item.category || "General",
         publishedAgo: dayjs(item.createdAt).fromNow(),
         authorName: item.authorName || item.authorRoleName || "Official Notice",
         isPinned: item.isPinned ?? false,
@@ -128,6 +139,25 @@ export function PublicAnnouncementsContent() {
 
     return [];
   }, [announcementsResponse]);
+
+  // tabs depend on both server categories and which categories have announcements
+  const tabs = useMemo(() => {
+    const cats: AnnouncementCategoryItem[] = categoriesResponse?.data || [];
+    const base = [{ id: "all", label: "All News" }];
+
+    const present = new Set(announcements.map((a) => a.category));
+
+    const catTabs = cats
+      .filter((c) => present.has(c.slug || c.id))
+      .map((c) => ({ id: c.slug || c.id, label: c.name }));
+
+    // include any announcement categories not declared in server categories
+    const extra = Array.from(present)
+      .filter((id) => id && id !== "all" && !catTabs.some((t) => t.id === id))
+      .map((id) => ({ id, label: id }));
+
+    return [...base, ...catTabs, ...extra];
+  }, [categoriesResponse?.data, announcements]);
 
   const filteredAnnouncements = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -206,7 +236,7 @@ export function PublicAnnouncementsContent() {
               sizes="100vw"
               className="object-cover opacity-45"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(4,18,63,0.92),rgba(4,18,63,0.18)_70%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(4,18,63,0.92),rgba(4,18,63,0.18) 70%)]" />
 
             <div className="relative z-10 p-5 sm:p-7 lg:p-10">
               <div className="max-w-[720px]">
@@ -263,27 +293,32 @@ export function PublicAnnouncementsContent() {
             />
           </label>
 
-          <div className="flex flex-wrap gap-2">
-            {publicAnnouncementTabs.map((tab) => {
-              const selected = tab.id === activeTab;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setPage(1);
-                  }}
-                  className={
-                    selected
-                      ? "rounded-full bg-[#08143c] px-4 py-2.5 text-xs font-semibold text-white"
-                      : "rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
-                  }
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+          <div className="-mx-4 sm:mx-0">
+            <div className="relative">
+              <div className="hide-scrollbar mx-4 flex w-auto gap-2 overflow-x-auto whitespace-nowrap py-2 sm:mx-0 sm:flex-wrap sm:overflow-visible">
+                {tabs.map((tab) => {
+                  const selected = tab.id === activeTab;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setPage(1);
+                      }}
+                      className={
+                        selected
+                          ? "inline-flex items-center justify-center rounded-full bg-[#08143c] px-4 py-2.5 text-xs font-semibold text-white shadow-[0_6px_18px_rgba(8,20,60,0.12)]"
+                          : "inline-flex items-center justify-center rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                      }
+                      aria-pressed={selected}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 

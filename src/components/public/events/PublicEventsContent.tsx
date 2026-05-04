@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Clock3, MapPin, Search, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { publicEventCategories,} from "@/lib/public/events";
 import { useEvents } from "@/hooks/useEvents";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { EventListItem } from "@/schemas/event.schema";
@@ -19,13 +18,16 @@ function getCategoryName(event: EventListItem) {
     | (EventListItem["organizing_club"] & {
         categoryName?: string;
         category_details?: { name?: string };
+        categoryDetails?: { name?: string };
       })
     | undefined;
 
   return (
     organizingClub?.category_name ||
     organizingClub?.categoryName ||
+    organizingClub?.categoryDetails?.name ||
     organizingClub?.category_details?.name ||
+    organizingClub?.category ||
     "General"
   );
 }
@@ -144,13 +146,26 @@ function ProposalCard() {
 }
 
 export function PublicEventsContent() {
-  const [activeCategory, setActiveCategory] = useState<(typeof publicEventCategories)[number]>("All Events");
+  const [activeCategory, setActiveCategory] = useState("All Events");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const { hasPermission } = usePermissions();
   const canRegisterForEvents = hasPermission("events.create");
 
   const { data: eventsResponse, isLoading, isError } = useEvents(page, PAGE_SIZE);
+
+  const eventCategories = useMemo(() => {
+    const labels = new Set<string>();
+
+    eventsResponse?.data?.forEach((event) => {
+      const label = getCategoryName(event);
+      if (label) {
+        labels.add(label);
+      }
+    });
+
+    return ["All Events", ...Array.from(labels).sort((left, right) => left.localeCompare(right))];
+  }, [eventsResponse]);
 
   const filteredEvents = useMemo(() => {
     if (!eventsResponse?.data) return [];
@@ -250,7 +265,7 @@ export function PublicEventsContent() {
       <section className="space-y-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2.5">
-            {publicEventCategories.map((category) => {
+            {eventCategories.map((category) => {
               const selected = activeCategory === category;
               return (
                 <button

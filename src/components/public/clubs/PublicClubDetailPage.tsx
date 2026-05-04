@@ -164,9 +164,9 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
                     </div>
 
                     <Link
-                      href="/public/events"
+                      href={`/public/events/${event.id}`}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ebeff7] text-[#1d2d59] transition-colors hover:bg-[#dce3f3]"
-                      aria-label={`View details for ${event.title}`}
+                      aria-label={`Open event ${event.title}`}
                     >
                       <ArrowUpRight size={15} />
                     </Link>

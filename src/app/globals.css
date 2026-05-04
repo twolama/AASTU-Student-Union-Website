@@ -161,3 +161,12 @@ body {
   justify-content: center;
   background: transparent;
 }
+
+/* Hide scrollbar but keep scroll functionality for small-screen tab lists */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
