@@ -9,6 +9,10 @@ import {
 } from "@/schemas/announcement.schema";
 
 type AnnouncementMutationPayload = FormData | Record<string, unknown>;
+type CategoryQueryOptions = {
+  hasAnnouncements?: boolean;
+  publishedOnly?: boolean;
+};
 
 export const announcementService = {
   // Announcements
@@ -41,8 +45,14 @@ export const announcementService = {
   },
 
   // Categories
-  getCategories: async () => {
-    const response = await apiClient.get<{ success: boolean; data: AnnouncementCategory[] }>(ANNOUNCEMENT_CATEGORY_ENDPOINTS.LIST);
+  getCategories: async (options?: CategoryQueryOptions) => {
+    const params: Record<string, string> = {};
+    if (options?.hasAnnouncements) params.has_announcements = "true";
+    if (options?.publishedOnly) params.published_only = "true";
+
+    const response = await apiClient.get<{ success: boolean; data: AnnouncementCategory[] }>(ANNOUNCEMENT_CATEGORY_ENDPOINTS.LIST, {
+      params,
+    });
     return response.data;
   },
 };
