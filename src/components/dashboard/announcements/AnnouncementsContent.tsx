@@ -22,17 +22,11 @@ export function AnnouncementsContent() {
     setCurrentPage(1);
   };
 
-  if (isAnnLoading && !annData) {
-    return (
-      <div className="flex h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
-      </div>
-    );
-  }
-
   const announcements = annData?.data || [];
   const meta = annData?.meta || { page: 1, limit: 9, total: 0, totalPages: 1 };
   const categories = catData?.data || [];
+
+  // Keep hooks consistent across renders: compute category IDs and effect before any early return
   const categoryIds = useMemo(() => new Set(categories.map((category) => category.slug)), [categories]);
 
   useEffect(() => {
@@ -41,6 +35,14 @@ export function AnnouncementsContent() {
       setCurrentPage(1);
     }
   }, [activeTabId, categoryIds]);
+
+  if (isAnnLoading && !annData) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
