@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { /* Download */ } from "lucide-react";
+import { ApiError } from "@/api/client";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
@@ -9,30 +10,56 @@ import { StatsSection } from "@/components/dashboard/StatsSection";
 import { VenueOccupancyTrends } from "@/components/dashboard/events/VenueOccupancyTrends";
 import { statsPeriods } from "@/data/dummy";
 import { getAnalyticsDashboard } from "@/api/services/analytics.service";
-import type { StatsRangeId } from "@/types/dashboard";
+import type { StatCard, StatsBreakdownItem, StatsRangeId, StatsTrendPoint } from "@/types/dashboard";
 import { StatsBarChartCard } from "@/components/dashboard/stats/StatsBarChartCard";
 import { StatsBreakdownCard } from "@/components/dashboard/stats/StatsBreakdownCard";
+
+type VenueKpis = {
+  mostPopular?: string;
+  avgSessionHours?: number;
+};
+
+type DashboardData = {
+  registrationTrends?: StatsTrendPoint[];
+  occupancyTrends?: StatsTrendPoint[];
+  clubBreakdown?: StatsBreakdownItem[];
+  eventDistribution?: StatsBreakdownItem[];
+  overview?: StatCard[];
+  venueKpis?: VenueKpis;
+};
+
+type AnalyticsResponse = {
+  forbidden?: boolean;
+  data?: DashboardData | null;
+};
 
 export function StatsContent() {
   const [selectedPeriod, setSelectedPeriod] = useState<StatsRangeId>("last-8-months");
   const [loading, setLoading] = useState(true);
-  const [dashboard, setDashboard] = useState<any>(null);
+  const [requestNonce, setRequestNonce] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
     getAnalyticsDashboard(selectedPeriod)
       .then((data) => {
         if (!mounted) return;
-        if (data?.forbidden || !data?.data) {
+        const payload = data as AnalyticsResponse;
+        if (payload?.forbidden || !payload?.data) {
           setDashboard(null);
           return;
         }
-        setDashboard(data.data);
+        setDashboard(payload.data);
       })
-      .catch(() => {
+      .catch((error) => {
         if (!mounted) return;
         setDashboard(null);
+        if (error instanceof ApiError) {
+          setErrorMessage(error.message);
+          return;
+        }
+        setErrorMessage("Unable to load analytics right now. Please try again.");
       })
       .finally(() => {
         if (!mounted) return;
@@ -41,35 +68,55 @@ export function StatsContent() {
     return () => {
       mounted = false;
     };
-  }, [selectedPeriod]);
+  }, [selectedPeriod, requestNonce]);
 
   const selectedPeriodOption = statsPeriods.find((item) => item.id === selectedPeriod) ?? statsPeriods[0];
 
-  if (loading || !dashboard) {
-    return <div className="p-8 text-center text-gray-400">Loading analytics...</div>;
-  }
-
-  const registrationPoints = dashboard.registrationTrends || [];
-  const occupancyPoints = dashboard.occupancyTrends || [];
-  const clubBreakdown = dashboard.clubBreakdown || [];
-  const eventDistribution = dashboard.eventDistribution || [];
-  const overviewCards = dashboard.overview || [];
-  const venueKpis = dashboard.venueKpis || {};
+  const registrationPoints = useMemo(() => dashboard?.registrationTrends ?? [], [dashboard]);
+  const occupancyPoints = useMemo(() => dashboard?.occupancyTrends ?? [], [dashboard]);
+  const clubBreakdown = useMemo(() => dashboard?.clubBreakdown ?? [], [dashboard]);
+  const eventDistribution = useMemo(() => dashboard?.eventDistribution ?? [], [dashboard]);
+  const overviewCards = useMemo(() => dashboard?.overview ?? [], [dashboard]);
+  const venueKpis = dashboard?.venueKpis || {};
 
   const registrationsSummary = useMemo(() => {
     const firstValue = registrationPoints[0]?.value ?? 0;
     const lastValue = registrationPoints[registrationPoints.length - 1]?.value ?? 0;
     const peakPoint = registrationPoints.reduce(
-      (highest: any, point: any) => (point.value > highest.value ? point : highest),
+      (highest, point) => (point.value > highest.value ? point : highest),
       registrationPoints[0] ?? { label: "", value: 0 }
     );
     const momentum = firstValue > 0 ? Math.round(((lastValue - firstValue) / firstValue) * 100) : 0;
     return {
       peakPoint,
-      average: Math.round(registrationPoints.reduce((sum: number, point: any) => sum + point.value, 0) / Math.max(registrationPoints.length, 1)),
+      average: Math.round(registrationPoints.reduce((sum, point) => sum + point.value, 0) / Math.max(registrationPoints.length, 1)),
       momentum,
     };
   }, [registrationPoints]);
+
+  if (loading) {
+    return <div className="p-8 text-center text-gray-400">Loading analytics...</div>;
+  }
+
+  if (!dashboard) {
+    return (
+      <div className="rounded-[22px] border border-amber-200 bg-amber-50/60 p-6 text-center">
+        <p className="text-sm text-amber-900">{errorMessage || "Analytics are temporarily unavailable."}</p>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-4"
+          onClick={() => {
+            setErrorMessage(null);
+            setLoading(true);
+            setRequestNonce((prev) => prev + 1);
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -86,7 +133,11 @@ export function StatsContent() {
               label="Reporting period"
               value={selectedPeriod}
               options={statsPeriods.map((period) => ({ value: period.id, label: period.label }))}
-              onValueChange={(value) => setSelectedPeriod(value as StatsRangeId)}
+              onValueChange={(value) => {
+                setErrorMessage(null);
+                setLoading(true);
+                setSelectedPeriod(value as StatsRangeId);
+              }}
               className="min-w-[220px]"
             />
             
@@ -143,7 +194,7 @@ export function StatsContent() {
           items={eventDistribution}
           showDonut
           donutLabel="Events"
-          footerNote={`${eventDistribution.reduce((sum: number, item: any) => sum + (item.value || 0), 0)} events recorded in the selected period.`}
+          footerNote={`${eventDistribution.reduce((sum, item) => sum + item.value, 0)} events recorded in the selected period.`}
           className="min-w-0"
         />
       </div>

@@ -1,7 +1,8 @@
 import { apiClient } from "@/api/client";
 import { AUTH_ENDPOINTS, USER_ENDPOINTS } from "@/api/endpoints";
+import { writeCachedCurrentUser } from "@/lib/auth-cache";
 import { LoginRequestSchema, LoginResponseSchema, type LoginRequest, type LoginResponse } from "@/schemas/auth.schema";
-import { CurrentUserResponseSchema, type CurrentUser, type ProfileUpdate } from "@/schemas/user.schema";
+import { CurrentUserResponseSchema, type CurrentUser, type ProfileUpdate, type ChangePasswordRequest } from "@/schemas/user.schema";
 
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
   const request = LoginRequestSchema.parse(payload);
@@ -13,6 +14,7 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
 export async function getCurrentUser(): Promise<CurrentUser> {
   const response = await apiClient.get(USER_ENDPOINTS.ME);
   const parsed = CurrentUserResponseSchema.parse(response.data);
+  writeCachedCurrentUser(parsed.data);
   return parsed.data;
 }
 
@@ -44,10 +46,11 @@ export async function updateProfile(payload: ProfileUpdate): Promise<CurrentUser
   });
 
   const parsed = CurrentUserResponseSchema.parse(response.data);
+  writeCachedCurrentUser(parsed.data);
   return parsed.data;
 }
 
-export async function changePassword(payload: any): Promise<{ success: boolean; message: string }> {
+export async function changePassword(payload: ChangePasswordRequest): Promise<{ success: boolean; message: string }> {
   const response = await apiClient.post(AUTH_ENDPOINTS.CHANGE_PASSWORD, payload);
   return response.data;
 }

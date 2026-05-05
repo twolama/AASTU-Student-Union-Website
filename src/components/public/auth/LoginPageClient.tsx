@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { LoginForm } from "@/components/public/auth/LoginForm";
 import { useAuthLogin } from "@/hooks/useAuthLogin";
 import { logout } from "@/api/services/auth.service";
@@ -9,6 +11,17 @@ import type { LoginValues } from "@/lib/public/auth";
 export function LoginPageClient() {
   const router = useRouter();
   const loginMutation = useAuthLogin();
+  const currentUserQuery = useCurrentUser();
+
+  useEffect(() => {
+    if (currentUserQuery.data) {
+      router.replace("/dashboard");
+    }
+  }, [currentUserQuery.data, router]);
+
+  if (currentUserQuery.isLoading) {
+    return <div className="px-6 py-12 text-sm text-gray-500">Checking your session...</div>;
+  }
 
   async function handleSubmit(values: LoginValues) {
     try {

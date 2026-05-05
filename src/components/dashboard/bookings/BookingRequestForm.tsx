@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import { useCreateBooking, useUpdateBooking, useBookingAvailability } from "@/hooks/useBookings";
@@ -18,7 +18,6 @@ import {
   MapPin,
   Users2,
   Loader2,
-  Calendar as CalendarIcon,
 } from "lucide-react";
 import dayjs from "dayjs";
 import { useVenues, useVenue } from "@/hooks/useVenues";
@@ -34,7 +33,6 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { BookingVenueCard } from "@/types/dashboard";
 import type { Club } from "@/schemas/club.schema";
-import type { Venue } from "@/schemas/venue.schema";
 
 type StepId = 1 | 2 | 3;
 
@@ -104,6 +102,21 @@ const stepLabels: { id: StepId; label: string }[] = [
   { id: 2, label: "Requirements" },
   { id: 3, label: "Review" },
 ];
+
+function FieldError({ errors }: { errors?: string[] }) {
+  if (!errors || errors.length === 0) return null;
+
+  return (
+    <div className="mt-1 flex items-start gap-1 text-[11px] font-medium text-rose-600 animate-in fade-in slide-in-from-top-1">
+      <Info size={12} className="mt-0.5 shrink-0" />
+      <ul className="list-inside list-none">
+        {errors.map((err, index) => (
+          <li key={index}>{err}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 
 
@@ -182,29 +195,49 @@ export function BookingRequestForm({
   const venueIdFromUrl = searchParams.get("venueId");
 
   const [clubAssociation, setClubAssociation] = useState(initialData?.clubAssociation ?? "");
-  const [selectedVenueId, setSelectedVenueId] = useState(initialData?.selectedVenueId ?? "");
-  
   const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100, undefined, "active");
-  const { data: fullVenueData, isLoading: isFullVenueLoading } = useVenue(selectedVenueId);
   const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100);
   const queryClient = useQueryClient();
-  const { data: upcomingEventsData, isLoading: isUpcomingEventsLoading } = useClubUpcomingEvents(clubAssociation);
-  
   const [startDate, setStartDate] = useState(initialData?.startDate ?? "");
   const [endDate, setEndDate] = useState(initialData?.endDate ?? "");
-  
+
+  const realVenues = useMemo(() => {
+    if (!venuesData || !venuesData.data) return [];
+    return venuesData.data.map((v) => ({
+      id: v.id || "unknown",
+      name: v.name,
+      description: v.shortDescription,
+      imageUrl: v.imageUrl || v.heroImage || v.thumbnail || "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&auto=format&fit=crop",
+      capacity: v.maxCapacity,
+      category: v.category?.slug || "general",
+      status: v.status === "active" ? "available" : "blocked",
+      amenities: v.amenities || [],
+    })) as BookingVenueCard[];
+  }, [venuesData]);
+
+  const preferredVenueId = useMemo(() => {
+    const candidates = [venueIdFromUrl, initialData?.selectedVenueId].filter(Boolean) as string[];
+    return candidates.find((id) => realVenues.some((venue) => venue.id === id)) ?? realVenues[0]?.id ?? "";
+  }, [venueIdFromUrl, initialData?.selectedVenueId, realVenues]);
+
+  const [selectedVenueId, setSelectedVenueId] = useState(initialData?.selectedVenueId ?? venueIdFromUrl ?? "");
+  const resolvedSelectedVenueId = selectedVenueId || preferredVenueId;
+
+  const { data: fullVenueData, isLoading: isFullVenueLoading } = useVenue(resolvedSelectedVenueId);
+  const { data: upcomingEventsData } = useClubUpcomingEvents(clubAssociation);
+
   const isDateRangeValid = useMemo(() => {
     if (!startDate || !endDate) return false;
     return new Date(endDate) >= new Date(startDate);
   }, [startDate, endDate]);
 
   const { data: availableSlotsData, isLoading: isAvailabilityLoading, isError: isAvailabilityError } = useBookingAvailability(
-    selectedVenueId,
+    resolvedSelectedVenueId,
     startDate,
     endDate,
     bookingId
   );
-  
+
   // Actually, I should update the hook to be disabled if dates are invalid
 
   const timeSlots = useMemo(() => {
@@ -229,20 +262,6 @@ export function BookingRequestForm({
       available: !shouldDisableAll
     }));
   }, [availableSlotsData, startDate, endDate, isAvailabilityLoading, isAvailabilityError, isDateRangeValid]);
-
-  const realVenues = useMemo(() => {
-    if (!venuesData || !venuesData.data) return [];
-    return venuesData.data.map(v => ({
-      id: v.id || "unknown",
-      name: v.name,
-      description: v.shortDescription,
-      imageUrl: v.imageUrl || v.heroImage || v.thumbnail || "https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&auto=format&fit=crop",
-      capacity: v.maxCapacity,
-      category: v.category?.slug || "general",
-      status: v.status === "active" ? "available" : "blocked",
-      amenities: v.amenities || [],
-    })) as BookingVenueCard[];
-  }, [venuesData]);
 
   const clubOptions = useMemo(() => {
     const base = [{ value: "", label: "Select your student organization" }];
@@ -281,52 +300,59 @@ export function BookingRequestForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  function FieldError({ name }: { name: string }) {
-    const errors = fieldErrors[name];
-    if (!errors || errors.length === 0) return null;
-    return (
-      <div className="mt-1 flex items-start gap-1 text-[11px] font-medium text-rose-600 animate-in fade-in slide-in-from-top-1">
-        <Info size={12} className="mt-0.5 shrink-0" />
-        <ul className="list-inside list-none">
-          {errors.map((err, i) => (
-            <li key={i}>{err}</li>
-          ))}
-        </ul>
-      </div>
-    );
+  function clearTransientErrors() {
+    setFieldErrors({});
+    setErrorMessage(null);
   }
 
-  // Sync selectedVenueId with URL or initial data only once
-  useEffect(() => {
-    if (realVenues.length > 0 && !isInitialized) {
-      if (venueIdFromUrl && realVenues.some(v => v.id === venueIdFromUrl)) {
-        setSelectedVenueId(venueIdFromUrl);
-      } else if (initialData?.selectedVenueId && realVenues.some(v => v.id === initialData.selectedVenueId)) {
-        setSelectedVenueId(initialData.selectedVenueId);
-      } else {
-        // Fallback to first available venue if URL/initial ID is missing or invalid
-        setSelectedVenueId(realVenues[0].id);
-      }
-      setIsInitialized(true);
-    }
-  }, [realVenues, venueIdFromUrl, initialData, isInitialized]);
+  function handleVenueChange(value: string) {
+    clearTransientErrors();
+    setSelectedVenueId(value);
+    setEquipment([]);
+    setSelectedSlots([]);
+  }
 
-  // Reset equipment when venue changes to avoid stale requirements from previous venue
-  useEffect(() => {
-    if (isInitialized) {
-      setEquipment([]);
-      setSelectedSlots([]); // Also clear slots when venue changes
-    }
-  }, [selectedVenueId, isInitialized]);
+  function handleStartDateChange(value: string) {
+    clearTransientErrors();
+    setStartDate(value);
+    setSelectedSlots([]);
+  }
 
-  // Clear slots when date range changes
-  useEffect(() => {
-    if (isInitialized) {
-      setSelectedSlots([]);
-    }
-  }, [startDate, endDate, isInitialized]);
+  function handleEndDateChange(value: string) {
+    clearTransientErrors();
+    setEndDate(value);
+    setSelectedSlots([]);
+  }
+
+  function handleClubAssociationChange(value: string) {
+    clearTransientErrors();
+    setClubAssociation(value);
+  }
+
+  function handleEventTitleChange(value: string) {
+    clearTransientErrors();
+    setEventTitle(value);
+  }
+
+  function handleExpectedAttendanceChange(value: string) {
+    clearTransientErrors();
+    setExpectedAttendance(value);
+  }
+
+  function handlePurposeChange(value: string) {
+    clearTransientErrors();
+    setPurpose(value);
+  }
+
+  function handleSpecialRequestsChange(value: string) {
+    clearTransientErrors();
+    setSpecialRequests(value);
+  }
+
+  function handleGuidelinesCheckedChange(value: boolean) {
+    clearTransientErrors();
+    setGuidelinesChecked(value);
+  }
 
   const venueOptions = useMemo(() => {
     return realVenues.map((venue) => ({ 
@@ -336,8 +362,8 @@ export function BookingRequestForm({
   }, [realVenues]);
 
   const selectedVenue = useMemo(
-    () => realVenues.find((venue) => venue.id === selectedVenueId) || null,
-    [realVenues, selectedVenueId]
+    () => realVenues.find((venue) => venue.id === resolvedSelectedVenueId) || null,
+    [realVenues, resolvedSelectedVenueId]
   );
 
   const dynamicEquipmentOptions = useMemo(() => {
@@ -364,6 +390,7 @@ export function BookingRequestForm({
   const durationHours = Math.max(0, selectedSlots.length);
 
   function toggleSlot(slotLabel: string) {
+    clearTransientErrors();
     setSelectedSlots((current) =>
       current.includes(slotLabel)
         ? current.filter((slot) => slot !== slotLabel)
@@ -372,30 +399,13 @@ export function BookingRequestForm({
   }
 
   function toggleEquipment(optionId: string) {
+    clearTransientErrors();
     setEquipment((current) =>
       current.includes(optionId)
           ? current.filter((item) => item !== optionId)
         : [...current, optionId]
     );
   }
-
-  // Clear field errors when user changes inputs
-  useEffect(() => {
-    setFieldErrors({});
-    setErrorMessage(null);
-  }, [
-    clubAssociation,
-    selectedVenueId,
-    eventTitle,
-    expectedAttendance,
-    startDate,
-    endDate,
-    selectedSlots,
-    purpose,
-    equipment,
-    specialRequests,
-    guidelinesChecked,
-  ]);
 
   function goNext() {
     setErrorMessage(null);
@@ -405,7 +415,7 @@ export function BookingRequestForm({
       if (currentStep === 1) {
         Step1Schema.parse({
           clubAssociation,
-          selectedVenueId,
+          selectedVenueId: resolvedSelectedVenueId,
           eventTitle,
           expectedAttendance,
           startDate,
@@ -446,13 +456,13 @@ export function BookingRequestForm({
     
     try {
       // Final validation
-      Step1Schema.parse({ clubAssociation, selectedVenueId, eventTitle, expectedAttendance, startDate, endDate, selectedSlots, purpose });
+      Step1Schema.parse({ clubAssociation, selectedVenueId: resolvedSelectedVenueId, eventTitle, expectedAttendance, startDate, endDate, selectedSlots, purpose });
       Step2Schema.parse({ equipment, specialRequests });
       Step3Schema.parse({ guidelinesChecked });
 
       const payload = {
         club: clubAssociation,
-        venue: selectedVenueId,
+        venue: resolvedSelectedVenueId,
         title: eventTitle, // Backend might expect 'title'
         event_title: eventTitle,
         expected_attendance: parseInt(expectedAttendance),
@@ -476,7 +486,7 @@ export function BookingRequestForm({
       setTimeout(() => {
         router.push("/bookings");
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
         const errors: Record<string, string[]> = {};
         error.issues.forEach((issue) => {
@@ -489,14 +499,25 @@ export function BookingRequestForm({
         return;
       }
 
-      let errorData = error?.response?.data;
+      const errorResponse = error as {
+        response?: {
+          data?: {
+            code?: string;
+            details?: Record<string, unknown>;
+            message?: string;
+          };
+        };
+        message?: string;
+      };
+
+      let errorData = errorResponse.response?.data;
       
       // Handle cases where the message is a stringified JSON (common in proxy responses)
       if (typeof errorData?.message === "string" && errorData.message.includes("VALIDATION_ERROR")) {
         try {
           const parsedMessage = JSON.parse(errorData.message);
           errorData = { ...errorData, ...parsedMessage };
-        } catch (e) {
+        } catch {
           // Not valid JSON, ignore
         }
       }
@@ -520,7 +541,7 @@ export function BookingRequestForm({
         setFieldErrors(mappedErrors);
         setErrorMessage("Please correct the errors below.");
       } else {
-        setErrorMessage(errorData?.message || error.message || "Failed to submit booking request.");
+        setErrorMessage(errorData?.message || (error instanceof Error ? error.message : "Failed to submit booking request."));
       }
     }
   }
@@ -564,9 +585,9 @@ export function BookingRequestForm({
               <div className="relative">
                 <DropdownSelect
                   label="Venue Selection"
-                  value={selectedVenueId}
+                  value={resolvedSelectedVenueId}
                   options={venueOptions}
-                  onValueChange={setSelectedVenueId}
+                  onValueChange={handleVenueChange}
                   className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
                   disabled={isVenuesLoading}
                 />
@@ -575,20 +596,20 @@ export function BookingRequestForm({
                     <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
                   </div>
                 )}
-                <FieldError name="selectedVenueId" />
+                <FieldError errors={fieldErrors.selectedVenueId} />
               </div>
 
-              <div className={cn("rounded-[10px] border border-gray-200 bg-[#fbfcff] p-3 sm:p-4 transition-opacity", !selectedVenueId && "opacity-50 pointer-events-none")}>
+              <div className={cn("rounded-[10px] border border-gray-200 bg-[#fbfcff] p-3 sm:p-4 transition-opacity", !resolvedSelectedVenueId && "opacity-50 pointer-events-none")}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <DatePicker
                       id="booking-start-date"
                       label="Start Date"
                       value={startDate}
-                      onChange={setStartDate}
+                      onChange={handleStartDateChange}
                       minDate={dayjs().format("YYYY-MM-DD")}
                     />
-                    <FieldError name="startDate" />
+                    <FieldError errors={fieldErrors.startDate} />
                   </div>
 
                   <div>
@@ -596,11 +617,11 @@ export function BookingRequestForm({
                       id="booking-end-date"
                       label="End Date"
                       value={endDate}
-                      onChange={setEndDate}
+                      onChange={handleEndDateChange}
                       minDate={startDate || dayjs().format("YYYY-MM-DD")}
                       align="right"
                     />
-                    <FieldError name="endDate" />
+                    <FieldError errors={fieldErrors.endDate} />
                   </div>
                 </div>
 
@@ -610,7 +631,7 @@ export function BookingRequestForm({
                   </p>
                 )}
 
-                <div className={cn("mt-3 transition-opacity", !selectedVenueId && "opacity-50 pointer-events-none")}>
+                <div className={cn("mt-3 transition-opacity", !resolvedSelectedVenueId && "opacity-50 pointer-events-none")}>
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">
                       {!startDate || !endDate 
@@ -645,7 +666,7 @@ export function BookingRequestForm({
                       );
                     })}
                   </div>
-                  <FieldError name="selectedSlots" />
+                  <FieldError errors={fieldErrors.selectedSlots} />
 
                   <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#90a0bb]">
                     <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-white ring-1 ring-gray-300" />Available</span>
@@ -660,7 +681,7 @@ export function BookingRequestForm({
                   label="Club / Association Selection"
                   value={clubAssociation}
                   options={clubOptions}
-                  onValueChange={setClubAssociation}
+                  onValueChange={handleClubAssociationChange}
                   className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
                   disabled={isClubsLoading}
                 />
@@ -669,7 +690,7 @@ export function BookingRequestForm({
                     <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
                   </div>
                 )}
-                <FieldError name="clubAssociation" />
+                <FieldError errors={fieldErrors.clubAssociation} />
                 {!isClubsLoading && (!clubsData || !(clubsData.data && clubsData.data.length > 0)) ? (
                   <div className="mt-2 flex items-center gap-2 text-sm">
                     <p className="text-rose-600">No clubs available.</p>
@@ -693,11 +714,11 @@ export function BookingRequestForm({
                   <div className="mb-2 space-y-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Quick Select Upcoming Event</p>
                     <div className="flex flex-wrap gap-2">
-                      {upcomingEventsData.slice(0, 3).map((event: any) => (
+                      {upcomingEventsData.slice(0, 3).map((event: { id: string; title: string }) => (
                         <button
                           key={event.id}
                           type="button"
-                          onClick={() => setEventTitle(event.title)}
+                          onClick={() => handleEventTitleChange(event.title)}
                           className={cn(
                             "rounded-full border px-3 py-1 text-[11px] font-medium transition-all",
                             eventTitle === event.title
@@ -715,11 +736,11 @@ export function BookingRequestForm({
                 <Input
                   id="booking-event-title"
                   value={eventTitle}
-                  onChange={(event) => setEventTitle(event.target.value)}
+                  onChange={(event) => handleEventTitleChange(event.target.value)}
                   placeholder="e.g. Annual Tech Symposium 2024"
                   className="h-10 rounded-[10px]"
                 />
-                <FieldError name="eventTitle" />
+                <FieldError errors={fieldErrors.eventTitle} />
               </div>
 
               <div>
@@ -731,11 +752,11 @@ export function BookingRequestForm({
                   type="number"
                   min={1}
                   value={expectedAttendance}
-                  onChange={(event) => setExpectedAttendance(event.target.value)}
+                  onChange={(event) => handleExpectedAttendanceChange(event.target.value)}
                   placeholder="Number of attendees"
                   className="h-10 rounded-[10px]"
                 />
-                <FieldError name="expectedAttendance" />
+                <FieldError errors={fieldErrors.expectedAttendance} />
               </div>
 
 
@@ -746,11 +767,11 @@ export function BookingRequestForm({
                 <Textarea
                   id="booking-purpose"
                   value={purpose}
-                  onChange={(event) => setPurpose(event.target.value)}
+                  onChange={(event) => handlePurposeChange(event.target.value)}
                   placeholder="Briefly describe the activities and goals of the event..."
                   className="min-h-[104px] rounded-[10px]"
                 />
-                <FieldError name="purpose" />
+                <FieldError errors={fieldErrors.purpose} />
               </div>
             </div>
 
@@ -765,7 +786,7 @@ export function BookingRequestForm({
                 variant="goldSolid" 
                 className="h-10 w-full sm:w-auto" 
                 onClick={goNext}
-                disabled={!selectedVenueId || isVenuesLoading}
+                disabled={!resolvedSelectedVenueId || isVenuesLoading}
               >
                 Next Step
                 <ArrowRight size={14} />
@@ -866,11 +887,11 @@ export function BookingRequestForm({
             <p className="mt-2 text-sm text-[#6d7a95]">Additional details or technical notes.</p>
             <Textarea
               value={specialRequests}
-              onChange={(event) => setSpecialRequests(event.target.value)}
+              onChange={(event) => handleSpecialRequestsChange(event.target.value)}
               placeholder="Please describe any specific technical requirements or logistics needs not covered above..."
               className="mt-3 min-h-[110px] rounded-[10px]"
             />
-            <FieldError name="specialRequests" />
+            <FieldError errors={fieldErrors.specialRequests} />
           </article>
 
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
@@ -997,7 +1018,7 @@ export function BookingRequestForm({
               <input
                 type="checkbox"
                 checked={guidelinesChecked}
-                onChange={(event) => setGuidelinesChecked(event.target.checked)}
+                onChange={(event) => handleGuidelinesCheckedChange(event.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-gray-300 text-[#b48a1b] focus:ring-[#b48a1b]/30"
               />
               <span>
@@ -1007,7 +1028,7 @@ export function BookingRequestForm({
                 </span>
               </span>
             </label>
-            <FieldError name="guidelinesChecked" />
+            <FieldError errors={fieldErrors.guidelinesChecked} />
           </article>
 
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">

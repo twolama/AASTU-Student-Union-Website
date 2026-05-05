@@ -4,6 +4,18 @@ import { ClubStatCard } from "@/components/dashboard/clubs/ClubStatCard";
 import { useEffect, useState } from "react";
 import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 
+type RawClubStat = {
+  id: string;
+  title: string;
+  value: string | number;
+  icon?: string;
+};
+
+type ClubStatsPayload = {
+  club_stats?: RawClubStat[];
+  clubStats?: RawClubStat[];
+};
+
 export function ClubStatsSection() {
   const [items, setItems] = useState<any[] | null>(null);
 
@@ -13,10 +25,10 @@ export function ClubStatsSection() {
       .then((res) => {
         if (!mounted) return;
         if (res?.forbidden || !res?.data) return;
-        const data = res?.data || {};
+        const data: ClubStatsPayload = typeof res.data === "object" && res.data !== null ? (res.data as ClubStatsPayload) : {};
         const clubStats = data.club_stats || data.clubStats || null;
         if (Array.isArray(clubStats)) {
-          setItems(clubStats.map((s: any) => ({ id: s.id, title: s.title, value: s.value, icon: s.icon || 'Users' })));
+          setItems(clubStats.map((s) => ({ id: s.id, title: s.title, value: s.value, icon: s.icon || "Users" })));
         }
       })
       .catch(() => {})

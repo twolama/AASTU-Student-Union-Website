@@ -12,7 +12,7 @@ import { useRoles } from "@/hooks/useRoles";
 import { useDepartments } from "@/hooks/useDepartments";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Tabs } from "@/components/ui/Tabs";
-import { Users, ShieldCheck, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { type CurrentUser } from "@/schemas/user.schema";
 import { type UserManagementStat } from "@/types/dashboard";
 import { toast } from "sonner";
@@ -43,14 +43,15 @@ export function UsersContent() {
 
   // Fetch real data
   const { data: usersData, isLoading: isUsersLoading } = useUsers(currentPage, ITEMS_PER_PAGE, searchTerm, selectedRole, selectedDepartment);
-  const { data: rolesData, isLoading: isRolesLoading } = useRoles();
-  const { data: departments = [], isLoading: isDeptsLoading } = useDepartments();
+  const { data: rolesData } = useRoles();
+  const { data: departments = [] } = useDepartments();
   const { hasPermission } = usePermissions();
   const deleteUserMutation = useDeleteUser();
-  const canCreateUsers = hasPermission("users.create");
   const canEditUsers = hasPermission("users.edit");
   const canDeleteUsers = hasPermission("users.delete");
   const canManageRoles = hasPermission("users.edit");
+
+  const isUsersInitialLoading = isUsersLoading && !usersData;
 
   const roleOptions = useMemo(() => {
     if (!rolesData?.data) return [{ value: "all", label: "All Roles" }];
@@ -78,14 +79,14 @@ export function UsersContent() {
       await deleteUserMutation.mutateAsync(user.id);
       toast.success("User deleted successfully.");
       setDeleteTarget(null);
-    } catch (error: any) {
-      toast.error("Deletion failed", { description: error.message });
+    } catch (error) {
+      toast.error("Deletion failed", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
     }
   };
 
-  const isInitialLoading = (isUsersLoading && !usersData) || isRolesLoading || isDeptsLoading;
-
-  if (isInitialLoading) {
+  if (isUsersInitialLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />

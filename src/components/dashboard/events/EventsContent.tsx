@@ -10,6 +10,23 @@ import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import { useEvents } from "@/hooks/useEvents";
 import type { EventManagementItem, VenueOccupancyPoint, StatsTrendPoint } from "@/types/dashboard";
 
+type EventDistributionItem = {
+  id: string;
+  value: number;
+};
+
+type OccupancyItem = {
+  label: string;
+  value: number;
+};
+
+type EventsAnalyticsPayload = {
+  event_distribution?: EventDistributionItem[];
+  eventDistribution?: EventDistributionItem[];
+  occupancy_trends?: OccupancyItem[];
+  occupancyTrends?: OccupancyItem[];
+};
+
 const ITEMS_PER_PAGE = 4;
 
 function normalize(value: string) {
@@ -113,7 +130,7 @@ export function EventsContent() {
       .then((res) => {
         if (!mounted) return;
         if (res?.forbidden || !res?.data) return;
-        const data = res?.data || {};
+        const data: EventsAnalyticsPayload = typeof res.data === "object" && res.data !== null ? (res.data as EventsAnalyticsPayload) : {};
         const distribution = data.event_distribution || data.eventDistribution || [];
         const occupancy = data.occupancy_trends || data.occupancyTrends || [];
 

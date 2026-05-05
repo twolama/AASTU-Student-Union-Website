@@ -55,7 +55,7 @@ function isAccessTokenUsable(token: string | undefined) {
     // If we can't parse it but it exists, it might be an opaque token or weirdly formatted JWT.
     // We'll return true and let the downstream API requests handle the actual authorization.
     // This prevents redirection loops if the JWT format is slightly off.
-    console.warn("[Middleware] Failed to parse access token, but it exists. Allowing request.", error);
+    console.warn("[Proxy] Failed to parse access token, but it exists. Allowing request.", error);
     return true;
   }
 }
@@ -64,7 +64,7 @@ function hasRefreshToken(request: NextRequest) {
   return Boolean(request.cookies.get("refresh_token")?.value);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!isProtectedPath(pathname)) {

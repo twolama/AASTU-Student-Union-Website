@@ -21,9 +21,17 @@ export class ApiError extends Error {
   }
 }
 
+const DEFAULT_API_TIMEOUT_MS = 30000;
+
+function resolveApiTimeoutMs(): number {
+  const raw = process.env.NEXT_PUBLIC_API_TIMEOUT_MS;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_API_TIMEOUT_MS;
+}
+
 export const apiClient = axios.create({
   baseURL: "/api/proxy",
-  timeout: 15000,
+  timeout: resolveApiTimeoutMs(),
   withCredentials: true,
   headers: {
     Accept: "application/json",
@@ -80,7 +88,12 @@ apiClient.interceptors.response.use(
     const backendUnavailableMessage =
       "The backend service is unavailable right now. Please try again shortly.";
 
+    const isTimeoutError = error.code === "ECONNABORTED" || /timeout/i.test(error.message || "");
+    const timeoutMessage =
+      "The analytics request took too long to complete. Please retry in a moment.";
+
     const message =
+      (isTimeoutError ? timeoutMessage : undefined) ||
       (status === 503 && errorCode === "BACKEND_UNAVAILABLE"
         ? backendUnavailableMessage
         : undefined) ||

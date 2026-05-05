@@ -5,6 +5,7 @@ export function useRoles() {
   return useQuery({
     queryKey: ["roles"],
     queryFn: () => userService.getRoles(),
+    staleTime: 1000 * 60 * 30,
   });
 }
 

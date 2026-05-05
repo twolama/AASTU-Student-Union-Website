@@ -19,12 +19,12 @@ export function HeaderAccountMenu() {
   const currentUserQuery = useCurrentUser();
   const logoutMutation = useAuthLogout();
 
-  const displayName = currentUserQuery.data?.name ?? "User";
+  const displayName = currentUserQuery.data?.name ?? (currentUserQuery.isLoading ? "Loading..." : "User");
   const roleNames = currentUserQuery.data?.rolesDetails?.map((roleItem) => roleItem.name) ?? [];
   const displayRole =
     roleNames.length > 1
       ? `${roleNames[0]} +${roleNames.length - 1}`
-      : roleNames[0] ?? currentUserQuery.data?.roleDetails?.name ?? currentUserQuery.data?.role ?? "Member";
+      : roleNames[0] ?? currentUserQuery.data?.roleDetails?.name ?? currentUserQuery.data?.role ?? (currentUserQuery.isLoading ? "Loading..." : "Member");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

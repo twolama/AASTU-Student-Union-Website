@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login } from "@/api/services/auth.service";
+import { writeCachedCurrentUser } from "@/lib/auth-cache";
 import type { CurrentUser } from "@/schemas/user.schema";
 import type { LoginRequest, LoginResponse } from "@/schemas/auth.schema";
 
@@ -44,6 +45,7 @@ export function useAuthLogin() {
         bio: null,
       };
 
+      writeCachedCurrentUser(currentUser);
       queryClient.setQueryData(["auth", "current-user"], currentUser);
     },
     retry: false,

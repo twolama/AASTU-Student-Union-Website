@@ -11,6 +11,22 @@ import { usePermissions } from "@/hooks/usePermissions";
 import type { VenueItem } from "@/types/dashboard";
 import type { Venue } from "@/schemas/venue.schema";
 
+type VenueStatItem = {
+  id: string;
+  title: string;
+  value: string | number;
+  icon?: string;
+};
+
+type VenueAnalyticsPayload = {
+  venue_stats?: VenueStatItem[];
+  venueStats?: VenueStatItem[];
+  data?: {
+    venue_stats?: VenueStatItem[];
+    venueStats?: VenueStatItem[];
+  };
+};
+
 const ITEMS_PER_PAGE = 4;
 
 function normalize(value: string) {
@@ -69,7 +85,10 @@ export function VenuesContent() {
         if (!mounted) return;
         if (res?.forbidden || !res?.data) return;
         // Support both wrapped and unwrapped API payload shapes.
-        const payload = res?.data && typeof res.data === "object" ? res.data : res;
+        const payload: VenueAnalyticsPayload =
+          res?.data && typeof res.data === "object"
+            ? (res.data as VenueAnalyticsPayload)
+            : (res as VenueAnalyticsPayload);
         const stats =
           payload?.venue_stats ||
           payload?.venueStats ||
