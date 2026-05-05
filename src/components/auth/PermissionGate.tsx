@@ -13,11 +13,8 @@ interface PermissionGateProps {
 export function PermissionGate({ children, anyOf, allOf, fallback = null }: PermissionGateProps) {
   const { hasPermission, hasAnyPermission, isLoading } = usePermissions();
 
-  if (isLoading) {
-    return null;
-  }
-
   const canRender =
+    isLoading ||
     (anyOf ? hasAnyPermission(anyOf) : true) &&
     (allOf ? allOf.every((permission) => hasPermission(permission)) : true);
 

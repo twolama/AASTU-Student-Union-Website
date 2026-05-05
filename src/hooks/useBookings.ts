@@ -1,10 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { bookingService } from "@/api/services/booking.service";
 
 export const useBookings = (page = 1, limit = 20, status?: string, clubId?: string) => {
   return useQuery({
     queryKey: ["bookings", { page, limit, status, clubId }],
     queryFn: () => bookingService.getBookings(page, limit, status, clubId),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 };
 
@@ -13,6 +16,7 @@ export const useBooking = (id: string) => {
     queryKey: ["booking", id],
     queryFn: () => bookingService.getBooking(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -75,6 +79,6 @@ export const useBookingAvailability = (venueId: string, startDate: string, endDa
     queryKey: ["booking-availability", { venueId, startDate, endDate, excludeId }],
     queryFn: () => bookingService.getAvailability(venueId, startDate, endDate, excludeId),
     enabled: !!venueId && !!startDate && !!endDate && (new Date(endDate) >= new Date(startDate)),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };

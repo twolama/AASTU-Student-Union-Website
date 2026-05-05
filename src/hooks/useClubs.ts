@@ -6,6 +6,8 @@ export function useClubs(page = 1, limit = 20, category?: string, status?: strin
     queryKey: ["clubs", page, limit, category, status],
     queryFn: () => clubService.getClubs(page, limit, category, status),
     placeholderData: keepPreviousData,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }
 
@@ -56,5 +58,6 @@ export function useClubUpcomingEvents(id: string) {
     queryKey: ["club", id, "upcoming-events"],
     queryFn: () => clubService.getClubUpcomingEvents(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 }

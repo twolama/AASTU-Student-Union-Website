@@ -5,6 +5,7 @@ export function useClubCategories() {
   return useQuery({
     queryKey: ["club-categories"],
     queryFn: () => clubService.getCategories(),
+    staleTime: 30 * 60 * 1000,
   });
 }
 

@@ -6,7 +6,8 @@ export function useAnnouncements(page = 1, limit = 20, category?: string) {
     queryKey: ["announcements", page, limit, category],
     queryFn: () => announcementService.getAnnouncements(page, limit, category),
     placeholderData: keepPreviousData,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }
 

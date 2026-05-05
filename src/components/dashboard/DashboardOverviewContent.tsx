@@ -125,7 +125,8 @@ export function DashboardOverviewContent() {
   const dashboardQuery = useQuery({
     queryKey: DASHBOARD_QUERY_KEY,
     queryFn: () => getAnalyticsDashboard("last-8-months"),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     retry: false,
   });
 

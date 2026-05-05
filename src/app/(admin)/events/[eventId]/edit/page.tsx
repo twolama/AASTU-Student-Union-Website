@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { EventEditor } from "@/components/dashboard/events/EventEditor";
@@ -164,11 +165,19 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
         </div>
       }
     >
-      <EventEditor
-        mode="edit"
-        eventId={eventId}
-        initialValues={initialValues}
-      />
+      <Suspense
+        fallback={
+          <div className="rounded-[10px] border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+            Loading event editor...
+          </div>
+        }
+      >
+        <EventEditor
+          mode="edit"
+          eventId={eventId}
+          initialValues={initialValues}
+        />
+      </Suspense>
     </PermissionGate>
   );
 }

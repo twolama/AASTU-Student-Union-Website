@@ -6,6 +6,8 @@ export function useEvents(page = 1, limit = 20, status?: string, clubId?: string
     queryKey: ["events", page, limit, status, clubId],
     queryFn: () => eventService.getEvents(page, limit, status, clubId),
     placeholderData: keepPreviousData,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }
 
@@ -14,6 +16,7 @@ export function useEvent(id: string) {
     queryKey: ["event", id],
     queryFn: () => eventService.getEvent(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

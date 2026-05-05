@@ -6,6 +6,8 @@ export function useVenues(page = 1, limit = 20, category?: string, status?: stri
     queryKey: ["venues", page, limit, category, status],
     queryFn: () => venueService.getVenues(page, limit, category, status),
     placeholderData: keepPreviousData,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 }
 
@@ -55,6 +57,7 @@ export function useVenueCategories() {
   return useQuery({
     queryKey: ["venue-categories"],
     queryFn: () => venueService.getCategories(),
+    staleTime: 30 * 60 * 1000,
   });
 }
 
@@ -63,6 +66,7 @@ export function useVenueGallery(page = 1, limit = 20, venueId?: string) {
     queryKey: ["venue-gallery", page, limit, venueId],
     queryFn: () => venueService.getVenueGallery(page, limit, venueId),
     placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
