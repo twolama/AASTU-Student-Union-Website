@@ -12,8 +12,6 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { PublicFooter } from "@/components/public/layout/PublicFooter";
-import { PublicHeader } from "@/components/public/layout/PublicHeader";
 import { useEvent, useEvents } from "@/hooks/useEvents";
 import dayjs from "dayjs";
 
@@ -186,11 +184,9 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#f3f3f3]">
-        <PublicHeader />
         <div className="flex h-[60vh] items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-[#b6861f]" />
         </div>
-        <PublicFooter />
       </main>
     );
   }
@@ -198,7 +194,6 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
   if (isError || !event) {
     return (
       <main className="min-h-screen bg-[#f3f3f3]">
-        <PublicHeader />
         <div className="mx-auto max-w-[1280px] px-4 py-20 text-center">
           <AlertCircle className="mx-auto h-16 w-16 text-red-500" />
           <h2 className="mt-4 text-3xl font-black text-[#0f1d49]">Event Not Found</h2>
@@ -210,7 +205,6 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
             Back to Events
           </Link>
         </div>
-        <PublicFooter />
       </main>
     );
   }
@@ -231,7 +225,6 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[#f3f3f3] text-[#14213d]">
-      <PublicHeader />
 
       <section className="w-full bg-[#020e34]">
         <article className="relative overflow-hidden text-white">
@@ -543,7 +536,6 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
         </section>
       </section>
 
-      <PublicFooter />
     </main>
   );
 }

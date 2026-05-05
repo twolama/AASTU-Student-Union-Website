@@ -11,6 +11,7 @@ import {
   UserCircle2,
   Loader2,
 } from "lucide-react";
+import { resolveMediaUrl } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
@@ -78,7 +79,7 @@ export function UserSettingsContent() {
   const avatarPreviewUrl = useMemo(() => {
     if (profilePhoto) return URL.createObjectURL(profilePhoto);
     if (isAvatarDeleted) return undefined;
-    return user?.avatar || undefined;
+    return resolveMediaUrl(user?.avatar) || undefined;
   }, [profilePhoto, user?.avatar, isAvatarDeleted]);
 
   useEffect(() => {
@@ -134,7 +135,7 @@ export function UserSettingsContent() {
 
   const userRoleDisplay =
     user?.rolesDetails?.length
-      ? user.rolesDetails.map((roleItem) => roleItem.name).join(", ")
+      ? user.rolesDetails.map((roleItem: any) => roleItem.name).join(", ")
       : user?.roleDetails?.name || user?.role || "Member";
 
   return (

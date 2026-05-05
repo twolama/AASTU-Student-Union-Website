@@ -9,6 +9,7 @@ import { eventManagementStats, venueOccupancyTrends } from "@/data/dummy";
 import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import { useEvents } from "@/hooks/useEvents";
 import type { EventManagementItem, VenueOccupancyPoint, StatsTrendPoint } from "@/types/dashboard";
+import { Loader2 } from "lucide-react";
 
 type EventDistributionItem = {
   id: string;
@@ -56,7 +57,7 @@ export function EventsContent() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data } = useEvents(
+  const { data, isLoading } = useEvents(
     currentPage,
     ITEMS_PER_PAGE,
     selectedStatus === "all" ? undefined : selectedStatus,
@@ -190,13 +191,20 @@ export function EventsContent() {
         venueOptions={venueOptions}
       />
 
-      <EventsTable
-        items={paginatedItems}
-        currentPage={clampedPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        totalCount={totalCount}
-      />
+      {isLoading ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-[12px] border border-gray-200 bg-white shadow-sm">
+          <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+          <p className="text-sm text-gray-500">Fetching events...</p>
+        </div>
+      ) : (
+        <EventsTable
+          items={paginatedItems}
+          currentPage={clampedPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalCount={totalCount}
+        />
+      )}
 
       <VenueOccupancyTrends points={liveVenueOccupancy ?? venueOccupancyTrends} />
     </div>

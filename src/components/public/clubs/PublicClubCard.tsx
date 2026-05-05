@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Compass, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, resolveMediaUrl } from "@/lib/utils";
 import type { ClubItem } from "@/types/dashboard";
 
 interface PublicClubCardProps {
@@ -12,7 +12,8 @@ export function PublicClubCard({ club }: PublicClubCardProps) {
   const members = club.memberCount ?? "--";
   const rawDescription = club.description || "A growing student-led community focused on building skill, leadership, and impact.";
   const summary = rawDescription.replace(/<[^>]*>/g, "");
-  const bannerImage = club.coverImage;
+  const bannerImage = resolveMediaUrl(club.coverImage);
+  const logoUrl = resolveMediaUrl(club.logo);
 
   return (
     <Link 
@@ -36,8 +37,8 @@ export function PublicClubCard({ club }: PublicClubCardProps) {
         </p>
 
         <div className="absolute -bottom-6 left-5 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border-4 border-white bg-[#f4f6fb] text-sm font-bold text-[#1f2a44] shadow-sm">
-          {club.logo ? (
-            <img src={club.logo} alt={club.name} className="h-full w-full object-cover" />
+          {logoUrl ? (
+            <img src={logoUrl} alt={club.name} className="h-full w-full object-cover" />
           ) : (
             club.logoLabel
           )}

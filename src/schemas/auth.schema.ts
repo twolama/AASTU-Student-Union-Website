@@ -11,6 +11,7 @@ const LoginUserSchema = z.object({
   username: z.string(),
   name: z.string(),
   studentId: z.string(),
+  avatar: z.string().nullable().optional(),
   role: z.string().nullable(),
   roles: z.array(z.string()).optional(),
   permissions: z.array(z.string()).optional(),

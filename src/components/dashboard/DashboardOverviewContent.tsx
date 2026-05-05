@@ -22,6 +22,8 @@ type AnalyticsDashboardPayload = {
     recentActivity?: Array<Record<string, unknown>>;
     upcoming_mega_events?: Array<Record<string, unknown>>;
     upcomingMegaEvents?: Array<Record<string, unknown>>;
+    recent_announcements?: Array<Record<string, unknown>>;
+    recentAnnouncements?: Array<Record<string, unknown>>;
   } | null;
   message?: string;
 };
@@ -85,8 +87,19 @@ function mapDashboardData(payload: AnalyticsDashboardPayload) {
           : [],
       }))
     : undefined;
+    
+  const recentAnnouncementsSource = data.recent_announcements ?? data.recentAnnouncements;
+  const recentAnnouncementsItems = Array.isArray(recentAnnouncementsSource)
+    ? recentAnnouncementsSource.map((it: Record<string, unknown>) => ({
+        id: toStringValue(it.id),
+        title: toStringValue(it.title),
+        image: toStringValue(it.image),
+        createdAt: toStringValue(it.createdAt),
+        categoryDetails: it.categoryDetails as Record<string, unknown>,
+      }))
+    : undefined;
 
-  return { overviewItems, recentActivityItems, upcomingMegaEvents };
+  return { overviewItems, recentActivityItems, upcomingMegaEvents, recentAnnouncementsItems };
 }
 
 function DashboardOverviewSkeleton() {
@@ -144,7 +157,7 @@ export function DashboardOverviewContent() {
     return <DashboardOverviewError message={payload?.message || "You do not have permission to view analytics."} />;
   }
 
-  const { overviewItems, recentActivityItems, upcomingMegaEvents } = mapDashboardData(payload);
+  const { overviewItems, recentActivityItems, upcomingMegaEvents, recentAnnouncementsItems } = mapDashboardData(payload);
 
   return (
     <div className="flex flex-col gap-6">
@@ -173,7 +186,7 @@ export function DashboardOverviewContent() {
         )}
       </PermissionGate>
 
-      <RecentAnnouncements />
+      <RecentAnnouncements items={recentAnnouncementsItems} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">
         <UpcomingEvents items={upcomingMegaEvents} />

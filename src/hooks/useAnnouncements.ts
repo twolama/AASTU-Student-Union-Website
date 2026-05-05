@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { announcementService } from "@/api/services/announcement.service";
 
-export function useAnnouncements(page = 1, limit = 20, category?: string) {
+export function useAnnouncements(page = 1, limit = 20, options?: { category?: string; status?: string; initialData?: any }) {
   return useQuery({
-    queryKey: ["announcements", page, limit, category],
-    queryFn: () => announcementService.getAnnouncements(page, limit, category),
+    queryKey: ["announcements", page, limit, options?.category, options?.status],
+    queryFn: () => announcementService.getAnnouncements(page, limit, options?.category, options?.status),
     placeholderData: keepPreviousData,
+    initialData: options?.initialData,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });

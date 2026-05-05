@@ -34,23 +34,41 @@ export function ClubsFilters({
   }, [categories]);
 
   return (
-    <section className="rounded-[10px] border border-gray-200 bg-white p-3 shadow-sm">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <Tabs
-          items={clubFilterTabs}
-          value={activeTab}
-          onValueChange={(value) => onActiveTabChange(value as ClubFilterTab["id"])}
-          className="max-w-full border-0 bg-[#f3f5fa] p-1.5 shadow-none"
-        />
-
-        <DropdownSelect
-          label="Category"
-          value={category}
-          options={options}
-          onValueChange={onCategoryChange}
-          className="w-full lg:w-[220px]"
-        />
+    <div className="space-y-4">
+      <div className="rounded-[10px] border border-gray-200 bg-white p-3 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <Tabs
+            items={clubFilterTabs}
+            value={activeTab}
+            onValueChange={(value) => onActiveTabChange(value as ClubFilterTab["id"])}
+            className="max-w-full border-0 bg-[#f3f5fa] p-1.5 shadow-none"
+          />
+        </div>
       </div>
-    </section>
+
+      <div className="space-y-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Filter by Category</p>
+        <ul className="flex flex-wrap items-center gap-2">
+          {options.map((option) => {
+            const isActive = option.value === category;
+            return (
+              <li key={option.value}>
+                <button
+                  type="button"
+                  onClick={() => onCategoryChange(option.value)}
+                  className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+                    isActive
+                      ? "border-[#17254c] bg-[#17254c] text-white"
+                      : "border-gray-200 bg-[#f8f9fc] text-[#5f6f8d] hover:bg-gray-100"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
   );
 }

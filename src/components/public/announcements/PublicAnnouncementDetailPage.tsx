@@ -9,8 +9,6 @@ import {
   Users2,
   Tag,
 } from "lucide-react";
-import { PublicFooter } from "@/components/public/layout/PublicFooter";
-import { PublicHeader } from "@/components/public/layout/PublicHeader";
 import type { Announcement } from "@/schemas/announcement.schema";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -25,15 +23,12 @@ interface PublicAnnouncementDetailPageProps {
   announcement: Announcement;
   relatedAnnouncements?: Announcement[];
 }
-
 export function PublicAnnouncementDetailPage({ announcement, relatedAnnouncements = [] }: PublicAnnouncementDetailPageProps) {
   const publishedAt = dayjs(announcement.createdAt).format("MMM D, YYYY");
   const publishedAgo = dayjs(announcement.createdAt).fromNow();
 
   return (
-    <main className="min-h-screen overflow-x-clip bg-[#f3f3f3] text-[#14213d]">
-      <PublicHeader />
-
+    <>
       <section className="w-full bg-[#071741]">
         <article className="relative overflow-hidden text-white">
           <div className="relative h-[180px] sm:h-[220px] lg:h-[260px]">
@@ -235,8 +230,6 @@ export function PublicAnnouncementDetailPage({ announcement, relatedAnnouncement
           </aside>
         </div>
       </section>
-
-      <PublicFooter />
-    </main>
+    </>
   );
 }

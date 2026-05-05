@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { logout } from "@/api/services/auth.service";
+import { clearCachedCurrentUser } from "@/lib/auth-cache";
 
 export default function SignOutPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function SignOutPage() {
           return;
         }
 
+        clearCachedCurrentUser();
         queryClient.removeQueries({ queryKey: ["auth"] });
         router.replace("/login");
         router.refresh();

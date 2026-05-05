@@ -18,7 +18,7 @@ export function useAuthLogin() {
         name: response.data.user.name,
         studentId: response.data.user.studentId,
         email: response.data.user.email,
-        avatar: null,
+        avatar: response.data.user.avatar || null,
         phoneNumber: null,
         dormBlock: null,
         dormRoom: null,
@@ -47,6 +47,7 @@ export function useAuthLogin() {
 
       writeCachedCurrentUser(currentUser);
       queryClient.setQueryData(["auth", "current-user"], currentUser);
+      queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
     },
     retry: false,
   });

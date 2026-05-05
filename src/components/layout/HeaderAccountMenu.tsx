@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { HeaderUserAvatar } from "@/components/layout/HeaderUserAvatar";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuthLogout } from "@/hooks/useAuthLogout";
+import { clearCachedCurrentUser } from "@/lib/auth-cache";
 
 export function HeaderAccountMenu() {
   const [open, setOpen] = useState(false);
@@ -19,7 +20,7 @@ export function HeaderAccountMenu() {
   const currentUserQuery = useCurrentUser();
   const logoutMutation = useAuthLogout();
 
-  const displayName = currentUserQuery.data?.name ?? (currentUserQuery.isLoading ? "Loading..." : "User");
+  const displayName = currentUserQuery.data?.name ?? (currentUserQuery.isLoading ? "Loading..." : "");
   const roleNames = currentUserQuery.data?.rolesDetails?.map((roleItem) => roleItem.name) ?? [];
   const displayRole =
     roleNames.length > 1
@@ -53,6 +54,7 @@ export function HeaderAccountMenu() {
     try {
       await logoutMutation.mutateAsync();
     } finally {
+      clearCachedCurrentUser();
       queryClient.removeQueries({ queryKey: ["auth"] });
       setOpen(false);
       router.replace("/login");

@@ -10,8 +10,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
-export function RecentAnnouncements() {
-  const { data: annData, isLoading } = useAnnouncements(1, 3);
+export function RecentAnnouncements({ items }: { items?: any[] }) {
+  const { data: annData, isLoading } = useAnnouncements(1, 3, { initialData: items ? { data: items, total: items.length, page: 1, totalPages: 1 } : undefined });
 
   if (isLoading && !annData) {
     return (

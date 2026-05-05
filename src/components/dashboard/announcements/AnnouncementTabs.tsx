@@ -1,25 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
 import { Tabs } from "@/components/ui/Tabs";
-import { type AnnouncementCategory } from "@/schemas/announcement.schema";
 
 interface AnnouncementTabsProps {
-  categories: AnnouncementCategory[];
+  tabs: { id: string; label: string; badge?: string | number }[];
   activeTabId: string;
   onTabChange: (id: string) => void;
 }
 
-export function AnnouncementTabs({ categories, activeTabId, onTabChange }: AnnouncementTabsProps) {
-  const tabs = useMemo(() => {
-    return [
-      { id: "all", label: "All Announcements" },
-      ...categories.map(cat => ({
-        id: cat.slug,
-        label: cat.name
-      }))
-    ];
-  }, [categories]);
+export function AnnouncementTabs({ tabs, activeTabId, onTabChange }: AnnouncementTabsProps) {
 
   return (
     <Tabs

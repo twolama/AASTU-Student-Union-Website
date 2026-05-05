@@ -28,9 +28,17 @@ function getPublicAnnouncementSourceLabel(announcement: AnnouncementItem) {
 
 type LocalAnnouncement = AnnouncementItem & { categoryLabel?: string };
 
+import { useRouter } from "next/navigation";
+
 function AnnouncementCard({ announcement }: { announcement: LocalAnnouncement }) {
+  const router = useRouter();
+  const href = `/public/announcements/${announcement.id}`;
+
   return (
-    <Link href={`/public/announcements/${announcement.id}`}>
+    <Link 
+      href={href}
+      onMouseEnter={() => router.prefetch(href)}
+    >
       <article className="group flex h-full flex-col overflow-hidden rounded-[18px] border border-[#eceff6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(14,26,66,0.12)] cursor-pointer">
         <div className="relative h-40 bg-[#f2f4f8]">
           <Image
@@ -101,6 +109,7 @@ function AnnouncementCalloutCard() {
 }
 
 export function PublicAnnouncementsContent() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -264,6 +273,7 @@ export function PublicAnnouncementsContent() {
 
                   <Link
                     href={`/public/announcements/${featuredAnnouncement.id}`}
+                    onMouseEnter={() => router.prefetch(`/public/announcements/${featuredAnnouncement.id}`)}
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#f1c44d] transition-colors hover:text-[#ffd86e]"
                   >
                     Read Full Memo

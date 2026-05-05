@@ -16,8 +16,6 @@ import {
   Phone,
   CheckCircle2,
 } from "lucide-react";
-import { PublicFooter } from "@/components/public/layout/PublicFooter";
-import { PublicHeader } from "@/components/public/layout/PublicHeader";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { ClubDetailItem } from "@/types/dashboard";
@@ -47,7 +45,6 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[#f2f2f2] text-[#14213d]">
-      <PublicHeader />
 
       <section className="w-full overflow-hidden bg-[#02081d]">
         <article className="relative">
@@ -274,7 +271,6 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
         </aside>
       </div>
 
-      <PublicFooter />
     </main>
   );
 }

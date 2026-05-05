@@ -12,7 +12,7 @@ async function getAnnouncement(id: string) {
   const baseUrl = process.env.API_BASE_URL || "http://localhost:8000";
   try {
     const res = await fetch(`${baseUrl}/api/v1/announcements/${id}/`, {
-      cache: "no-store",
+      next: { revalidate: 300 },
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -27,7 +27,7 @@ async function getRelatedAnnouncements(currentId: string) {
   const baseUrl = process.env.API_BASE_URL || "http://localhost:8000";
   try {
     const res = await fetch(`${baseUrl}/api/v1/announcements/?limit=4`, {
-      cache: "no-store",
+      next: { revalidate: 300 },
     });
     if (!res.ok) return [];
     const json = await res.json();

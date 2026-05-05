@@ -100,6 +100,12 @@ export function PublicHeader() {
                 key={item.label}
                 href={item.href}
                 onMouseEnter={() => router.prefetch(item.href)}
+                onClick={(e) => {
+                  if (pathname === item.href) {
+                    e.preventDefault();
+                  }
+                  if (menuOpen) setMenuOpen(false);
+                }}
                 className={cn(
                   "text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
                   isActive(item.href)
@@ -114,7 +120,7 @@ export function PublicHeader() {
 
           <div className="flex items-center gap-2">
             <div className="flex items-center min-w-[80px] justify-end">
-              {cachedUserExists ? (
+              {cachedUserExists && !pathname.startsWith("/login") && !pathname.startsWith("/sign-up") ? (
                 <div className="flex items-center">
                   <HeaderAccountMenu />
                 </div>
@@ -179,7 +185,12 @@ export function PublicHeader() {
               <Link
                 key={item.label}
                 href={item.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  if (pathname === item.href) {
+                    e.preventDefault();
+                  }
+                  setMenuOpen(false);
+                }}
                 onMouseEnter={() => router.prefetch(item.href)}
                 className={cn(
                   "rounded-md px-3 py-2.5 text-sm font-medium transition-colors",

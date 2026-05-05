@@ -29,7 +29,17 @@ const RoleDetailsSchema = z
   .passthrough();
 
 export const CurrentUserDataSchema = z
-  .object({
+  .preprocess((val: any) => {
+    if (val && typeof val === "object") {
+      const result = { ...val };
+      if ("student_id" in val) result.studentId = val.student_id;
+      if ("phone_number" in val) result.phoneNumber = val.phone_number;
+      if ("dorm_block" in val) result.dormBlock = val.dorm_block;
+      if ("dorm_room" in val) result.dormRoom = val.dorm_room;
+      return result;
+    }
+    return val;
+  }, z.object({
     id: z.string(),
     name: z.string(),
     studentId: z.string().nullable().optional(),
@@ -50,8 +60,7 @@ export const CurrentUserDataSchema = z
     djangoPermissions: z.array(z.string()).optional(),
     initials: z.string().optional(),
     bio: z.string().nullable().optional(),
-  })
-  .passthrough();
+  }).passthrough());
 
 export const CurrentUserResponseSchema = z
   .object({

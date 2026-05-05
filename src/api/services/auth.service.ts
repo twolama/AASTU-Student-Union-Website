@@ -1,6 +1,6 @@
 import { apiClient } from "@/api/client";
 import { AUTH_ENDPOINTS, USER_ENDPOINTS } from "@/api/endpoints";
-import { writeCachedCurrentUser } from "@/lib/auth-cache";
+import { clearCachedCurrentUser, writeCachedCurrentUser } from "@/lib/auth-cache";
 import { LoginRequestSchema, LoginResponseSchema, type LoginRequest, type LoginResponse } from "@/schemas/auth.schema";
 import { CurrentUserResponseSchema, type CurrentUser, type ProfileUpdate, type ChangePasswordRequest } from "@/schemas/user.schema";
 
@@ -12,10 +12,16 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
 }
 
 export async function getCurrentUser(): Promise<CurrentUser> {
-  const response = await apiClient.get(USER_ENDPOINTS.ME);
-  const parsed = CurrentUserResponseSchema.parse(response.data);
-  writeCachedCurrentUser(parsed.data);
-  return parsed.data;
+  try {
+    const response = await apiClient.get(USER_ENDPOINTS.ME);
+    const parsed = CurrentUserResponseSchema.parse(response.data);
+    writeCachedCurrentUser(parsed.data);
+    return parsed.data;
+  } catch (error) {
+    // If the token is invalid or expired, clear the local cache
+    clearCachedCurrentUser();
+    throw error;
+  }
 }
 
 export async function updateProfile(payload: ProfileUpdate): Promise<CurrentUser> {

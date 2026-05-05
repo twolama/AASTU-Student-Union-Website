@@ -328,7 +328,7 @@ export function BookingsContent() {
 
       {activeTab === "browse-venues" ? (
         <>
-          {isVenuesLoading ? (
+          {isVenuesLoading && !venuesData ? (
             <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-[12px] border border-gray-200 bg-white shadow-sm">
               <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
               <p className="text-sm text-gray-500">Discovering available venues...</p>
@@ -369,7 +369,7 @@ export function BookingsContent() {
         </>
       ) : (
         <>
-          {isBookingsLoading ? (
+          {isBookingsLoading && !bookingsData ? (
             <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-[12px] border border-gray-200 bg-white shadow-sm">
               <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
               <p className="text-sm text-gray-500">Loading bookings...</p>

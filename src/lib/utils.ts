@@ -29,3 +29,27 @@ export function stripHtml(html: string): string {
   if (!html) return "";
   return html.replace(/<[^>]*>?/gm, "");
 }
+
+/**
+ * Resolves a media URL from the API.
+ * If the URL is relative (starts with /media/), it prefixes it with /api/proxy.
+ */
+export function resolveMediaUrl(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  if (value.startsWith("/api/proxy/")) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return `/api/proxy${value}`;
+  }
+
+  return `/api/proxy/${value}`;
+}

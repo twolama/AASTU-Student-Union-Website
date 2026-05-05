@@ -7,12 +7,17 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { LoginForm } from "@/components/public/auth/LoginForm";
 import { useAuthLogin } from "@/hooks/useAuthLogin";
 import { logout } from "@/api/services/auth.service";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import type { LoginValues } from "@/lib/public/auth";
+
+const DASHBOARD_QUERY_KEY = ["analytics", "dashboard", "last-8-months"] as const;
 
 export function LoginPageClient() {
   const router = useRouter();
   const loginMutation = useAuthLogin();
   const currentUserQuery = useCurrentUser();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (currentUserQuery.data) {
@@ -40,6 +45,12 @@ export function LoginPageClient() {
         router.push("/force-password-change");
         return;
       }
+
+      // Prefetch dashboard data to make it open instantly
+      queryClient.prefetchQuery({
+        queryKey: DASHBOARD_QUERY_KEY,
+        queryFn: () => getAnalyticsDashboard("last-8-months"),
+      });
 
       // Schedule a client-side fallback logout for non-remembered sessions (24 hours)
       try {
