@@ -8,7 +8,8 @@ export function useNotifications(page = 1, limit = 10, enabled = true) {
     queryKey: ["notifications", page, limit],
     queryFn: () => notificationService.getNotifications(page, limit),
     enabled,
-    staleTime: 15_000,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
   });
 }
 

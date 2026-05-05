@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { EventDetailView } from "@/components/dashboard/events/EventDetailView";
 import type { EventDetailItem } from "@/types/dashboard";
 import { eventDetailItems, eventManagementItems } from "@/data/dummy";
-import { eventService } from "@/api/services/event.service";
 
 interface EventDetailPageProps {
   params: Promise<{ eventId: string }>;
@@ -264,7 +263,8 @@ function buildFallbackEventDetail(eventId: string) {
 
 async function fetchEventDetail(eventId: string): Promise<ApiEventDetail | null> {
   try {
-    const apiUrl = `http://localhost:8000/api/v1/events/${eventId}/`;
+    const baseUrl = process.env.API_BASE_URL || "http://localhost:8000";
+    const apiUrl = `${baseUrl}/api/v1/events/${eventId}/`;
 
     const response = await fetch(apiUrl, {
       cache: "no-store",
@@ -277,7 +277,7 @@ async function fetchEventDetail(eventId: string): Promise<ApiEventDetail | null>
       return null;
     }
 
-    const payload = await response.json();
+    const payload = (await response.json()) as { data?: ApiEventDetail };
     return payload?.data ?? null;
   } catch (error) {
     console.error(`Error fetching event ${eventId}:`, error);

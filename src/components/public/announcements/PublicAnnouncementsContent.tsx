@@ -104,7 +104,7 @@ export function PublicAnnouncementsContent() {
   const [activeTab, setActiveTab] = useState("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions(undefined, { loadCurrentUser: false });
   const canSubmitRequest = hasPermission("announcements.create");
 
   const { data: announcementsResponse } = useQuery({

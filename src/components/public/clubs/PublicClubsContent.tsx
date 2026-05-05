@@ -29,7 +29,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeCategory, setActiveCategory] = useState("All");
   const [query, setQuery] = useState("");
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions(undefined, { loadCurrentUser: false });
   const canProposeClub = hasPermission("clubs.create");
 
   const categories = useMemo(() => {

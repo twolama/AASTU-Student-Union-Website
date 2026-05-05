@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Bell,
   CalendarClock,
   CheckCheck,
   Info,
+  Loader2,
   Megaphone,
   ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { notificationService } from "@/api/services/notification.service";
 import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -29,12 +32,20 @@ const notificationIconMap = {
 export function HeaderNotificationsMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const queryClient = useQueryClient();
   const notificationsQuery = useNotifications(1, 10, open);
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
 
   const notificationItems = notificationsQuery.data?.data ?? [];
   const unreadCount = notificationItems.filter((item) => item.unread).length;
+
+  useEffect(() => {
+    queryClient.prefetchQuery({
+      queryKey: ["notifications", 1, 10],
+      queryFn: () => notificationService.getNotifications(1, 10),
+    });
+  }, [queryClient]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -101,7 +112,11 @@ export function HeaderNotificationsMenu() {
 
           <ul className="max-h-[320px] overflow-y-auto p-2">
             {notificationsQuery.isLoading ? (
-              <li className="px-3 py-4 text-sm text-gray-500">Loading notifications...</li>
+              <li className="px-3 py-6">
+                <div className="flex items-center justify-center" aria-busy="true">
+                  <Loader2 className="h-5 w-5 animate-spin text-[#c49a22]" />
+                </div>
+              </li>
             ) : null}
 
             {!notificationsQuery.isLoading && notificationItems.length === 0 ? (

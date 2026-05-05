@@ -14,8 +14,15 @@ type PermissionResult = {
   refetch: () => Promise<unknown>;
 };
 
-export function usePermissions(userId?: string): PermissionResult {
-  const currentUserQuery = useCurrentUser();
+type UsePermissionsOptions = {
+  loadCurrentUser?: boolean;
+};
+
+export function usePermissions(userId?: string, options?: UsePermissionsOptions): PermissionResult {
+  const loadCurrentUser = options?.loadCurrentUser ?? true;
+  const shouldFetchCurrentUser = loadCurrentUser || Boolean(userId);
+
+  const currentUserQuery = useCurrentUser({ enabled: shouldFetchCurrentUser });
 
   const targetUserId = userId ?? currentUserQuery.data?.id;
 
@@ -36,7 +43,9 @@ export function usePermissions(userId?: string): PermissionResult {
 
   const isLoading = userId
     ? permissionsQuery.isLoading
-    : currentUserQuery.isLoading;
+    : shouldFetchCurrentUser
+      ? currentUserQuery.isLoading
+      : false;
 
   const hasPermission = useMemo(() => {
     return (permission: string) => permissions.includes(permission);
@@ -55,6 +64,9 @@ export function usePermissions(userId?: string): PermissionResult {
     refetch: async () => {
       if (userId) {
         return permissionsQuery.refetch();
+      }
+      if (!shouldFetchCurrentUser) {
+        return Promise.resolve(null);
       }
       return currentUserQuery.refetch();
     },

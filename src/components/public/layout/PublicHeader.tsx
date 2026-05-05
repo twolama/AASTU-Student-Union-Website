@@ -2,13 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { clubService } from "@/api/services/club.service";
+import { eventService } from "@/api/services/event.service";
+import { announcementService } from "@/api/services/announcement.service";
 import { HeaderAccountMenu } from "@/components/layout/HeaderAccountMenu";
+import { readCachedCurrentUser } from "@/lib/auth-cache";
 
 interface NavItem {
   label: string;
@@ -25,7 +29,45 @@ const navItems: NavItem[] = [
 export function PublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { data: user, isLoading } = useCurrentUser();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [cachedUserExists, setCachedUserExists] = useState(false);
+
+  useEffect(() => {
+    const updateCachedUserState = () => {
+      setCachedUserExists(Boolean(readCachedCurrentUser()?.data));
+    };
+
+    updateCachedUserState();
+    window.addEventListener("storage", updateCachedUserState);
+
+    return () => {
+      window.removeEventListener("storage", updateCachedUserState);
+    };
+  }, []);
+
+  const prefetchTargets = useMemo(() => [...navItems.map((item) => item.href), "/login"], []);
+
+  useEffect(() => {
+    prefetchTargets.forEach((target) => {
+      router.prefetch(target);
+    });
+  }, [prefetchTargets, router]);
+
+  useEffect(() => {
+    queryClient.prefetchQuery({
+      queryKey: ["clubs", 1, 100, undefined, "active"],
+      queryFn: () => clubService.getClubs(1, 100, undefined, "active"),
+    });
+    queryClient.prefetchQuery({
+      queryKey: ["events", 1, 5, undefined, undefined],
+      queryFn: () => eventService.getEvents(1, 5),
+    });
+    queryClient.prefetchQuery({
+      queryKey: ["public-announcements"],
+      queryFn: () => announcementService.getAnnouncements(1, 100),
+    });
+  }, [queryClient]);
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -57,6 +99,7 @@ export function PublicHeader() {
               <Link
                 key={item.label}
                 href={item.href}
+                onMouseEnter={() => router.prefetch(item.href)}
                 className={cn(
                   "text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
                   isActive(item.href)
@@ -71,13 +114,14 @@ export function PublicHeader() {
 
           <div className="flex items-center gap-2">
             <div className="flex items-center min-w-[80px] justify-end">
-              {user ? (
+              {cachedUserExists ? (
                 <div className="flex items-center">
                   <HeaderAccountMenu />
                 </div>
               ) : (
                 <Link
                   href="/login"
+                  onMouseEnter={() => router.prefetch("/login")}
                   className="hidden rounded-[4px] bg-[#14213d] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#1f2f55] lg:inline-flex"
                 >
                   Login
@@ -136,6 +180,7 @@ export function PublicHeader() {
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
+                onMouseEnter={() => router.prefetch(item.href)}
                 className={cn(
                   "rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive(item.href)
@@ -149,6 +194,7 @@ export function PublicHeader() {
             <Link
               href="/login"
               onClick={() => setMenuOpen(false)}
+              onMouseEnter={() => router.prefetch("/login")}
               className="mt-3 inline-flex items-center justify-center rounded-md bg-[#14213d] px-4 py-2.5 text-sm font-semibold text-white"
             >
               Login

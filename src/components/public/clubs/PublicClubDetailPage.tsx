@@ -27,7 +27,7 @@ interface PublicClubDetailPageProps {
 }
 
 export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions(undefined, { loadCurrentUser: false });
   const canJoinClub = hasPermission("clubs.create");
   const president = club.contacts.find((contact) =>
     contact.roleLabel.toLowerCase().includes("president")

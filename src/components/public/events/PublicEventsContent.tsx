@@ -149,7 +149,7 @@ export function PublicEventsContent() {
   const [activeCategory, setActiveCategory] = useState("All Events");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions(undefined, { loadCurrentUser: false });
   const canRegisterForEvents = hasPermission("events.create");
 
   const { data: eventsResponse, isLoading, isError } = useEvents(page, PAGE_SIZE);

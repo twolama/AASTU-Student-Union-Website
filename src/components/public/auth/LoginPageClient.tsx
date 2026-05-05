@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { LoginForm } from "@/components/public/auth/LoginForm";
 import { useAuthLogin } from "@/hooks/useAuthLogin";
@@ -20,7 +21,11 @@ export function LoginPageClient() {
   }, [currentUserQuery.data, router]);
 
   if (currentUserQuery.isLoading) {
-    return <div className="px-6 py-12 text-sm text-gray-500">Checking your session...</div>;
+    return (
+      <div className="flex items-center justify-center px-6 py-12" aria-busy="true">
+        <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+      </div>
+    );
   }
 
   async function handleSubmit(values: LoginValues) {

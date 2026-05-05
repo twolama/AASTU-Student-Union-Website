@@ -11,6 +11,47 @@ import {
   type EventVolunteer,
 } from "@/schemas/event.schema";
 
+const EVENT_LIST_CACHE_TTL_MS = 5 * 60 * 1000;
+const EVENT_DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
+
+type CacheEntry<T> = {
+  payload: T;
+  expiresAt: number;
+};
+
+const eventListCache = new Map<string, CacheEntry<EventListResponse>>();
+const eventDetailCache = new Map<string, CacheEntry<EventDetail>>();
+const inFlightEventListRequests = new Map<string, Promise<EventListResponse>>();
+const inFlightEventDetailRequests = new Map<string, Promise<EventDetail>>();
+
+function getCachedPayload<T>(cache: Map<string, CacheEntry<T>>, key: string) {
+  const cached = cache.get(key);
+  if (!cached) {
+    return null;
+  }
+
+  if (cached.expiresAt <= Date.now()) {
+    cache.delete(key);
+    return null;
+  }
+
+  return cached.payload;
+}
+
+function setCachedPayload<T>(cache: Map<string, CacheEntry<T>>, key: string, payload: T, ttlMs: number) {
+  cache.set(key, {
+    payload,
+    expiresAt: Date.now() + ttlMs,
+  });
+}
+
+function clearEventCaches() {
+  eventListCache.clear();
+  eventDetailCache.clear();
+  inFlightEventListRequests.clear();
+  inFlightEventDetailRequests.clear();
+}
+
 export const eventService = {
   sanitizeCreatePayload: (data: FormData | Record<string, unknown>) => {
     const allowedKeys = new Set([
@@ -52,6 +93,17 @@ export const eventService = {
   },
 
   getEvents: async (page = 1, limit = 20, status?: string, clubId?: string) => {
+    const cacheKey = JSON.stringify({ page, limit, status: status || "", clubId: clubId || "" });
+    const cached = getCachedPayload(eventListCache, cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const inFlight = inFlightEventListRequests.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
     const params: Record<string, string | number> = { page, limit };
 
     if (status && status !== "all") {
@@ -62,21 +114,54 @@ export const eventService = {
       params.club = clubId;
     }
 
-    const response = await apiClient.get<EventListResponse>(EVENT_ENDPOINTS.LIST, { params });
-    const normalized = {
-      ...response.data,
-      data: Array.isArray(response.data.data) ? response.data.data.map(normalizeKeys) : response.data.data
-    };
-    return EventListResponseSchema.parse(normalized);
+    const request = apiClient
+      .get<EventListResponse>(EVENT_ENDPOINTS.LIST, { params })
+      .then((response) => {
+        const normalized = {
+          ...response.data,
+          data: Array.isArray(response.data.data) ? response.data.data.map(normalizeKeys) : response.data.data,
+        };
+        const parsed = EventListResponseSchema.parse(normalized);
+        setCachedPayload(eventListCache, cacheKey, parsed, EVENT_LIST_CACHE_TTL_MS);
+        return parsed;
+      })
+      .finally(() => {
+        inFlightEventListRequests.delete(cacheKey);
+      });
+
+    inFlightEventListRequests.set(cacheKey, request);
+    return request;
   },
 
   getEvent: async (id: string) => {
-    const response = await apiClient.get<{ success: boolean; data: EventDetail }>(EVENT_ENDPOINTS.DETAIL(id));
-    const normalized = {
-      ...response.data,
-      data: normalizeKeys(response.data.data)
-    };
-    return EventDetailSchema.parse(normalized.data);
+    const cacheKey = id;
+    const cached = getCachedPayload(eventDetailCache, cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const inFlight = inFlightEventDetailRequests.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const request = apiClient
+      .get<{ success: boolean; data: EventDetail }>(EVENT_ENDPOINTS.DETAIL(id))
+      .then((response) => {
+        const normalized = {
+          ...response.data,
+          data: normalizeKeys(response.data.data),
+        };
+        const parsed = EventDetailSchema.parse(normalized.data);
+        setCachedPayload(eventDetailCache, cacheKey, parsed, EVENT_DETAIL_CACHE_TTL_MS);
+        return parsed;
+      })
+      .finally(() => {
+        inFlightEventDetailRequests.delete(cacheKey);
+      });
+
+    inFlightEventDetailRequests.set(cacheKey, request);
+    return request;
   },
 
   createEvent: async (data: FormData | Record<string, unknown>) => {
@@ -88,6 +173,8 @@ export const eventService = {
       }
       const normalizedData = normalizeKeys(response.data.data);
       const parsed = EventDetailSchema.parse(normalizedData);
+
+      clearEventCaches();
 
       return parsed;
     } catch (err) {
@@ -106,6 +193,8 @@ export const eventService = {
       const normalizedData = normalizeKeys(response.data.data);
       const parsed = EventDetailSchema.parse(normalizedData);
 
+      clearEventCaches();
+
       return parsed;
     } catch (err) {
       throw err;
@@ -119,11 +208,14 @@ export const eventService = {
     });
 
     const normalizedData = normalizeKeys(response.data.data);
-    return EventDetailSchema.parse(normalizedData);
+    const parsed = EventDetailSchema.parse(normalizedData);
+    clearEventCaches();
+    return parsed;
   },
 
   deleteEvent: async (id: string) => {
     const response = await apiClient.delete<{ success: boolean }>(EVENT_ENDPOINTS.DELETE(id));
+    clearEventCaches();
     return response.data;
   },
 
