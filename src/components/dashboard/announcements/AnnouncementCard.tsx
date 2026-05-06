@@ -102,7 +102,7 @@ export function AnnouncementCard({ item }: AnnouncementCardProps) {
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-lg">
               <User size={12} className="text-[#c49a22]" />
-              {item.authorName || item.author.name}
+              {item.authorName || item.author?.name || "Official Notice"}
             </div>
             <div className="flex flex-wrap gap-2">
               {item.tags?.slice(0, 2).map((tag, i) => (

@@ -24,7 +24,7 @@ export const AnnouncementSchema = z.object({
     name: z.string(),
     avatar: z.string().url().nullable(),
     initials: z.string().optional(),
-  }),
+  }).nullable(),
   authorName: z.string().optional(),
   authorRoleName: z.string().optional(),
   image: z.string().url().nullable(),
