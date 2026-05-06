@@ -2,7 +2,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { ChevronLeft, ChevronRight, Clock3, MapPin, Search, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -10,16 +9,17 @@ import { useEvents } from "@/hooks/useEvents";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { EventListItem } from "@/schemas/event.schema";
 import dayjs from "dayjs";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 5;
 
 function getCategoryName(event: EventListItem) {
   const organizingClub = event.organizing_club as
     | (EventListItem["organizing_club"] & {
-        categoryName?: string;
-        category_details?: { name?: string };
-        categoryDetails?: { name?: string };
-      })
+      categoryName?: string;
+      category_details?: { name?: string };
+      categoryDetails?: { name?: string };
+    })
     | undefined;
 
   return (
@@ -37,12 +37,21 @@ function excerpt(text?: string, length = 120) {
   return text.length <= length ? text : `${text.slice(0, length).trimEnd()}...`;
 }
 
+function slugify(input?: string) {
+  if (!input) return input;
+  return input
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
 function EventCard({ event }: { event: EventListItem }) {
   const router = useRouter();
   const dateDay = event.date_day || (event.start_date_time ? dayjs(event.start_date_time).format("DD") : "??");
   const dateMonth = event.date_month || (event.start_date_time ? dayjs(event.start_date_time).format("MMM") : "???");
-  
-  const timeRange = event.start_date_time && event.end_date_time 
+
+  const timeRange = event.start_date_time && event.end_date_time
     ? `${dayjs(event.start_date_time).format("hh:mm A")} - ${dayjs(event.end_date_time).format("hh:mm A")}`
     : "Time TBD";
 
@@ -145,54 +154,63 @@ function ProposalCard() {
   );
 }
 
-export function PublicEventsContent() {
-  const [activeCategory, setActiveCategory] = useState("All Events");
-  const [query, setQuery] = useState("");
+interface PublicEventsContentProps {
+  activeCategory: string;
+  onCategoryChange: (value: string) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+}
+
+export function PublicEventsContent({
+  activeCategory,
+  onCategoryChange,
+  searchQuery,
+  onSearchChange
+}: PublicEventsContentProps) {
   const [page, setPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const { hasPermission } = usePermissions(undefined, { loadCurrentUser: false });
   const canRegisterForEvents = hasPermission("events.create");
 
-  const { data: eventsResponse, isLoading, isError } = useEvents(page, PAGE_SIZE);
+  const { data: eventsResponse, isLoading, isFetching } = useEvents(page, PAGE_SIZE, {
+    // Do not filter by internal 'published' status for the public listing
+    search: debouncedSearch || undefined,
+    category: activeCategory === "All Events" ? undefined : slugify(activeCategory)
+  });
 
   const eventCategories = useMemo(() => {
-    const labels = new Set<string>();
+    return ["All Events", "Tech", "Art and sport", "Sports", "Social Service", "Entrepreneurship", "Other"];
+  }, []);
 
-    eventsResponse?.data?.forEach((event) => {
-      const label = getCategoryName(event);
-      if (label) {
-        labels.add(label);
-      }
-    });
-
-    return ["All Events", ...Array.from(labels).sort((left, right) => left.localeCompare(right))];
-  }, [eventsResponse]);
-
-  const filteredEvents = useMemo(() => {
-    if (!eventsResponse?.data) return [];
-    
-    const normalized = query.trim().toLowerCase();
-
-    return eventsResponse.data.filter((event) => {
-      const categoryMatches =
-        activeCategory === "All Events" ||
-        (getCategoryName(event).toLowerCase() === activeCategory.toLowerCase());
-
-      const queryMatches =
-        normalized.length === 0 ||
-        event.title.toLowerCase().includes(normalized) ||
-        (event.venue?.toLowerCase().includes(normalized) ?? false) ||
-        getCategoryName(event).toLowerCase().includes(normalized);
-
-      return categoryMatches && queryMatches;
-    });
-  }, [activeCategory, query, eventsResponse]);
+  const filteredEvents = eventsResponse?.data || [];
 
   const totalPages = eventsResponse?.meta?.totalPages || 1;
 
-  // Reset to first page when category or query changes
+  useEffect(() => {
+    // Debug: log events response and current filters to assist troubleshooting
+      try {
+        console.log("PublicEventsContent: events fetched", {
+          count: eventsResponse?.data?.length ?? 0,
+          page,
+          activeCategory,
+          search: debouncedSearch,
+          responseMeta: eventsResponse?.meta,
+        });
+      } catch {
+        // ignore
+      }
+  }, [eventsResponse, page, activeCategory, debouncedSearch]);
+
+  // Reset to first page when category or search query changes
   useEffect(() => {
     setPage(1);
-  }, [activeCategory, query]);
+  }, [activeCategory, searchQuery]);
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -200,7 +218,7 @@ export function PublicEventsContent() {
 
   // Find a mega event for the hero section
   const megaEvent = useMemo(() => {
-    return eventsResponse?.data?.find(e => e.is_mega_event);
+    return eventsResponse?.data?.find((e: EventListItem) => e.is_mega_event);
   }, [eventsResponse]);
 
   return (
@@ -271,7 +289,7 @@ export function PublicEventsContent() {
                 <button
                   key={category}
                   type="button"
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => onCategoryChange(category)}
                   className={
                     selected
                       ? "rounded-full bg-[#08143c] px-5 py-2.5 text-xs font-semibold text-white"
@@ -292,26 +310,21 @@ export function PublicEventsContent() {
             />
             <input
               type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={searchQuery}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search events..."
               className="h-11 w-full rounded-full border border-transparent bg-[#eceff5] pl-11 pr-4 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#b6861f]"
             />
           </label>
         </div>
 
-        {isLoading ? (
+        {isLoading && !eventsResponse ? (
           <div className="flex min-h-[400px] items-center justify-center py-20">
             <Loader2 className="h-12 w-12 animate-spin text-[#b6861f]" />
           </div>
-        ) : isError ? (
-          <div className="rounded-[14px] border border-dashed border-red-300 bg-red-50 p-10 text-center shadow-sm">
-            <p className="text-lg font-semibold text-red-800">Failed to load events</p>
-            <p className="mt-2 text-sm text-red-600">Please try again later.</p>
-          </div>
         ) : filteredEvents.length > 0 ? (
-          <div className="grid min-w-0 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {filteredEvents.map((event) => (
+          <div className={cn("grid min-w-0 gap-5 md:grid-cols-2 xl:grid-cols-3", isFetching && "opacity-60 transition-opacity duration-200")}>
+            {filteredEvents.map((event: EventListItem) => (
               <EventCard key={event.id} event={event} />
             ))}
             {canRegisterForEvents ? <ProposalCard /> : null}

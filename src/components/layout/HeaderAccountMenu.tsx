@@ -13,6 +13,7 @@ import { clearCachedCurrentUser } from "@/lib/auth-cache";
 
 export function HeaderAccountMenu() {
   const [open, setOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -20,12 +21,22 @@ export function HeaderAccountMenu() {
   const currentUserQuery = useCurrentUser();
   const logoutMutation = useAuthLogout();
 
-  const displayName = currentUserQuery.data?.name ?? (currentUserQuery.isLoading ? "Loading..." : "");
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const displayAvatar = isMounted ? currentUserQuery.data?.avatar : undefined;
+
+  const displayName = isMounted 
+    ? (currentUserQuery.data?.name ?? (currentUserQuery.isLoading ? "Loading..." : ""))
+    : "";
+    
   const roleNames = currentUserQuery.data?.rolesDetails?.map((roleItem) => roleItem.name) ?? [];
-  const displayRole =
-    roleNames.length > 1
+  const displayRole = isMounted
+    ? (roleNames.length > 1
       ? `${roleNames[0]} +${roleNames.length - 1}`
-      : roleNames[0] ?? currentUserQuery.data?.roleDetails?.name ?? currentUserQuery.data?.role ?? (currentUserQuery.isLoading ? "Loading..." : "Member");
+      : roleNames[0] ?? currentUserQuery.data?.roleDetails?.name ?? currentUserQuery.data?.role ?? (currentUserQuery.isLoading ? "Loading..." : "Member"))
+    : "";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -79,7 +90,7 @@ export function HeaderAccountMenu() {
           <p className="text-sm font-semibold leading-tight text-gray-800">{displayName}</p>
           <p className="text-xs text-gray-400">{displayRole}</p>
         </div>
-        <HeaderUserAvatar name={displayName} src={currentUserQuery.data?.avatar} />
+        <HeaderUserAvatar name={displayName} src={displayAvatar} />
         <ChevronDown
           size={14}
           className={cn("hidden text-gray-400 transition-transform sm:block", open && "rotate-180")}
@@ -89,7 +100,7 @@ export function HeaderAccountMenu() {
       {open ? (
         <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-[250px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
           <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3.5">
-            <HeaderUserAvatar name={displayName} src={currentUserQuery.data?.avatar} />
+            <HeaderUserAvatar name={displayName} src={displayAvatar} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-gray-900">{displayName}</p>
               <p className="truncate text-xs text-gray-500">{displayRole}</p>

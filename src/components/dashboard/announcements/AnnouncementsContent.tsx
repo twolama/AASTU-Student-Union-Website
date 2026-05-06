@@ -17,8 +17,10 @@ export function AnnouncementsContent() {
   const { data: annData, isLoading: isAnnLoading, isFetching: isAnnFetching } = useAnnouncements(
     currentPage, 
     limit, 
-    activeCategoryId === "all" ? undefined : activeCategoryId,
-    selectedStatus === "all" ? undefined : selectedStatus
+    { 
+      category: activeCategoryId === "all" ? undefined : activeCategoryId,
+      status: selectedStatus === "all" ? undefined : selectedStatus
+    }
   );
   const { data: catData } = useAnnouncementCategories({ hasAnnouncements: true });
 

@@ -3,9 +3,19 @@
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useEffect, useState } from "react";
 
 export function UsersPageActions() {
   const { hasPermission } = usePermissions();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
 
   if (!hasPermission("users.create")) {
     return null;

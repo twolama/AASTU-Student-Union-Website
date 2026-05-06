@@ -19,8 +19,16 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { mainNavItems, bottomNavItems } from "@/data/dummy";
 import { usePermissions } from "@/hooks/usePermissions";
+import { clubService } from "@/api/services/club.service";
+import { eventService } from "@/api/services/event.service";
+import { announcementService } from "@/api/services/announcement.service";
+import { userService } from "@/api/services/user.service";
+import { venueService } from "@/api/services/venue.service";
+import { bookingService } from "@/api/services/booking.service";
+import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import type { NavItem } from "@/types/dashboard";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -54,6 +62,56 @@ function NavLink({ item, isCollapsed, isActive, onClick }: NavLinkProps) {
   const linkRef = useRef<HTMLAnchorElement | null>(null);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const queryClient = useQueryClient();
+
+  const handlePrefetch = () => {
+    const { href } = item;
+    const commonStale = 5 * 60 * 1000;
+
+    if (href === "/dashboard/announcements") {
+      queryClient.prefetchQuery({
+        queryKey: ["announcements", 1, 9, undefined, undefined],
+        queryFn: () => announcementService.getAnnouncements(1, 9),
+        staleTime: commonStale,
+      });
+    } else if (href === "/dashboard/clubs") {
+      queryClient.prefetchQuery({
+        queryKey: ["clubs", 1, 20, "all", undefined],
+        queryFn: () => clubService.getClubs(1, 20, "all"),
+        staleTime: commonStale,
+      });
+    } else if (href === "/dashboard/events") {
+      queryClient.prefetchQuery({
+        queryKey: ["events", 1, 20, undefined, undefined],
+        queryFn: () => eventService.getEvents(1, 20),
+        staleTime: commonStale,
+      });
+    } else if (href === "/dashboard/venues") {
+      queryClient.prefetchQuery({
+        queryKey: ["venues", 1, 20],
+        queryFn: () => venueService.getVenues(1, 20),
+        staleTime: commonStale,
+      });
+    } else if (href === "/dashboard/bookings") {
+      queryClient.prefetchQuery({
+        queryKey: ["bookings", 1, 20],
+        queryFn: () => bookingService.getBookings(1, 20),
+        staleTime: commonStale,
+      });
+    } else if (href === "/dashboard/users") {
+      queryClient.prefetchQuery({
+        queryKey: ["users", 1, 20],
+        queryFn: () => userService.getUsers(1, 20),
+        staleTime: commonStale,
+      });
+    } else if (href === "/dashboard") {
+      queryClient.prefetchQuery({
+        queryKey: ["analytics", "dashboard", "last-8-months"],
+        queryFn: () => getAnalyticsDashboard("last-8-months"),
+        staleTime: commonStale,
+      });
+    }
+  };
 
   function updateTooltipPosition() {
     const element = linkRef.current;
@@ -91,6 +149,7 @@ function NavLink({ item, isCollapsed, isActive, onClick }: NavLinkProps) {
       href={item.href}
       onClick={onClick}
       onMouseEnter={() => {
+        handlePrefetch();
         if (isCollapsed) {
           updateTooltipPosition();
           setIsTooltipOpen(true);
@@ -128,13 +187,25 @@ function NavLink({ item, isCollapsed, isActive, onClick }: NavLinkProps) {
 }
 
 export function Sidebar({ isCollapsed, isMobileOpen, onCloseMobile }: SidebarProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const effectiveCollapsed = isMobileOpen ? false : isCollapsed;
   const { hasAnyPermission } = usePermissions();
 
-  const visibleMainNavItems = mainNavItems.filter((item) => !item.permissions || hasAnyPermission(item.permissions));
-  const visibleBottomNavItems = bottomNavItems.filter((item) => !item.permissions || hasAnyPermission(item.permissions));
+  // If not mounted, we only show items that don't require permissions (matching server)
+  const visibleMainNavItems = isMounted 
+    ? mainNavItems.filter((item) => !item.permissions || hasAnyPermission(item.permissions))
+    : mainNavItems.filter((item) => !item.permissions);
+    
+  const visibleBottomNavItems = isMounted
+    ? bottomNavItems.filter((item) => !item.permissions || hasAnyPermission(item.permissions))
+    : bottomNavItems.filter((item) => !item.permissions);
 
   return (
     <>

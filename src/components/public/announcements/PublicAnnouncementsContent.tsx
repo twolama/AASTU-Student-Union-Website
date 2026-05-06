@@ -2,19 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, CalendarClock, Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Badge } from "@/components/ui/Badge";
-import { announcementService } from "@/api/services/announcement.service";
+import { cn } from "@/lib/utils";
+// announcementService is not used here; keep API usage in hooks
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAnnouncements } from "@/hooks/useAnnouncements";
 
 dayjs.extend(relativeTime);
 import { getPublicAnnouncementCategoryLabel /*, publicAnnouncementTabs*/ } from "@/lib/public/announcements";
 import { useAnnouncementCategories } from "@/hooks/useAnnouncementCategories";
 import type { AnnouncementItem, AnnouncementCategory } from "@/types/dashboard";
+import type { Announcement, AnnouncementCategory as SchemaAnnouncementCategory } from "@/schemas/announcement.schema";
 
 const PAGE_SIZE = 5;
 
@@ -35,7 +37,7 @@ function AnnouncementCard({ announcement }: { announcement: LocalAnnouncement })
   const href = `/public/announcements/${announcement.id}`;
 
   return (
-    <Link 
+    <Link
       href={href}
       onMouseEnter={() => router.prefetch(href)}
     >
@@ -112,26 +114,28 @@ export function PublicAnnouncementsContent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 400);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const { hasPermission } = usePermissions(undefined, { loadCurrentUser: false });
   const canSubmitRequest = hasPermission("announcements.create");
 
-  const { data: announcementsResponse } = useQuery({
-    queryKey: ["public-announcements"],
-    queryFn: () => announcementService.getAnnouncements(1, 100),
-    staleTime: 1000 * 60 * 2,
+  const { data: announcementsResponse, isLoading, isFetching } = useAnnouncements(page, PAGE_SIZE, {
+    status: "published",
+    category: activeTab === "all" ? undefined : activeTab,
+    search: debouncedQuery || undefined
   });
 
   const { data: categoriesResponse } = useAnnouncementCategories();
 
-  interface AnnouncementCategoryItem {
-    id: string;
-    slug?: string;
-    name: string;
-  }
   const announcements = useMemo(() => {
     if (announcementsResponse?.data) {
-      return announcementsResponse.data.map((item) => ({
+      return announcementsResponse.data.map((item: Announcement) => ({
         id: item.id,
         title: item.title,
         body_excerpt: item.bodyExcerpt,
@@ -149,51 +153,20 @@ export function PublicAnnouncementsContent() {
     return [];
   }, [announcementsResponse]);
 
-  // tabs depend on both server categories and which categories have announcements
   const tabs = useMemo(() => {
-    const cats: AnnouncementCategoryItem[] = categoriesResponse?.data || [];
+    const cats = (categoriesResponse?.data || []) as SchemaAnnouncementCategory[];
     const base = [{ id: "all", label: "All News" }];
-
-    const present = new Set(announcements.map((a) => a.category));
-
-    const catTabs = cats
-      .filter((c) => present.has(c.slug || c.id))
-      .map((c) => ({ id: c.slug || c.id, label: c.name }));
-
-    // include any announcement categories not declared in server categories
-    const extra = Array.from(present)
-      .filter((id) => id && id !== "all" && !catTabs.some((t) => t.id === id))
-      .map((id) => ({ id, label: id }));
-
-    return [...base, ...catTabs, ...extra];
-  }, [categoriesResponse?.data, announcements]);
-
-  const filteredAnnouncements = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-
-    return announcements.filter((announcement) => {
-      const matchesTab = activeTab === "all" || announcement.category === activeTab;
-      const matchesQuery =
-        normalized.length === 0 ||
-        announcement.title.toLowerCase().includes(normalized) ||
-        announcement.body_excerpt.toLowerCase().includes(normalized) ||
-        getPublicAnnouncementSourceLabel(announcement).toLowerCase().includes(normalized);
-
-      return matchesTab && matchesQuery;
-    });
-  }, [activeTab, announcements, query]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredAnnouncements.length / PAGE_SIZE));
+    const catTabs = cats.map((c) => ({ id: c.slug || c.id, label: c.name }));
+    return [...base, ...catTabs];
+  }, [categoriesResponse]);
+  const totalPages = announcementsResponse?.meta?.totalPages || 1;
 
   const currentPage = Math.min(page, totalPages);
 
-  const visibleAnnouncements = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredAnnouncements.slice(start, start + PAGE_SIZE);
-  }, [currentPage, filteredAnnouncements]);
+  const visibleAnnouncements = announcements;
 
   const pinnedAnnouncements = useMemo(
-    () => announcements.filter((item) => item.isPinned),
+    () => announcements.filter((item: LocalAnnouncement) => item.isPinned),
     [announcements]
   );
 
@@ -332,12 +305,18 @@ export function PublicAnnouncementsContent() {
           </div>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {visibleAnnouncements.map((announcement) => (
-            <AnnouncementCard key={announcement.id} announcement={announcement} />
-          ))}
-          {canSubmitRequest ? <AnnouncementCalloutCard /> : null}
-        </div>
+        {isLoading && !announcementsResponse ? (
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />
+          </div>
+        ) : (
+          <div className={cn("grid gap-5 md:grid-cols-2 xl:grid-cols-3", isFetching && "opacity-60 transition-opacity duration-200")}>
+            {visibleAnnouncements.map((announcement: LocalAnnouncement) => (
+              <AnnouncementCard key={announcement.id} announcement={announcement} />
+            ))}
+            {canSubmitRequest ? <AnnouncementCalloutCard /> : null}
+          </div>
+        )}
 
         {totalPages > 1 ? (
           <nav aria-label="Announcements pagination" className="flex flex-wrap items-center justify-center gap-2 pt-2">

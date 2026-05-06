@@ -3,11 +3,16 @@ import { PublicHeader } from "@/components/public/layout/PublicHeader";
 import { PublicFooter } from "@/components/public/layout/PublicFooter";
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: {
+    default: "AASTU Student Union",
+    template: "%s | AASTU Student Union",
+  },
   description:
-    "AASTU Student Union public portal for clubs, events, and announcements.",
+    "Official portal of the Addis Ababa Science and Technology University Student Union. Explore clubs, upcoming events, and campus announcements.",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/aastu_logo.jpg",
+    shortcut: "/aastu_logo.jpg",
+    apple: "/aastu_logo.jpg",
   },
 };
 

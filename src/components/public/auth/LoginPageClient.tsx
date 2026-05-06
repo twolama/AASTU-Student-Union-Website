@@ -8,6 +8,7 @@ import { LoginForm } from "@/components/public/auth/LoginForm";
 import { useAuthLogin } from "@/hooks/useAuthLogin";
 import { logout } from "@/api/services/auth.service";
 import { useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/api/client";
 import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import type { LoginValues } from "@/lib/public/auth";
 
@@ -50,6 +51,18 @@ export function LoginPageClient() {
       queryClient.prefetchQuery({
         queryKey: DASHBOARD_QUERY_KEY,
         queryFn: () => getAnalyticsDashboard("last-8-months"),
+      });
+
+      // Prefetch permissions
+      queryClient.prefetchQuery({
+        queryKey: ["auth", "current-user"],
+        queryFn: async () => response.data.user,
+      });
+
+      // Prefetch notifications
+      queryClient.prefetchQuery({
+        queryKey: ["notifications", 1, 10],
+        queryFn: () => apiClient.get("/api/v1/notifications/", { params: { page: 1, limit: 10 } }).then(res => res.data),
       });
 
       // Schedule a client-side fallback logout for non-remembered sessions (24 hours)

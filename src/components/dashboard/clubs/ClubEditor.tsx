@@ -97,8 +97,8 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
   const [advisorSearch, setAdvisorSearch] = useState("");
 
   const { data: categoriesData } = useClubCategories();
-  const { data: presidentUsers } = useUsers(1, 10, presidentSearch);
-  const { data: advisorUsers } = useUsers(1, 10, advisorSearch);
+  const { data: presidentUsers } = useUsers(1, 10, { search: presidentSearch });
+  const { data: advisorUsers } = useUsers(1, 10, { search: advisorSearch });
   const { data: departmentsData } = useDepartments();
 
   const createMutation = useCreateClub();
@@ -542,7 +542,7 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
                 />
                 {presidentSearch && presidentUsers?.data && presidentUsers.data.length > 0 && (
                   <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-                    {presidentUsers.data.map((user) => (
+                    {presidentUsers.data.map((user: CurrentUser) => (
                       <button
                         key={user.id}
                         type="button"
@@ -607,7 +607,7 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
                 />
                 {advisorSearch && advisorUsers?.data && advisorUsers.data.length > 0 && (
                   <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
-                    {advisorUsers.data.map((user) => (
+                    {advisorUsers.data.map((user: CurrentUser) => (
                       <button
                         key={user.id}
                         type="button"

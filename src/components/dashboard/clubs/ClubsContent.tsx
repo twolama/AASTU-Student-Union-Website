@@ -40,16 +40,17 @@ export function ClubsContent() {
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState(1);
 
-  const { data: clubsData, isLoading, isError } = useClubs(page, 20, category);
+  const { data: clubsData, isLoading, isError } = useClubs(page, 20, {
+    category: category === "all" ? undefined : category,
+    status: activeTab === "all" ? undefined : activeTab
+  });
   const { data: categoriesData } = useClubCategories();
 
   const clubs = useMemo(() => {
     if (!clubsData?.data) return [];
-    
-    return clubsData.data
-      .filter((item) => (activeTab === "all" ? true : item.status === activeTab))
-      .map(mapClubToItem);
-  }, [clubsData, activeTab]);
+
+    return clubsData.data.map(mapClubToItem);
+  }, [clubsData]);
 
   const hasMore = clubsData?.meta ? clubsData.meta.page < clubsData.meta.totalPages : false;
 
@@ -80,7 +81,7 @@ export function ClubsContent() {
         </div>
       ) : (
         <section aria-label="Registered clubs" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {clubs.map((club) => (
+          {clubs.map((club: ClubItem) => (
             <ClubCard key={club.id} item={club} />
           ))}
         </section>
@@ -88,10 +89,10 @@ export function ClubsContent() {
 
       {hasMore && (
         <div className="flex justify-center pt-4">
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="md" 
+          <Button
+            type="button"
+            variant="outline"
+            size="md"
             className="rounded-full px-6"
             onClick={() => setPage(prev => prev + 1)}
             disabled={isLoading}

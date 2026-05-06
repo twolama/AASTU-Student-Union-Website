@@ -47,8 +47,10 @@ export function VenuesContent() {
   const { data: venuesResponse, isLoading } = useVenues(
     currentPage,
     ITEMS_PER_PAGE,
-    selectedType !== "all" ? selectedType : undefined,
-    selectedStatus !== "all" ? selectedStatus : undefined
+    {
+      category: selectedType !== "all" ? selectedType : undefined,
+      status: selectedStatus !== "all" ? selectedStatus : undefined
+    }
   );
 
   const typeOptions = useMemo(() => {

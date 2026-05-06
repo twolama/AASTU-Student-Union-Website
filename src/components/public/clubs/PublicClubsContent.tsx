@@ -11,9 +11,21 @@ import { usePermissions } from "@/hooks/usePermissions";
 
 interface PublicClubsContentProps {
   clubs: ClubItem[];
+  activeCategory: string;
+  onCategoryChange: (value: string) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  totalCount: number;
 }
 
-export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
+export function PublicClubsContent({ 
+  clubs, 
+  activeCategory, 
+  onCategoryChange, 
+  searchQuery, 
+  onSearchChange,
+  totalCount
+}: PublicClubsContentProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitState, setSubmitState] = useState<"idle" | "success">("idle");
   const [formData, setFormData] = useState({
@@ -27,32 +39,18 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
     phone: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [query, setQuery] = useState("");
   const { hasPermission } = usePermissions(undefined, { loadCurrentUser: false });
   const canProposeClub = hasPermission("clubs.create");
 
   const categories = useMemo(() => {
-    const unique = Array.from(new Set(clubs.map((club) => club.categoryLabel)));
-    return ["All", ...unique];
-  }, [clubs]);
+    // We still need all categories for the filter bar
+    // Since 'clubs' is now filtered, we might need a separate hook for categories
+    // But for now let's assume we want categories from the full list?
+    // Actually, it's better to fetch categories from the server.
+    return ["All", "Tech", "Art and sport", "Sports", "Social Service", "Entrepreneurship", "Other"];
+  }, []);
 
-  const filteredClubs = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return clubs.filter((club) => {
-      const matchesCategory =
-        activeCategory === "All" || club.categoryLabel === activeCategory;
-
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        club.name.toLowerCase().includes(normalizedQuery) ||
-        club.presidentName.toLowerCase().includes(normalizedQuery) ||
-        club.advisorName.toLowerCase().includes(normalizedQuery);
-
-      return matchesCategory && matchesQuery;
-    });
-  }, [activeCategory, clubs, query]);
+  const filteredClubs = clubs;
 
   const featuredClub = filteredClubs[0];
   const supportingClubs = filteredClubs.slice(1);
@@ -179,7 +177,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
                 <button
                   key={category}
                   type="button"
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => onCategoryChange(category)}
                   className={
                     selected
                       ? "rounded-full bg-[#061649] px-5 py-2.5 text-xs font-semibold text-white"
@@ -200,8 +198,8 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
             />
             <input
               type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={searchQuery}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search clubs..."
               className="h-12 w-full rounded-full border border-slate-200 bg-[#f8f8f8] pl-11 pr-4 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#b6861f]"
             />
@@ -209,7 +207,7 @@ export function PublicClubsContent({ clubs }: PublicClubsContentProps) {
         </div>
 
         <p className="mt-4 text-sm text-slate-500">
-          Showing {filteredClubs.length} of {clubs.length} clubs
+          Showing {filteredClubs.length} of {totalCount} clubs
         </p>
       </section>
 

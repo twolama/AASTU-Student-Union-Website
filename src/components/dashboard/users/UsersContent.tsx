@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { UsersFilters } from "@/components/dashboard/users/UsersFilters";
 import { UsersStatsSection } from "@/components/dashboard/users/UsersStatsSection";
 import { UsersTable } from "@/components/dashboard/users/UsersTable";
@@ -32,6 +32,13 @@ const USERS_TABS = [
 
 export function UsersContent() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const [selectedRole, setSelectedRole] = useState("all");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,7 +49,11 @@ export function UsersContent() {
   const [deleteTarget, setDeleteTarget] = useState<CurrentUser | null>(null);
 
   // Fetch real data
-  const { data: usersData, isLoading: isUsersLoading } = useUsers(currentPage, ITEMS_PER_PAGE, searchTerm, selectedRole, selectedDepartment);
+  const { data: usersData, isLoading: isUsersLoading } = useUsers(currentPage, ITEMS_PER_PAGE, {
+    search: debouncedSearch || undefined,
+    role: selectedRole === "all" ? undefined : selectedRole,
+    department: selectedDepartment === "all" ? undefined : selectedDepartment
+  });
   const { data: rolesData } = useRoles();
   const { data: departments = [] } = useDepartments();
   const { hasPermission } = usePermissions();
@@ -100,7 +111,7 @@ export function UsersContent() {
 
   const stats: UserManagementStat[] = [
     { ...userManagementStats[0], value: meta.total.toString() },
-    { ...userManagementStats[1], value: users.filter((u) => (u.roles?.length ?? 0) > 0 || !!u.role).length.toString() },
+    { ...userManagementStats[1], value: users.filter((u: any) => (u.roles?.length ?? 0) > 0 || !!u.role).length.toString() },
     { ...userManagementStats[2], value: rolesCount.toString() },
   ];
 

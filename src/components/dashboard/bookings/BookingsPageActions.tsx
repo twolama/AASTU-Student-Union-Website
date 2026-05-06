@@ -3,9 +3,19 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useEffect, useState } from "react";
 
 export function BookingsPageActions() {
   const { hasPermission } = usePermissions();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
 
   if (!hasPermission("bookings.create")) {
     return null;

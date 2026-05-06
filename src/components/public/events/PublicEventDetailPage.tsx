@@ -178,7 +178,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
   const bookingDetails = (event as typeof event & { booking_details?: { time_label?: string | null; time_range?: string | null; selected_slots?: string[] | null; date_label?: string | null } | null })?.booking_details;
 
   const relatedEvents = relatedResponse?.data
-    ? relatedResponse.data.filter((e) => e.id !== eventId).slice(0, 3)
+    ? relatedResponse.data.filter((e: any) => e.id !== eventId).slice(0, 3)
     : [];
 
   if (isLoading) {
@@ -500,7 +500,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {relatedEvents.map((e) => (
+            {relatedEvents.map((e: any) => (
               <article key={e.id} className="overflow-hidden rounded-[14px] bg-white shadow-sm">
                 <div className="relative h-40">
                   <Image

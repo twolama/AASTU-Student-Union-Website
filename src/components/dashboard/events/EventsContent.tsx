@@ -9,6 +9,7 @@ import { eventManagementStats, venueOccupancyTrends } from "@/data/dummy";
 import { getAnalyticsDashboard } from "@/api/services/analytics.service";
 import { useEvents } from "@/hooks/useEvents";
 import type { EventManagementItem, VenueOccupancyPoint, StatsTrendPoint } from "@/types/dashboard";
+import type { EventListItem } from "@/schemas/event.schema";
 import { Loader2 } from "lucide-react";
 
 type EventDistributionItem = {
@@ -57,11 +58,22 @@ export function EventsContent() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const { data, isLoading } = useEvents(
     currentPage,
     ITEMS_PER_PAGE,
-    selectedStatus === "all" ? undefined : selectedStatus,
-    selectedClub === "all" ? undefined : selectedClub
+    {
+      status: selectedStatus === "all" ? undefined : selectedStatus,
+      clubId: selectedClub === "all" ? undefined : selectedClub,
+      search: debouncedSearch || undefined,
+      venue: selectedVenue === "all" ? undefined : selectedVenue
+    }
   );
 
   const events = data?.data ?? [];
@@ -70,8 +82,8 @@ export function EventsContent() {
 
   const clubOptions = useMemo(() => {
     const clubs = events
-      .map((event) => ({ value: event.organizing_club?.id || "unknown", label: event.organizing_club?.name || "Unknown Club" }))
-      .filter((item, index, list) => list.findIndex((entry) => entry.value === item.value) === index);
+      .map((event: EventListItem) => ({ value: event.organizing_club?.id || "unknown", label: event.organizing_club?.name || "Unknown Club" }))
+      .filter((item: { value: string; label: string }, index: number, list: { value: string; label: string }[]) => list.findIndex((entry) => entry.value === item.value) === index);
 
     const options = [{ value: "all", label: "All Clubs" }, ...clubs];
 
@@ -84,8 +96,8 @@ export function EventsContent() {
 
   const venueOptions = useMemo(() => {
     const venues = events
-      .map((event) => ({ value: event.venue || "unknown", label: event.venue || "Unknown Venue" }))
-      .filter((item, index, list) => list.findIndex((entry) => entry.value === item.value) === index);
+      .map((event: EventListItem) => ({ value: event.venue || "unknown", label: event.venue || "Unknown Venue" }))
+      .filter((item: { value: string; label: string }, index: number, list: { value: string; label: string }[]) => list.findIndex((entry) => entry.value === item.value) === index);
 
     const options = [{ value: "all", label: "All Venues" }, ...venues];
 
@@ -96,31 +108,13 @@ export function EventsContent() {
     return options;
   }, [events, selectedVenue]);
 
-  const filteredItems = useMemo(() => {
-    return events
-      .filter((item) => {
-        const term = searchTerm.trim().toLowerCase();
-        const matchesSearch =
-          term.length === 0 ||
-          item.title.toLowerCase().includes(term) ||
-          item.organizing_club?.name?.toLowerCase().includes(term) ||
-          item.venue?.toLowerCase().includes(term);
+  const paginatedItems = useMemo(() => {
+    return events.map(formatEventRow);
+  }, [events]);
 
-        const matchesVenue = selectedVenue === "all" ? true : item.venue === selectedVenue;
-
-        return matchesSearch && matchesVenue;
-      })
-      .map(formatEventRow);
-  }, [events, searchTerm, selectedVenue]);
-
-  const totalPages =
-    searchTerm || selectedVenue !== "all"
-      ? Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE))
-      : totalPagesFromServer;
-
-  const paginatedItems = filteredItems.slice(0, ITEMS_PER_PAGE);
+  const totalPages = totalPagesFromServer;
+  const totalCount = totalCountFromServer;
   const clampedPage = Math.min(currentPage, totalPages);
-  const totalCount = searchTerm || selectedVenue !== "all" ? filteredItems.length : totalCountFromServer;
 
   const [liveEventStats, setLiveEventStats] = useState<typeof eventManagementStats | null>(null);
   const [liveVenueOccupancy, setLiveVenueOccupancy] = useState<Array<VenueOccupancyPoint | StatsTrendPoint> | null>(null);

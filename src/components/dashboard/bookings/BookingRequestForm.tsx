@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { BookingVenueCard } from "@/types/dashboard";
 import type { Club } from "@/schemas/club.schema";
+import type { Venue } from "@/schemas/venue.schema";
 
 type StepId = 1 | 2 | 3;
 
@@ -175,7 +176,7 @@ function StepIndicator({ currentStep }: { currentStep: StepId }) {
 }
 
 const DEFAULT_TIME_SLOTS = [
-  "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", 
+  "08:00", "09:00", "10:00", "11:00", "12:00", "13:00",
   "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"
 ];
 
@@ -195,7 +196,7 @@ export function BookingRequestForm({
   const venueIdFromUrl = searchParams.get("venueId");
 
   const [clubAssociation, setClubAssociation] = useState(initialData?.clubAssociation ?? "");
-  const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100, undefined, "active");
+  const { data: venuesData, isLoading: isVenuesLoading } = useVenues(1, 100, { status: "active" });
   const { data: clubsData, isLoading: isClubsLoading } = useClubs(1, 100);
   const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState(initialData?.startDate ?? "");
@@ -203,7 +204,7 @@ export function BookingRequestForm({
 
   const realVenues = useMemo(() => {
     if (!venuesData || !venuesData.data) return [];
-    return venuesData.data.map((v) => ({
+    return venuesData.data.map((v: Venue) => ({
       id: v.id || "unknown",
       name: v.name,
       description: v.shortDescription,
@@ -245,7 +246,7 @@ export function BookingRequestForm({
     if (availableSlotsData && availableSlotsData.length > 0) {
       return availableSlotsData;
     }
-    
+
     // 2. Determine if we should be in a "disabled/loading" state
     // We disable everything if:
     // - Dates are missing or invalid (end before start)
@@ -256,7 +257,7 @@ export function BookingRequestForm({
     const hasDates = !!(startDate && endDate);
     const isValid = isDateRangeValid;
     const shouldDisableAll = !hasDates || !isValid || isFetching || isAvailabilityError || !availableSlotsData;
-    
+
     return DEFAULT_TIME_SLOTS.map(label => ({
       label,
       available: !shouldDisableAll
@@ -355,9 +356,9 @@ export function BookingRequestForm({
   }
 
   const venueOptions = useMemo(() => {
-    return realVenues.map((venue) => ({ 
-      value: venue.id, 
-      label: venue.name 
+    return realVenues.map((venue) => ({
+      value: venue.id,
+      label: venue.name
     }));
   }, [realVenues]);
 
@@ -369,7 +370,7 @@ export function BookingRequestForm({
   const dynamicEquipmentOptions = useMemo(() => {
     // Prefer data from useVenue as it has full details
     const venueAmenities = fullVenueData?.amenities || selectedVenue?.amenities || [];
-    
+
     // If the venue has specific amenities listed, use them as options
     if (venueAmenities.length > 0) {
       return venueAmenities.map((amenity: string) => ({
@@ -377,7 +378,7 @@ export function BookingRequestForm({
         label: amenity
       }));
     }
-    
+
     // No specific amenities listed for this venue
     return [];
   }, [selectedVenue, fullVenueData]);
@@ -402,7 +403,7 @@ export function BookingRequestForm({
     clearTransientErrors();
     setEquipment((current) =>
       current.includes(optionId)
-          ? current.filter((item) => item !== optionId)
+        ? current.filter((item) => item !== optionId)
         : [...current, optionId]
     );
   }
@@ -429,7 +430,7 @@ export function BookingRequestForm({
           specialRequests,
         });
       }
-      
+
       setCurrentStep((current) => (current < 3 ? ((current + 1) as StepId) : current));
       window.scrollTo(0, 0);
     } catch (error) {
@@ -453,7 +454,7 @@ export function BookingRequestForm({
   async function handleSubmit() {
     setErrorMessage(null);
     setFieldErrors({});
-    
+
     try {
       // Final validation
       Step1Schema.parse({ clubAssociation, selectedVenueId: resolvedSelectedVenueId, eventTitle, expectedAttendance, startDate, endDate, selectedSlots, purpose });
@@ -482,7 +483,7 @@ export function BookingRequestForm({
         await createMutation.mutateAsync(payload);
         setStatusMessage("Booking request submitted successfully.");
       }
-      
+
       setTimeout(() => {
         router.push("/bookings");
       }, 2000);
@@ -511,7 +512,7 @@ export function BookingRequestForm({
       };
 
       let errorData = errorResponse.response?.data;
-      
+
       // Handle cases where the message is a stringified JSON (common in proxy responses)
       if (typeof errorData?.message === "string" && errorData.message.includes("VALIDATION_ERROR")) {
         try {
@@ -535,7 +536,7 @@ export function BookingRequestForm({
           if (key === "expected_attendance") fieldName = "expectedAttendance";
           if (key === "selected_slots") fieldName = "selectedSlots";
           if (key === "guidelines_acknowledged") fieldName = "guidelinesChecked";
-          
+
           mappedErrors[fieldName] = value as string[];
         });
         setFieldErrors(mappedErrors);
@@ -555,515 +556,515 @@ export function BookingRequestForm({
       ) : null}
 
       {canViewForm ? (
-      <>
-      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400">
-        <Link href="/dashboard" className="font-medium text-[#c49a22] hover:underline">
-          Dashboard
-        </Link>
-        <ChevronRight size={14} />
-        <Link href="/bookings" className="text-gray-500 hover:text-gray-700">
-          Bookings
-        </Link>
-        <ChevronRight size={14} />
-        <span className="text-gray-500">{pageTitle}</span>
-      </nav>
+        <>
+          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-gray-400">
+            <Link href="/dashboard" className="font-medium text-[#c49a22] hover:underline">
+              Dashboard
+            </Link>
+            <ChevronRight size={14} />
+            <Link href="/bookings" className="text-gray-500 hover:text-gray-700">
+              Bookings
+            </Link>
+            <ChevronRight size={14} />
+            <span className="text-gray-500">{pageTitle}</span>
+          </nav>
 
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-[#1f2a44] sm:text-[34px]">{pageTitle}</h1>
-        <StepIndicator currentStep={currentStep} />
-      </header>
+          <header className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[#1f2a44] sm:text-[34px]">{pageTitle}</h1>
+            <StepIndicator currentStep={currentStep} />
+          </header>
 
-      {currentStep === 1 ? (
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_250px]">
-          <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="inline-flex items-center gap-2 text-2xl font-bold text-[#1f2a44]">
-              <ClipboardList size={18} className="text-[#b48a1b]" />
-              About the Event
-            </h2>
+          {currentStep === 1 ? (
+            <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_250px]">
+              <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <h2 className="inline-flex items-center gap-2 text-2xl font-bold text-[#1f2a44]">
+                  <ClipboardList size={18} className="text-[#b48a1b]" />
+                  About the Event
+                </h2>
 
-            <div className="mt-4 space-y-4">
-              <div className="relative">
-                <DropdownSelect
-                  label="Venue Selection"
-                  value={resolvedSelectedVenueId}
-                  options={venueOptions}
-                  onValueChange={handleVenueChange}
-                  className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
-                  disabled={isVenuesLoading}
-                />
-                {isVenuesLoading && (
-                  <div className="absolute right-10 top-[34px]">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
-                  </div>
-                )}
-                <FieldError errors={fieldErrors.selectedVenueId} />
-              </div>
-
-              <div className={cn("rounded-[10px] border border-gray-200 bg-[#fbfcff] p-3 sm:p-4 transition-opacity", !resolvedSelectedVenueId && "opacity-50 pointer-events-none")}>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <DatePicker
-                      id="booking-start-date"
-                      label="Start Date"
-                      value={startDate}
-                      onChange={handleStartDateChange}
-                      minDate={dayjs().format("YYYY-MM-DD")}
+                <div className="mt-4 space-y-4">
+                  <div className="relative">
+                    <DropdownSelect
+                      label="Venue Selection"
+                      value={resolvedSelectedVenueId}
+                      options={venueOptions}
+                      onValueChange={handleVenueChange}
+                      className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
+                      disabled={isVenuesLoading}
                     />
-                    <FieldError errors={fieldErrors.startDate} />
+                    {isVenuesLoading && (
+                      <div className="absolute right-10 top-[34px]">
+                        <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
+                      </div>
+                    )}
+                    <FieldError errors={fieldErrors.selectedVenueId} />
                   </div>
 
-                  <div>
-                    <DatePicker
-                      id="booking-end-date"
-                      label="End Date"
-                      value={endDate}
-                      onChange={handleEndDateChange}
-                      minDate={startDate || dayjs().format("YYYY-MM-DD")}
-                      align="right"
-                    />
-                    <FieldError errors={fieldErrors.endDate} />
-                  </div>
-                </div>
+                  <div className={cn("rounded-[10px] border border-gray-200 bg-[#fbfcff] p-3 sm:p-4 transition-opacity", !resolvedSelectedVenueId && "opacity-50 pointer-events-none")}>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <DatePicker
+                          id="booking-start-date"
+                          label="Start Date"
+                          value={startDate}
+                          onChange={handleStartDateChange}
+                          minDate={dayjs().format("YYYY-MM-DD")}
+                        />
+                        <FieldError errors={fieldErrors.startDate} />
+                      </div>
 
-                {startDate && endDate && !isDateRangeValid && (
-                  <p className="mt-2 text-xs font-medium text-red-500">
-                    Error: End date cannot be before start date.
-                  </p>
-                )}
+                      <div>
+                        <DatePicker
+                          id="booking-end-date"
+                          label="End Date"
+                          value={endDate}
+                          onChange={handleEndDateChange}
+                          minDate={startDate || dayjs().format("YYYY-MM-DD")}
+                          align="right"
+                        />
+                        <FieldError errors={fieldErrors.endDate} />
+                      </div>
+                    </div>
 
-                <div className={cn("mt-3 transition-opacity", !resolvedSelectedVenueId && "opacity-50 pointer-events-none")}>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">
-                      {!startDate || !endDate 
-                        ? "Select Dates to View Availability" 
-                        : isAvailabilityLoading 
-                          ? "Checking Availability..." 
-                          : "Select Time Slots (Hourly)"}
-                    </p>
-                    {isAvailabilityLoading && <Loader2 className="h-3 w-3 animate-spin text-[#c49a22]" />}
-                  </div>
+                    {startDate && endDate && !isDateRangeValid && (
+                      <p className="mt-2 text-xs font-medium text-red-500">
+                        Error: End date cannot be before start date.
+                      </p>
+                    )}
 
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                    {timeSlots.map((slot) => {
-                      const isSelected = selectedSlots.includes(slot.label);
-                      const isClickable = slot.available && startDate && endDate;
-                      
-                      return (
-                        <button
-                          key={slot.label}
-                          type="button"
-                          disabled={!isClickable}
-                          onClick={() => toggleSlot(slot.label)}
-                          className={cn(
-                            "inline-flex h-9 items-center justify-center rounded-[8px] border text-xs font-semibold transition-colors",
-                            !isClickable && "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400",
-                            isClickable && !isSelected && "border-gray-200 bg-white text-[#4f5f7c] hover:border-[#b48a1b]/35",
-                            isClickable && isSelected && "border-[#b48a1b] bg-[#b48a1b] text-white"
-                          )}
-                        >
-                          {formatTimeLabel(slot.label)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <FieldError errors={fieldErrors.selectedSlots} />
+                    <div className={cn("mt-3 transition-opacity", !resolvedSelectedVenueId && "opacity-50 pointer-events-none")}>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">
+                          {!startDate || !endDate
+                            ? "Select Dates to View Availability"
+                            : isAvailabilityLoading
+                              ? "Checking Availability..."
+                              : "Select Time Slots (Hourly)"}
+                        </p>
+                        {isAvailabilityLoading && <Loader2 className="h-3 w-3 animate-spin text-[#c49a22]" />}
+                      </div>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#90a0bb]">
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-white ring-1 ring-gray-300" />Available</span>
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#b48a1b]" />Selected</span>
-                    <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300" />Reserved</span>
-                  </div>
-                </div>
-              </div>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                        {timeSlots.map((slot) => {
+                          const isSelected = selectedSlots.includes(slot.label);
+                          const isClickable = slot.available && startDate && endDate;
 
-              <div className="relative">
-                <DropdownSelect
-                  label="Club / Association Selection"
-                  value={clubAssociation}
-                  options={clubOptions}
-                  onValueChange={handleClubAssociationChange}
-                  className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
-                  disabled={isClubsLoading}
-                />
-                {isClubsLoading && (
-                  <div className="absolute right-10 top-[34px]">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
-                  </div>
-                )}
-                <FieldError errors={fieldErrors.clubAssociation} />
-                {!isClubsLoading && (!clubsData || !(clubsData.data && clubsData.data.length > 0)) ? (
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <p className="text-rose-600">No clubs available.</p>
-                    <button
-                      type="button"
-                      onClick={() => queryClient.invalidateQueries({ queryKey: ["clubs"] })}
-                      className="text-[#b48a1b] underline"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+                          return (
+                            <button
+                              key={slot.label}
+                              type="button"
+                              disabled={!isClickable}
+                              onClick={() => toggleSlot(slot.label)}
+                              className={cn(
+                                "inline-flex h-9 items-center justify-center rounded-[8px] border text-xs font-semibold transition-colors",
+                                !isClickable && "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400",
+                                isClickable && !isSelected && "border-gray-200 bg-white text-[#4f5f7c] hover:border-[#b48a1b]/35",
+                                isClickable && isSelected && "border-[#b48a1b] bg-[#b48a1b] text-white"
+                              )}
+                            >
+                              {formatTimeLabel(slot.label)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <FieldError errors={fieldErrors.selectedSlots} />
 
-              <div>
-                <label htmlFor="booking-event-title" className="mb-1.5 block text-xs font-semibold text-gray-700">
-                  Event Title
-                </label>
-                
-                {upcomingEventsData && upcomingEventsData.length > 0 && (
-                  <div className="mb-2 space-y-1.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Quick Select Upcoming Event</p>
-                    <div className="flex flex-wrap gap-2">
-                      {upcomingEventsData.slice(0, 3).map((event: { id: string; title: string }) => (
-                        <button
-                          key={event.id}
-                          type="button"
-                          onClick={() => handleEventTitleChange(event.title)}
-                          className={cn(
-                            "rounded-full border px-3 py-1 text-[11px] font-medium transition-all",
-                            eventTitle === event.title
-                              ? "border-[#b48a1b] bg-[#fdf8ec] text-[#6f5510]"
-                              : "border-gray-200 bg-white text-[#5f6f8d] hover:border-gray-300"
-                          )}
-                        >
-                          {event.title}
-                        </button>
-                      ))}
+                      <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#90a0bb]">
+                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-white ring-1 ring-gray-300" />Available</span>
+                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#b48a1b]" />Selected</span>
+                        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300" />Reserved</span>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                <Input
-                  id="booking-event-title"
-                  value={eventTitle}
-                  onChange={(event) => handleEventTitleChange(event.target.value)}
-                  placeholder="e.g. Annual Tech Symposium 2024"
-                  className="h-10 rounded-[10px]"
-                />
-                <FieldError errors={fieldErrors.eventTitle} />
-              </div>
+                  <div className="relative">
+                    <DropdownSelect
+                      label="Club / Association Selection"
+                      value={clubAssociation}
+                      options={clubOptions}
+                      onValueChange={handleClubAssociationChange}
+                      className="[&>div>button]:h-10 [&>div>button]:rounded-[10px]"
+                      disabled={isClubsLoading}
+                    />
+                    {isClubsLoading && (
+                      <div className="absolute right-10 top-[34px]">
+                        <Loader2 className="h-4 w-4 animate-spin text-[#c49a22]" />
+                      </div>
+                    )}
+                    <FieldError errors={fieldErrors.clubAssociation} />
+                    {!isClubsLoading && (!clubsData || !(clubsData.data && clubsData.data.length > 0)) ? (
+                      <div className="mt-2 flex items-center gap-2 text-sm">
+                        <p className="text-rose-600">No clubs available.</p>
+                        <button
+                          type="button"
+                          onClick={() => queryClient.invalidateQueries({ queryKey: ["clubs"] })}
+                          className="text-[#b48a1b] underline"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
 
-              <div>
-                <label htmlFor="booking-attendance" className="mb-1.5 block text-xs font-semibold text-gray-700">
-                  Expected Attendance
-                </label>
-                <Input
-                  id="booking-attendance"
-                  type="number"
-                  min={1}
-                  value={expectedAttendance}
-                  onChange={(event) => handleExpectedAttendanceChange(event.target.value)}
-                  placeholder="Number of attendees"
-                  className="h-10 rounded-[10px]"
-                />
-                <FieldError errors={fieldErrors.expectedAttendance} />
-              </div>
+                  <div>
+                    <label htmlFor="booking-event-title" className="mb-1.5 block text-xs font-semibold text-gray-700">
+                      Event Title
+                    </label>
+
+                    {upcomingEventsData && upcomingEventsData.length > 0 && (
+                      <div className="mb-2 space-y-1.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Quick Select Upcoming Event</p>
+                        <div className="flex flex-wrap gap-2">
+                          {upcomingEventsData.slice(0, 3).map((event: { id: string; title: string }) => (
+                            <button
+                              key={event.id}
+                              type="button"
+                              onClick={() => handleEventTitleChange(event.title)}
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-[11px] font-medium transition-all",
+                                eventTitle === event.title
+                                  ? "border-[#b48a1b] bg-[#fdf8ec] text-[#6f5510]"
+                                  : "border-gray-200 bg-white text-[#5f6f8d] hover:border-gray-300"
+                              )}
+                            >
+                              {event.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <Input
+                      id="booking-event-title"
+                      value={eventTitle}
+                      onChange={(event) => handleEventTitleChange(event.target.value)}
+                      placeholder="e.g. Annual Tech Symposium 2024"
+                      className="h-10 rounded-[10px]"
+                    />
+                    <FieldError errors={fieldErrors.eventTitle} />
+                  </div>
+
+                  <div>
+                    <label htmlFor="booking-attendance" className="mb-1.5 block text-xs font-semibold text-gray-700">
+                      Expected Attendance
+                    </label>
+                    <Input
+                      id="booking-attendance"
+                      type="number"
+                      min={1}
+                      value={expectedAttendance}
+                      onChange={(event) => handleExpectedAttendanceChange(event.target.value)}
+                      placeholder="Number of attendees"
+                      className="h-10 rounded-[10px]"
+                    />
+                    <FieldError errors={fieldErrors.expectedAttendance} />
+                  </div>
 
 
-              <div>
-                <label htmlFor="booking-purpose" className="mb-1.5 block text-xs font-semibold text-gray-700">
-                  Purpose of Booking
-                </label>
+                  <div>
+                    <label htmlFor="booking-purpose" className="mb-1.5 block text-xs font-semibold text-gray-700">
+                      Purpose of Booking
+                    </label>
+                    <Textarea
+                      id="booking-purpose"
+                      value={purpose}
+                      onChange={(event) => handlePurposeChange(event.target.value)}
+                      placeholder="Briefly describe the activities and goals of the event..."
+                      className="min-h-[104px] rounded-[10px]"
+                    />
+                    <FieldError errors={fieldErrors.purpose} />
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <Link href="/bookings">
+                    <Button type="button" variant="outline" className="h-10 w-full sm:w-auto">
+                      Cancel Request
+                    </Button>
+                  </Link>
+                  <Button
+                    type="button"
+                    variant="goldSolid"
+                    className="h-10 w-full sm:w-auto"
+                    onClick={goNext}
+                    disabled={!resolvedSelectedVenueId || isVenuesLoading}
+                  >
+                    Next Step
+                    <ArrowRight size={14} />
+                  </Button>
+                </div>
+              </article>
+
+              <aside className="space-y-4">
+                <article className="overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm">
+                  <div className="relative h-24 bg-gray-100">
+                    <Image
+                      src={selectedVenue?.imageUrl ?? "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop"}
+                      alt="Selected venue"
+                      fill
+                      className="object-cover"
+                    />
+                    <span className="absolute left-2 top-2 rounded-full bg-[#b48a1b] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white">
+                      Selected Venue
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 p-3">
+                    <h3 className="text-2xl font-bold text-[#1f2a44]">{selectedVenue?.name}</h3>
+                    <div className="space-y-1 text-xs text-[#5f6f8d]">
+                      <p className="inline-flex items-center gap-1.5"><Users2 size={12} className="text-[#b48a1b]" />Capacity: {selectedVenue?.capacity.toLocaleString()} Seats</p>
+                      <p className="inline-flex items-center gap-1.5"><MapPin size={12} className="text-[#b48a1b]" />AASTU Campus · {selectedVenue?.category.replace("-", " ")}</p>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="rounded-[12px] border border-[#203163] bg-[#1f2a44] p-4 text-white shadow-sm">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d6b662]">Booking Guidelines</h3>
+                  <ul className="mt-3 space-y-2 text-xs text-white/80">
+                    <li className="inline-flex gap-2"><Info size={12} className="mt-0.5 shrink-0 text-[#d6b662]" />Submit request at least 7 working days prior.</li>
+                    <li className="inline-flex gap-2"><Info size={12} className="mt-0.5 shrink-0 text-[#d6b662]" />48-hour cancellation notice required.</li>
+                    <li className="inline-flex gap-2"><Info size={12} className="mt-0.5 shrink-0 text-[#d6b662]" />Clubs are responsible for cleanliness & damages.</li>
+                  </ul>
+                </article>
+              </aside>
+            </section>
+          ) : null}
+
+          {currentStep === 2 ? (
+            <section className="space-y-4">
+              <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <h2 className="inline-flex items-center gap-2 text-2xl font-bold text-[#1f2a44]">
+                  <CalendarClock size={18} className="text-[#b48a1b]" />
+                  Equipment & Support Requirements
+                </h2>
+
+                <div className="mt-4 grid gap-2 md:grid-cols-3">
+                  {isFullVenueLoading ? (
+                    <div className="col-span-full flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-[#c49a22]" />
+                      <span className="ml-2 text-sm text-gray-500">Loading venue requirements...</span>
+                    </div>
+                  ) : dynamicEquipmentOptions.length > 0 ? (
+                    dynamicEquipmentOptions.map((option: EquipmentOption) => {
+                      const isSelected = equipment.includes(option.id);
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => toggleEquipment(option.id)}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-[10px] border px-3 py-3 text-left text-sm font-semibold transition-colors",
+                            isSelected
+                              ? "border-[#b48a1b]/35 bg-[#fdf8ec] text-[#6f5510]"
+                              : "border-gray-200 bg-[#fbfcff] text-[#4f5f7c] hover:border-[#b48a1b]/25"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "inline-flex h-4 w-4 items-center justify-center rounded border",
+                              isSelected ? "border-[#b48a1b] bg-[#b48a1b] text-white" : "border-gray-300 bg-white"
+                            )}
+                          >
+                            {isSelected ? <Check size={12} /> : null}
+                          </span>
+                          {option.label}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-full flex items-center gap-3 rounded-[10px] bg-gray-50 p-4 text-sm text-gray-500 border border-gray-100">
+                      <Info size={18} className="text-gray-400 shrink-0" />
+                      <p>No specific equipment or support requirements are listed for this venue.</p>
+                    </div>
+                  )}
+                </div>
+              </article>
+
+              <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <h2 className="inline-flex items-center gap-2 text-2xl font-bold text-[#1f2a44]">
+                  <ClipboardCheck size={18} className="text-[#b48a1b]" />
+                  Special Requests
+                </h2>
+                <p className="mt-2 text-sm text-[#6d7a95]">Additional details or technical notes.</p>
                 <Textarea
-                  id="booking-purpose"
-                  value={purpose}
-                  onChange={(event) => handlePurposeChange(event.target.value)}
-                  placeholder="Briefly describe the activities and goals of the event..."
-                  className="min-h-[104px] rounded-[10px]"
+                  value={specialRequests}
+                  onChange={(event) => handleSpecialRequestsChange(event.target.value)}
+                  placeholder="Please describe any specific technical requirements or logistics needs not covered above..."
+                  className="mt-3 min-h-[110px] rounded-[10px]"
                 />
-                <FieldError errors={fieldErrors.purpose} />
-              </div>
-            </div>
+                <FieldError errors={fieldErrors.specialRequests} />
+              </article>
 
-            <div className="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <Link href="/bookings">
-                <Button type="button" variant="outline" className="h-10 w-full sm:w-auto">
-                  Cancel Request
+              <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
+                <Button type="button" variant="outline" className="h-10 w-full sm:w-auto" onClick={goBack}>
+                  <ArrowLeft size={14} />
+                  Back
                 </Button>
-              </Link>
-              <Button 
-                type="button" 
-                variant="goldSolid" 
-                className="h-10 w-full sm:w-auto" 
-                onClick={goNext}
-                disabled={!resolvedSelectedVenueId || isVenuesLoading}
-              >
-                Next Step
-                <ArrowRight size={14} />
-              </Button>
-            </div>
-          </article>
-
-          <aside className="space-y-4">
-            <article className="overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm">
-              <div className="relative h-24 bg-gray-100">
-                <Image
-                  src={selectedVenue?.imageUrl ?? "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop"}
-                  alt="Selected venue"
-                  fill
-                  className="object-cover"
-                />
-                <span className="absolute left-2 top-2 rounded-full bg-[#b48a1b] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white">
-                  Selected Venue
-                </span>
+                <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={goNext}>
+                  Next Step
+                  <ArrowRight size={14} />
+                </Button>
               </div>
+            </section>
+          ) : null}
 
-              <div className="space-y-2 p-3">
-                <h3 className="text-2xl font-bold text-[#1f2a44]">{selectedVenue?.name}</h3>
-                <div className="space-y-1 text-xs text-[#5f6f8d]">
-                  <p className="inline-flex items-center gap-1.5"><Users2 size={12} className="text-[#b48a1b]" />Capacity: {selectedVenue?.capacity.toLocaleString()} Seats</p>
-                  <p className="inline-flex items-center gap-1.5"><MapPin size={12} className="text-[#b48a1b]" />AASTU Campus · {selectedVenue?.category.replace("-", " ")}</p>
+          {currentStep === 3 ? (
+            <section className="space-y-4">
+              <article className="overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm">
+                <div className="grid gap-0 lg:grid-cols-[340px_minmax(0,1fr)]">
+                  <div className="relative h-48 bg-gray-100 lg:h-full">
+                    <Image
+                      src={selectedVenue?.imageUrl ?? "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1100&auto=format&fit=crop"}
+                      alt="Venue preview"
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute bottom-3 left-3 rounded-md bg-black/40 px-2 py-1 text-white">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f3d792]">Primary Venue</p>
+                      <p className="text-2xl font-bold">{selectedVenue?.name}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 p-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Capacity</p>
+                      <p className="text-sm font-semibold text-[#1f2a44]">{selectedVenue?.capacity.toLocaleString()} Seats Available</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Location</p>
+                      <p className="text-sm font-semibold text-[#1f2a44]">AASTU Campus · {selectedVenue?.category.replace("-", " ")}</p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Status</p>
+                      <p className="text-sm font-semibold text-emerald-600">Available for Selection</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
 
-            <article className="rounded-[12px] border border-[#203163] bg-[#1f2a44] p-4 text-white shadow-sm">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d6b662]">Booking Guidelines</h3>
-              <ul className="mt-3 space-y-2 text-xs text-white/80">
-                <li className="inline-flex gap-2"><Info size={12} className="mt-0.5 shrink-0 text-[#d6b662]" />Submit request at least 7 working days prior.</li>
-                <li className="inline-flex gap-2"><Info size={12} className="mt-0.5 shrink-0 text-[#d6b662]" />48-hour cancellation notice required.</li>
-                <li className="inline-flex gap-2"><Info size={12} className="mt-0.5 shrink-0 text-[#d6b662]" />Clubs are responsible for cleanliness & damages.</li>
-              </ul>
-            </article>
-          </aside>
-        </section>
-      ) : null}
-
-      {currentStep === 2 ? (
-        <section className="space-y-4">
-          <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="inline-flex items-center gap-2 text-2xl font-bold text-[#1f2a44]">
-              <CalendarClock size={18} className="text-[#b48a1b]" />
-              Equipment & Support Requirements
-            </h2>
-
-            <div className="mt-4 grid gap-2 md:grid-cols-3">
-              {isFullVenueLoading ? (
-                <div className="col-span-full flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#c49a22]" />
-                  <span className="ml-2 text-sm text-gray-500">Loading venue requirements...</span>
+              <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#1f2a44]">
+                    <ClipboardList size={17} className="text-[#b48a1b]" />
+                    Event Overview
+                  </h2>
+                  <button type="button" onClick={() => setCurrentStep(1)} className="text-xs font-semibold text-[#b48a1b] hover:underline">
+                    Edit
+                  </button>
                 </div>
-              ) : dynamicEquipmentOptions.length > 0 ? (
-                dynamicEquipmentOptions.map((option: EquipmentOption) => {
-                  const isSelected = equipment.includes(option.id);
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => toggleEquipment(option.id)}
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-[10px] border px-3 py-3 text-left text-sm font-semibold transition-colors",
-                        isSelected
-                          ? "border-[#b48a1b]/35 bg-[#fdf8ec] text-[#6f5510]"
-                          : "border-gray-200 bg-[#fbfcff] text-[#4f5f7c] hover:border-[#b48a1b]/25"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "inline-flex h-4 w-4 items-center justify-center rounded border",
-                          isSelected ? "border-[#b48a1b] bg-[#b48a1b] text-white" : "border-gray-300 bg-white"
-                        )}
-                      >
-                        {isSelected ? <Check size={12} /> : null}
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Event Title</p>
+                    <p className="text-xl font-semibold text-[#1f2a44]">{eventTitle || "Untitled booking event"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Organization</p>
+                    <p className="text-xl font-semibold text-[#1f2a44]">
+                      {clubOptions.find((option) => option.value === clubAssociation)?.label || "Not selected"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Date</p>
+                    <p className="text-sm font-semibold text-[#1f2a44]">{startDate ? dayjs(startDate).format("MMM DD, YYYY") : "--"}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Selected Time Slots</p>
+                    <p className="text-sm font-semibold text-[#1f2a44]">
+                      {selectedSlots.length > 0 ? selectedSlots.map(formatTimeLabel).join(", ") : "None"}
+                    </p>
+                  </div>
+                </div>
+              </article>
+
+              <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#1f2a44]">
+                    <ClipboardCheck size={17} className="text-[#b48a1b]" />
+                    Requirements Summary
+                  </h2>
+                  <button type="button" onClick={() => setCurrentStep(2)} className="text-xs font-semibold text-[#b48a1b] hover:underline">
+                    Edit
+                  </button>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedEquipmentLabels.length > 0 ? (
+                    selectedEquipmentLabels.map((label: string) => (
+                      <span key={label} className="inline-flex items-center rounded-[8px] border border-[#ead9a3] bg-[#fbf4dc] px-2.5 py-1.5 text-xs font-medium text-[#7f6112]">
+                        {label}
                       </span>
-                      {option.label}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="col-span-full flex items-center gap-3 rounded-[10px] bg-gray-50 p-4 text-sm text-gray-500 border border-gray-100">
-                  <Info size={18} className="text-gray-400 shrink-0" />
-                  <p>No specific equipment or support requirements are listed for this venue.</p>
+                    ))
+                  ) : (
+                    <p className="text-sm text-[#7f8ba2]">No equipment selected.</p>
+                  )}
                 </div>
-              )}
-            </div>
-          </article>
 
-          <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="inline-flex items-center gap-2 text-2xl font-bold text-[#1f2a44]">
-              <ClipboardCheck size={18} className="text-[#b48a1b]" />
-              Special Requests
-            </h2>
-            <p className="mt-2 text-sm text-[#6d7a95]">Additional details or technical notes.</p>
-            <Textarea
-              value={specialRequests}
-              onChange={(event) => handleSpecialRequestsChange(event.target.value)}
-              placeholder="Please describe any specific technical requirements or logistics needs not covered above..."
-              className="mt-3 min-h-[110px] rounded-[10px]"
-            />
-            <FieldError errors={fieldErrors.specialRequests} />
-          </article>
+                {specialRequests.trim().length > 0 ? (
+                  <p className="mt-3 text-sm text-[#60718f]">
+                    <span className="font-semibold text-[#1f2a44]">Additional Note:</span> {specialRequests}
+                  </p>
+                ) : null}
+              </article>
 
-          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
-            <Button type="button" variant="outline" className="h-10 w-full sm:w-auto" onClick={goBack}>
-              <ArrowLeft size={14} />
-              Back
-            </Button>
-            <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={goNext}>
-              Next Step
-              <ArrowRight size={14} />
-            </Button>
-          </div>
-        </section>
-      ) : null}
-
-      {currentStep === 3 ? (
-        <section className="space-y-4">
-          <article className="overflow-hidden rounded-[12px] border border-gray-200 bg-white shadow-sm">
-            <div className="grid gap-0 lg:grid-cols-[340px_minmax(0,1fr)]">
-              <div className="relative h-48 bg-gray-100 lg:h-full">
-                <Image
-                  src={selectedVenue?.imageUrl ?? "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1100&auto=format&fit=crop"}
-                  alt="Venue preview"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute bottom-3 left-3 rounded-md bg-black/40 px-2 py-1 text-white">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f3d792]">Primary Venue</p>
-                  <p className="text-2xl font-bold">{selectedVenue?.name}</p>
+              <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="space-y-1 text-sm text-[#5f6f8d]">
+                  <p className="flex items-center justify-between gap-2"><span>Total Duration</span><span className="font-semibold text-[#1f2a44]">{durationHours.toFixed(1)} Hours</span></p>
+                  <p className="flex items-center justify-between gap-2"><span>Equipment Count</span><span className="font-semibold text-[#1f2a44]">{selectedEquipmentLabels.length} items</span></p>
                 </div>
-              </div>
+              </article>
 
-              <div className="grid gap-2 p-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Capacity</p>
-                  <p className="text-sm font-semibold text-[#1f2a44]">{selectedVenue?.capacity.toLocaleString()} Seats Available</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Location</p>
-                  <p className="text-sm font-semibold text-[#1f2a44]">AASTU Campus · {selectedVenue?.category.replace("-", " ")}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Status</p>
-                  <p className="text-sm font-semibold text-emerald-600">Available for Selection</p>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#1f2a44]">
-                <ClipboardList size={17} className="text-[#b48a1b]" />
-                Event Overview
-              </h2>
-              <button type="button" onClick={() => setCurrentStep(1)} className="text-xs font-semibold text-[#b48a1b] hover:underline">
-                Edit
-              </button>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Event Title</p>
-                <p className="text-xl font-semibold text-[#1f2a44]">{eventTitle || "Untitled booking event"}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Organization</p>
-                <p className="text-xl font-semibold text-[#1f2a44]">
-                  {clubOptions.find((option) => option.value === clubAssociation)?.label || "Not selected"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Date</p>
-                <p className="text-sm font-semibold text-[#1f2a44]">{startDate ? dayjs(startDate).format("MMM DD, YYYY") : "--"}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a95a8]">Selected Time Slots</p>
-                <p className="text-sm font-semibold text-[#1f2a44]">
-                  {selectedSlots.length > 0 ? selectedSlots.map(formatTimeLabel).join(", ") : "None"}
-                </p>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="inline-flex items-center gap-2 text-xl font-bold text-[#1f2a44]">
-                <ClipboardCheck size={17} className="text-[#b48a1b]" />
-                Requirements Summary
-              </h2>
-              <button type="button" onClick={() => setCurrentStep(2)} className="text-xs font-semibold text-[#b48a1b] hover:underline">
-                Edit
-              </button>
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {selectedEquipmentLabels.length > 0 ? (
-                selectedEquipmentLabels.map((label: string) => (
-                  <span key={label} className="inline-flex items-center rounded-[8px] border border-[#ead9a3] bg-[#fbf4dc] px-2.5 py-1.5 text-xs font-medium text-[#7f6112]">
-                    {label}
+              <article className="rounded-[12px] border border-[#ead9a3] bg-[#fffaf0] p-4 shadow-sm">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={guidelinesChecked}
+                    onChange={(event) => handleGuidelinesCheckedChange(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-[#b48a1b] focus:ring-[#b48a1b]/30"
+                  />
+                  <span>
+                    <span className="block font-semibold text-[#1f2a44]">Booking Guidelines Acknowledgment</span>
+                    <span className="mt-1 block text-sm text-[#60718f]">
+                      I confirm that the details provided are accurate and I agree to the venue usage policies, including responsibility for equipment care and scheduled departure.
+                    </span>
                   </span>
-                ))
-              ) : (
-                <p className="text-sm text-[#7f8ba2]">No equipment selected.</p>
-              )}
+                </label>
+                <FieldError errors={fieldErrors.guidelinesChecked} />
+              </article>
+
+              <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
+                <Button type="button" variant="outline" className="h-10 w-full sm:w-auto" onClick={goBack}>
+                  <ArrowLeft size={14} />
+                  Back
+                </Button>
+
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  <Button type="button" variant="outline" className="h-10 w-full sm:w-auto">
+                    Save Draft
+                  </Button>
+                  <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={handleSubmit} disabled={!guidelinesChecked || !canSubmitBooking}>
+                    {isEditMode ? "Update Booking" : "Submit"}
+                    <ArrowRight size={14} />
+                  </Button>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {errorMessage ? (
+            <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {errorMessage}
             </div>
+          ) : null}
 
-            {specialRequests.trim().length > 0 ? (
-              <p className="mt-3 text-sm text-[#60718f]">
-                <span className="font-semibold text-[#1f2a44]">Additional Note:</span> {specialRequests}
-              </p>
-            ) : null}
-          </article>
-
-          <article className="rounded-[12px] border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="space-y-1 text-sm text-[#5f6f8d]">
-              <p className="flex items-center justify-between gap-2"><span>Total Duration</span><span className="font-semibold text-[#1f2a44]">{durationHours.toFixed(1)} Hours</span></p>
-              <p className="flex items-center justify-between gap-2"><span>Equipment Count</span><span className="font-semibold text-[#1f2a44]">{selectedEquipmentLabels.length} items</span></p>
+          {statusMessage ? (
+            <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {statusMessage}
             </div>
-          </article>
+          ) : null}
 
-          <article className="rounded-[12px] border border-[#ead9a3] bg-[#fffaf0] p-4 shadow-sm">
-            <label className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={guidelinesChecked}
-                onChange={(event) => handleGuidelinesCheckedChange(event.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#b48a1b] focus:ring-[#b48a1b]/30"
-              />
-              <span>
-                <span className="block font-semibold text-[#1f2a44]">Booking Guidelines Acknowledgment</span>
-                <span className="mt-1 block text-sm text-[#60718f]">
-                  I confirm that the details provided are accurate and I agree to the venue usage policies, including responsibility for equipment care and scheduled departure.
-                </span>
-              </span>
-            </label>
-            <FieldError errors={fieldErrors.guidelinesChecked} />
-          </article>
-
-          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
-            <Button type="button" variant="outline" className="h-10 w-full sm:w-auto" onClick={goBack}>
-              <ArrowLeft size={14} />
-              Back
-            </Button>
-
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <Button type="button" variant="outline" className="h-10 w-full sm:w-auto">
-                Save Draft
-              </Button>
-              <Button type="button" variant="goldSolid" className="h-10 w-full sm:w-auto" onClick={handleSubmit} disabled={!guidelinesChecked || !canSubmitBooking}>
-                {isEditMode ? "Update Booking" : "Submit"}
-                <ArrowRight size={14} />
-              </Button>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {errorMessage ? (
-        <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {errorMessage}
-        </div>
-      ) : null}
-
-      {statusMessage ? (
-        <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {statusMessage}
-        </div>
-      ) : null}
-
-      <DashboardFooter />
-      </>
+          <DashboardFooter />
+        </>
       ) : null}
     </div>
   );

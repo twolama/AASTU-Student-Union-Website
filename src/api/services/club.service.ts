@@ -1,14 +1,14 @@
 import { apiClient } from "../client";
 import { CLUB_ENDPOINTS, CLUB_CATEGORY_ENDPOINTS } from "../endpoints";
-import { 
-  ClubListResponseSchema, 
-  ClubSchema, 
-  type Club, 
-  type ClubListResponse 
+import {
+  ClubListResponseSchema,
+  ClubSchema,
+  type Club,
+  type ClubListResponse
 } from "@/schemas/club.schema";
-import { 
-  ClubCategoryListResponseSchema, 
-  type ClubCategory 
+import {
+  ClubCategoryListResponseSchema,
+  type ClubCategory
 } from "@/schemas/club-category.schema";
 
 type ClubMutationPayload = FormData | Record<string, unknown>;
@@ -56,8 +56,8 @@ function clearClubCaches() {
 
 export const clubService = {
   // Clubs
-  getClubs: async (page = 1, limit = 20, category?: string, status?: string) => {
-    const cacheKey = JSON.stringify({ page, limit, category: category || "", status: status || "" });
+  getClubs: async (page = 1, limit = 20, category?: string, status?: string, search?: string) => {
+    const cacheKey = JSON.stringify({ page, limit, category: category || "", status: status || "", search: search || "" });
     const cached = getCachedPayload(clubListCache, cacheKey);
     if (cached) {
       return cached;
@@ -71,6 +71,7 @@ export const clubService = {
     const params: Record<string, string | number> = { page, limit };
     if (category && category !== "all") params["category__slug"] = category;
     if (status) params["status"] = status;
+    if (search) params["search"] = search;
 
     const request = apiClient
       .get<ClubListResponse>(CLUB_ENDPOINTS.LIST, { params })

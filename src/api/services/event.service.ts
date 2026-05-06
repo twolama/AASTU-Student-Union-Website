@@ -92,8 +92,8 @@ export const eventService = {
     return sanitized;
   },
 
-  getEvents: async (page = 1, limit = 20, status?: string, clubId?: string) => {
-    const cacheKey = JSON.stringify({ page, limit, status: status || "", clubId: clubId || "" });
+  getEvents: async (page = 1, limit = 20, status?: string, clubId?: string, search?: string, venue?: string, category?: string) => {
+    const cacheKey = JSON.stringify({ page, limit, status: status || "", clubId: clubId || "", search: search || "", venue: venue || "", category: category || "" });
     const cached = getCachedPayload(eventListCache, cacheKey);
     if (cached) {
       return cached;
@@ -112,6 +112,18 @@ export const eventService = {
 
     if (clubId && clubId !== "all") {
       params.club = clubId;
+    }
+
+    if (search) {
+      params.search = search;
+    }
+
+    if (venue && venue !== "all") {
+      params.venue = venue;
+    }
+
+    if (category && category !== "all") {
+      params.category = category;
     }
 
     const request = apiClient

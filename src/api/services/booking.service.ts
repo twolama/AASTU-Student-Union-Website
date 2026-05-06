@@ -9,7 +9,7 @@ import {
 } from "@/schemas/booking.schema";
 
 export const bookingService = {
-  getBookings: async (page = 1, limit = 20, status?: string, clubId?: string) => {
+  getBookings: async (page = 1, limit = 20, status?: string, clubId?: string, search?: string) => {
     const params: Record<string, string | number> = { page, limit };
 
     if (status && status !== "all") {
@@ -18,6 +18,10 @@ export const bookingService = {
 
     if (clubId) {
       params.club = clubId;
+    }
+
+    if (search) {
+      params.search = search;
     }
 
     const response = await apiClient.get<BookingListResponse>(BOOKING_ENDPOINTS.LIST, { params });

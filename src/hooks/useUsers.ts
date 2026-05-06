@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import { userService, type CreateUserInput } from "@/api/services/user.service";
 import { type CurrentUser } from "@/schemas/user.schema";
 
-export function useUsers(page = 1, limit = 20, search?: string, role?: string, department?: string) {
+export function useUsers(page = 1, limit = 20, options?: { search?: string; role?: string; department?: string; initialData?: any }) {
   return useQuery({
-    queryKey: ["users", page, limit, search, role, department],
-    queryFn: () => userService.getUsers(page, limit, search, role, department),
+    queryKey: ["users", page, limit, options?.search, options?.role, options?.department],
+    queryFn: () => userService.getUsers(page, limit, options?.search, options?.role, options?.department),
     placeholderData: keepPreviousData,
+    initialData: options?.initialData,
   });
 }
 

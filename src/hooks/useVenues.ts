@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { venueService } from "@/api/services/venue.service";
 
-export function useVenues(page = 1, limit = 20, category?: string, status?: string) {
+export function useVenues(page = 1, limit = 20, options?: { category?: string; status?: string; initialData?: any }) {
   return useQuery({
-    queryKey: ["venues", page, limit, category, status],
-    queryFn: () => venueService.getVenues(page, limit, category, status),
+    queryKey: ["venues", page, limit, options?.category, options?.status],
+    queryFn: () => venueService.getVenues(page, limit, options?.category, options?.status),
     placeholderData: keepPreviousData,
+    initialData: options?.initialData,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });

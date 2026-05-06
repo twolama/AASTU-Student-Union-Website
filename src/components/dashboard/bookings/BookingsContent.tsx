@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { VenueCategory } from "@/schemas/venue-category.schema";
+import type { BookingListItem } from "@/schemas/booking.schema";
+import type { Venue } from "@/schemas/venue.schema";
 import type {
   BookingRequestDateRange,
   BookingRequestItem,
@@ -65,17 +67,30 @@ export function BookingsContent() {
   const [browsePage, setBrowsePage] = useState(1);
 
   const [myBookingsPage, setMyBookingsPage] = useState(1);
-  
-  const { 
-    data: venuesData, 
-    isLoading: isVenuesLoading, 
-    isError: isVenuesError, 
-    error: venuesError 
-  } = useVenues(browsePage, BROWSE_PAGE_SIZE, activeVenueFilter, "active");
+
+  const {
+    data: venuesData,
+    isLoading: isVenuesLoading,
+    isError: isVenuesError,
+    error: venuesError
+  } = useVenues(browsePage, BROWSE_PAGE_SIZE, {
+    category: activeVenueFilter === "all" ? undefined : activeVenueFilter,
+    status: "active"
+  });
 
   const { data: categoriesData } = useVenueCategories();
 
-  const { data: bookingsData, isLoading: isBookingsLoading, isError, error } = useBookings(1, 100);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data: bookingsData, isLoading: isBookingsLoading, isError, error } = useBookings(1, 100, {
+    search: debouncedSearch || undefined
+  });
   const approveMutation = useApproveBooking();
   const cancelMutation = useCancelBooking();
   const deleteMutation = useDeleteBooking();
@@ -93,7 +108,6 @@ export function BookingsContent() {
   const canApproveBookings = hasPermission("bookings.approve_booking") || hasPermission("bookings.reject_booking");
   const canDeleteBookings = hasPermission("bookings.delete");
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedVenueType, setSelectedVenueType] = useState("all");
   const [selectedDateRange, setSelectedDateRange] = useState<BookingRequestDateRange>("all");
 
@@ -110,7 +124,7 @@ export function BookingsContent() {
       return [];
     }
     console.log("BookingsContent: Mapping", bookingsData.data.length, "bookings to myBookings");
-    return bookingsData.data.map(b => {
+    return bookingsData.data.map((b: BookingListItem) => {
       console.log("Mapping booking item:", b.id, b.status);
       return {
         id: b.id,
@@ -125,12 +139,12 @@ export function BookingsContent() {
 
   const requests = useMemo(() => {
     if (!bookingsData || !bookingsData.data) return [];
-    
+
     // Including all requests (not just pending) to ensure visibility
     const allItems = bookingsData.data;
     console.log("BookingsContent: Found", allItems.length, "total requests to display in the queue");
-    
-    return allItems.map(b => ({
+
+    return allItems.map((b: BookingListItem) => ({
       id: b.id,
       requesterName: b.requester_name || "Unknown Requester",
       clubName: b.club_name || "No Club",
@@ -168,7 +182,7 @@ export function BookingsContent() {
 
   const realVenues = useMemo(() => {
     if (!venuesData || !venuesData.data) return [];
-    return venuesData.data.map(v => ({
+    return venuesData.data.map((v: Venue) => ({
       id: v.id || "unknown",
       name: v.name,
       description: v.shortDescription,
@@ -192,7 +206,7 @@ export function BookingsContent() {
   const venueCategories = useMemo(() => {
     const baseFilters = [{ id: "all", label: "All Venues" }];
     if (!categoriesData) return baseFilters;
-    
+
     return [
       ...baseFilters,
       ...categoriesData.map((cat: VenueCategory) => ({
@@ -206,9 +220,9 @@ export function BookingsContent() {
     if (!bookingsData || !bookingsData.data) return { pendingCount: 0, approvedCount: 0, cancelledCount: 0, totalCount: 0 };
     const items = bookingsData.data;
     return {
-      pendingCount: items.filter(b => b.status === "pending").length,
-      approvedCount: items.filter(b => b.status === "approved").length,
-      cancelledCount: items.filter(b => b.status === "cancelled").length,
+      pendingCount: items.filter((b: BookingListItem) => b.status === "pending").length,
+      approvedCount: items.filter((b: BookingListItem) => b.status === "approved").length,
+      cancelledCount: items.filter((b: BookingListItem) => b.status === "cancelled").length,
       totalCount: items.length,
     };
   }, [bookingsData]);
@@ -240,21 +254,12 @@ export function BookingsContent() {
 
   const filteredApprovalRequests = useMemo(() => {
     return requests.filter((request) => {
-      const normalizedTerm = searchTerm.trim().toLowerCase();
-
-      const matchesSearch =
-        normalizedTerm.length === 0
-          ? true
-          : request.requesterName.toLowerCase().includes(normalizedTerm) ||
-            request.clubName.toLowerCase().includes(normalizedTerm) ||
-            request.purpose.toLowerCase().includes(normalizedTerm);
-
       const matchesVenueType = selectedVenueType === "all" ? true : request.venueType === selectedVenueType;
       const matchesRange = matchesDateRange(request.requestedDateIso, selectedDateRange);
 
-      return matchesSearch && matchesVenueType && matchesRange;
+      return matchesVenueType && matchesRange;
     });
-  }, [requests, searchTerm, selectedVenueType, selectedDateRange]);
+  }, [requests, selectedVenueType, selectedDateRange]);
 
   if (!canViewBookings) {
     return (
@@ -342,9 +347,9 @@ export function BookingsContent() {
               <p className="text-xs text-rose-600 max-w-xs mx-auto">
                 {venuesError instanceof Error ? venuesError.message : "An error occurred while fetching available venues."}
               </p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="outline" 
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
                 className="mt-2 h-8 border-rose-200 text-rose-700 hover:bg-rose-100"
               >
                 Retry
@@ -383,9 +388,9 @@ export function BookingsContent() {
               <p className="text-xs text-rose-600 max-w-xs mx-auto">
                 {error instanceof Error ? error.message : "An error occurred while fetching the booking list."}
               </p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="outline" 
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
                 className="mt-2 h-8 border-rose-200 text-rose-700 hover:bg-rose-100"
               >
                 Retry Loading

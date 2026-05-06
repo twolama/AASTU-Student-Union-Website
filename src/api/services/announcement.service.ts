@@ -57,8 +57,8 @@ function clearAnnouncementCaches() {
 
 export const announcementService = {
   // Announcements
-  getAnnouncements: async (page = 1, limit = 20, category?: string, status?: string) => {
-    const cacheKey = JSON.stringify({ page, limit, category: category || "", status: status || "" });
+  getAnnouncements: async (page = 1, limit = 20, category?: string, status?: string, search?: string) => {
+    const cacheKey = JSON.stringify({ page, limit, category: category || "", status: status || "", search: search || "" });
     const cached = getCachedPayload(announcementListCache, cacheKey);
     if (cached) {
       return cached;
@@ -72,6 +72,7 @@ export const announcementService = {
     const params: Record<string, string | number> = { page, limit };
     if (category && category !== "all") params["category__slug"] = category;
     if (status && status !== "all") params["status"] = status;
+    if (search) params["search"] = search;
 
     const request = apiClient
       .get<AnnouncementListResponse>(ANNOUNCEMENT_ENDPOINTS.LIST, { params })

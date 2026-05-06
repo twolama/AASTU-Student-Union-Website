@@ -4,13 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Pin, Clock } from "lucide-react";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
+import type { Announcement } from "@/schemas/announcement.schema";
 import { Badge } from "@/components/ui/Badge";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
-export function RecentAnnouncements({ items }: { items?: any[] }) {
+export function RecentAnnouncements({ items }: { items?: Array<Announcement | Record<string, unknown>> }) {
   const { data: annData, isLoading } = useAnnouncements(1, 3, { initialData: items ? { data: items, total: items.length, page: 1, totalPages: 1 } : undefined });
 
   if (isLoading && !annData) {
@@ -52,8 +53,8 @@ export function RecentAnnouncements({ items }: { items?: any[] }) {
           <div className="flex flex-col items-center justify-center p-10 text-center">
             <p className="text-sm text-gray-400">No recent updates available.</p>
           </div>
-        ) : (
-          announcements.map((item) => (
+          ) : (
+          announcements.map((item: any) => (
             <Link
               key={item.id}
               href={`/announcements/${item.id}`}

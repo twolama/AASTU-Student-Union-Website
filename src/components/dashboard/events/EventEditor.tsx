@@ -18,6 +18,8 @@ import { useBookings } from "@/hooks/useBookings";
 import { useClubs } from "@/hooks/useClubs";
 import { venueService } from "@/api/services/venue.service";
 import { bookingService } from "@/api/services/booking.service";
+import type { Club } from "@/schemas/club.schema";
+import type { BookingListItem } from "@/schemas/booking.schema";
 
 // --- Editable Volunteers & User-Friendly Logistics UI ---
 
@@ -148,7 +150,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
   const createEventMutation = useCreateEvent();
   const updateEventMutation = useUpdateEvent();
   const { data: clubsData } = useClubs(1, 100);
-  const { data: approvedBookings, isLoading: isBookingsLoading } = useBookings(1, 100, "approved", values.organizing_club);
+  const { data: approvedBookings, isLoading: isBookingsLoading } = useBookings(1, 100, { status: "approved", clubId: values.organizing_club });
   const isSubmitting = createEventMutation.status === "pending" || updateEventMutation.status === "pending";
 
   const isCreate = mode === "create";
@@ -531,7 +533,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
               value={values.organizing_club}
               options={[
                 { value: "", label: "Select the organizing club" },
-                ...(clubsData?.data || []).map(c => ({ value: c.id, label: c.name }))
+                ...(clubsData?.data || []).map((c: Club) => ({ value: c.id, label: c.name }))
               ]}
               onValueChange={(value) => {
                 updateField("organizing_club", value);
@@ -649,7 +651,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
               value={values.booking_id || ""}
               options={[
                 { value: "", label: "Choose an approved venue booking..." },
-                ...(approvedBookings?.data || []).map(b => ({
+                ...(approvedBookings?.data || []).map((b: BookingListItem) => ({
                   value: b.id,
                   label: `${b.event_title || 'Untitled Request'} — ${b.venue_name} (${b.date_label})`
                 }))

@@ -38,8 +38,10 @@ export function PublicHeader() {
       setCachedUserExists(Boolean(readCachedCurrentUser()?.data));
     };
 
-    updateCachedUserState();
     window.addEventListener("storage", updateCachedUserState);
+
+    // Also check on mount in case it changed before the listener was active
+    updateCachedUserState();
 
     return () => {
       window.removeEventListener("storage", updateCachedUserState);

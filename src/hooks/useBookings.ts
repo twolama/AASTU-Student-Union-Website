@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { bookingService } from "@/api/services/booking.service";
 
-export const useBookings = (page = 1, limit = 20, status?: string, clubId?: string) => {
+export const useBookings = (page = 1, limit = 20, options?: { status?: string; clubId?: string; search?: string; category?: string; initialData?: any }) => {
   return useQuery({
-    queryKey: ["bookings", { page, limit, status, clubId }],
-    queryFn: () => bookingService.getBookings(page, limit, status, clubId),
+    queryKey: ["bookings", { page, limit, status: options?.status, clubId: options?.clubId, search: options?.search, category: options?.category }],
+    queryFn: () => bookingService.getBookings(page, limit, options?.status, options?.clubId, options?.search),
     placeholderData: keepPreviousData,
+    initialData: options?.initialData,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });

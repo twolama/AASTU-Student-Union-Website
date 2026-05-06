@@ -1,14 +1,29 @@
 "use client";
+import { useEffect, useState } from "react";
 
 import { PublicClubsContent } from "@/components/public/clubs/PublicClubsContent";
 import { useClubs } from "@/hooks/useClubs";
 import { Loader2 } from "lucide-react";
 import type { ClubItem } from "@/types/dashboard";
+import type { Club } from "@/schemas/club.schema";
 
 export function PublicClubsPage() {
-  const { data: clubsData, isLoading, isError } = useClubs(1, 100, undefined, "active");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
 
-  if (isLoading) {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 400);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const { data: clubsData, isLoading, isFetching } = useClubs(1, 100, {
+    category: activeCategory === "All" ? undefined : activeCategory,
+    search: debouncedQuery || undefined,
+    status: "active"
+  });
+
+  if (isLoading && !clubsData) {
     return (
       <div className="flex h-[calc(100vh-80px)] items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-[#c49a22]" />
@@ -17,7 +32,7 @@ export function PublicClubsPage() {
   }
 
   // Map API data to ClubItem format
-  const activeClubs: ClubItem[] = (clubsData?.data ?? []).map((club) => ({
+  const activeClubs: ClubItem[] = (clubsData?.data ?? []).map((club: Club) => ({
     id: club.id,
     name: club.name,
     categoryLabel: club.categoryName || "General",
@@ -34,7 +49,16 @@ export function PublicClubsPage() {
 
   return (
     <section className="mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-      <PublicClubsContent clubs={activeClubs} />
+      <div className={isFetching && clubsData ? "opacity-60 transition-opacity duration-200" : "transition-opacity duration-200"}>
+        <PublicClubsContent
+          clubs={activeClubs}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          searchQuery={query}
+          onSearchChange={setQuery}
+          totalCount={clubsData?.meta.total || 0}
+        />
+      </div>
     </section>
   );
 }
