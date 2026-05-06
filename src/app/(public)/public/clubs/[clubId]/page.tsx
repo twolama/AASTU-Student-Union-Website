@@ -90,6 +90,8 @@ export default function ClubDetailPage() {
       };
     }),
     recentActivities: [],
+    proposalFileUrl: club.proposalFile,
+    showProposal: club.showProposal,
   };
 
   return <PublicClubDetailPage club={mappedClub} />;

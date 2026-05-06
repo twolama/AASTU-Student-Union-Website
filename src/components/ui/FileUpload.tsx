@@ -71,17 +71,24 @@ export function FileUpload({
 
         {resolvedPreviewUrl ? (
           <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="relative h-28 w-full">
-              {isLocalPreview ? (
-                <img src={resolvedPreviewUrl} alt="Selected cover image preview" className="h-full w-full object-cover" />
+            <div className="relative h-28 w-full bg-gray-50 flex items-center justify-center">
+              {accept.includes("pdf") || (fileName?.toLowerCase().endsWith(".pdf")) ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-50 text-red-500 shadow-sm ring-1 ring-red-500/20">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-500/60">PDF Document</span>
+                </div>
+              ) : isLocalPreview ? (
+                <img src={resolvedPreviewUrl} alt="Selected file preview" className="h-full w-full object-cover" />
               ) : (
-                <Image src={resolvedPreviewUrl} alt="Selected cover image preview" fill className="object-cover" />
+                <Image src={resolvedPreviewUrl} alt="Selected file preview" fill className="object-cover" />
               )}
             </div>
             <div className="flex items-center justify-between gap-3 px-3 py-2 text-left">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-gray-800">
-                  {fileName ?? "Current cover image"}
+                  {fileName ?? "Current file"}
                 </p>
                 <p className="text-xs text-gray-500">Replace by uploading a new file.</p>
               </div>
@@ -93,7 +100,7 @@ export function FileUpload({
                     onClear();
                   }}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                  aria-label="Remove cover image"
+                  aria-label="Remove file"
                 >
                   <X size={14} />
                 </button>
@@ -106,7 +113,9 @@ export function FileUpload({
               <UploadCloud size={20} />
             </span>
             <p className="mt-3 text-sm font-medium text-gray-700">{helperText}</p>
-            <p className="mt-1 text-xs text-gray-400">PNG, JPG up to 5MB</p>
+            <p className="mt-1 text-xs text-gray-400">
+              {accept.includes("pdf") ? "PDF files" : "PNG, JPG"} up to 5MB
+            </p>
           </>
         )}
       </label>

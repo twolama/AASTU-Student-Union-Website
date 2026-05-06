@@ -300,6 +300,8 @@ export interface ClubItem {
   departmentName?: string;
   description?: string;
   memberCount?: number;
+  proposalFile?: string | null;
+  showProposal?: boolean;
 }
 
 export interface ClubDetailStat {
@@ -358,6 +360,8 @@ export interface ClubDetailItem {
   contacts: ClubMemberProfile[];
   upcomingEvents: ClubUpcomingEventItem[];
   recentActivities: ClubActivityItem[];
+  proposalFileUrl?: string | null;
+  showProposal?: boolean;
 }
 
 // ─── Bookings ───────────────────────────────────────────────────────────────

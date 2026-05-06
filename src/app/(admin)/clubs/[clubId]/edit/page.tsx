@@ -73,6 +73,9 @@ export default function EditClubPage({ params }: EditClubPageProps) {
           president: club.president || "",
           advisor: club.advisor || "",
           department: club.department || "",
+          proposalFileUrl: club.proposalFile || "",
+          proposalFileName: club.proposalFile ? club.proposalFile.split("/").pop() : undefined,
+          showProposal: club.showProposal || false,
         }}
       />
     </PermissionGate>

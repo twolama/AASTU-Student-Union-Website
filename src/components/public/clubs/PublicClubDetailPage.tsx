@@ -246,6 +246,35 @@ export function PublicClubDetailPage({ club }: PublicClubDetailPageProps) {
             </div>
           </article>
 
+          {club.showProposal && club.proposalFileUrl && (
+            <article className="rounded-[16px] bg-white p-5 shadow-sm sm:p-6">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Official Documents
+              </h3>
+              <div className="mt-4">
+                <a
+                  href={club.proposalFileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-center justify-between gap-4 rounded-[12px] border border-slate-200 bg-[#fafbff] p-4 transition-colors hover:border-[#c49a22]/30 hover:bg-[#fdfaf0]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-500 shadow-sm ring-1 ring-red-500/20 group-hover:bg-red-100">
+                      <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#0f1d49]">Club Proposal Document</p>
+                      <p className="text-xs text-slate-500">Official registry and objectives (PDF)</p>
+                    </div>
+                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ebeff7] text-[#1d2d59] transition-colors group-hover:bg-[#c49a22] group-hover:text-white">
+                    <ArrowUpRight size={14} />
+                  </div>
+                </a>
+              </div>
+            </article>
+          )}
+
           {canJoinClub ? (
             <article className="rounded-[16px] bg-[#041347] p-5 text-white shadow-sm sm:p-6">
               <h3 className="text-2xl font-black">Join Us</h3>

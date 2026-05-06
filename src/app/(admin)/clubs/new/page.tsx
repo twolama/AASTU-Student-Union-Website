@@ -52,6 +52,9 @@ export default function CreateClubPage() {
           president: "",
           advisor: "",
           department: "",
+          proposalFileUrl: "",
+          proposalFileName: undefined,
+          showProposal: false,
         }}
       />
     </PermissionGate>

@@ -38,6 +38,8 @@ export const ClubSchema = z.object({
   advisorName: z.string().optional().nullable(),
   advisorDetails: ClubUserDetailSchema.optional().nullable(),
   links: z.record(z.string(), z.any()).optional().default({}),
+  proposalFile: z.string().nullable().optional(),
+  showProposal: z.boolean().optional().default(false),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 }).passthrough();

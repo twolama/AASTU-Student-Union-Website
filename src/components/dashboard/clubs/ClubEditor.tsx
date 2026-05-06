@@ -16,11 +16,13 @@ import {
   Loader2,
   ShieldCheck,
   Users,
+  FileText,
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { FileUpload } from "@/components/ui/FileUpload";
+import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import type { ClubStatus } from "@/types/dashboard";
@@ -67,6 +69,9 @@ export interface ClubEditorValues {
   status: ClubStatus;
   president: string; // ID
   advisor: string; // ID
+  proposalFileUrl?: string;
+  proposalFileName?: string;
+  showProposal: boolean;
 }
 
 interface ClubEditorProps {
@@ -90,6 +95,8 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
   const [stagedLogo, setStagedLogo] = useState<File | null>(null);
   const [isBannerApproved, setIsBannerApproved] = useState(false);
   const [isLogoApproved, setIsLogoApproved] = useState(false);
+  const [proposalFile, setProposalFile] = useState<File | null>(null);
+  const [isProposalApproved, setIsProposalApproved] = useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const isInternalUpdate = useRef(false);
 
@@ -168,6 +175,8 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
 
     if (bannerFile) formData.append("cover_image", bannerFile);
     if (logoFile) formData.append("logo", logoFile);
+    if (proposalFile) formData.append("proposal_file", proposalFile);
+    formData.append("show_proposal", String(values.showProposal));
 
     // Links as JSON string
     formData.append("links", JSON.stringify({
@@ -749,9 +758,80 @@ export function ClubEditor({ mode, initialValues, clubId }: ClubEditorProps) {
       <section className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#fdf8ec] text-[#c49a22]">
+            <FileText size={14} />
+          </span>
+          <h2 className="text-xl font-bold text-[#1f2a44] sm:text-2xl">4. Club Proposal</h2>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-gray-700">Public Visibility</p>
+              <p className="text-xs text-gray-500">Allow students to view and download your club's official proposal PDF.</p>
+            </div>
+            <Switch
+              checked={values.showProposal}
+              onCheckedChange={(checked) => updateField("showProposal", checked)}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-700">Proposal Document (PDF)</label>
+            <FileUpload
+              label="PDF Document"
+              helperText="Upload official club proposal PDF"
+              file={proposalFile}
+              previewUrl={values.proposalFileUrl}
+              fileName={proposalFile?.name || values.proposalFileName}
+              accept="application/pdf"
+              onChange={(file) => {
+                if (file && file.size > 10 * 1024 * 1024) {
+                  toast.error("File is too large (max 10MB)");
+                  return;
+                }
+                setProposalFile(file);
+                setIsProposalApproved(false);
+              }}
+              onClear={() => {
+                setProposalFile(null);
+                setIsProposalApproved(false);
+                updateField("proposalFileUrl", "");
+                updateField("proposalFileName", undefined);
+              }}
+              className="[&>label]:min-h-[100px] [&>label]:rounded-[10px]"
+            />
+            {proposalFile && !isProposalApproved && (
+              <div className="mt-2 flex items-center justify-between rounded-lg border border-[#c49a22]/20 bg-[#fdfaf0] p-3">
+                <p className="text-xs font-medium text-[#8c6c14]">Confirm this PDF as the club proposal?</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="goldSolid"
+                  onClick={() => {
+                    setIsProposalApproved(true);
+                    toast.success("Proposal document approved");
+                  }}
+                  className="h-8 px-4 text-[11px]"
+                >
+                  Approve PDF
+                </Button>
+              </div>
+            )}
+            {isProposalApproved && proposalFile && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#10b981]">
+                <Check size={12} /> PDF Document Approved
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#fdf8ec] text-[#c49a22]">
             <ShieldCheck size={14} />
           </span>
-          <h2 className="text-xl font-bold text-[#1f2a44] sm:text-2xl">4. Status Management</h2>
+          <h2 className="text-xl font-bold text-[#1f2a44] sm:text-2xl">5. Status Management</h2>
           <span className="inline-flex h-5 items-center rounded-full bg-[#1f2a44] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white">
             Admin Only
           </span>
