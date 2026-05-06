@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, MapPin, MoreVertical, Pencil, ShieldAlert, T
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { cn } from "@/lib/utils";
+import { getEventStatusLabel, getEventStatusVariant, resolveEventStatus } from "@/lib/events/status";
 import { useArchiveEvent, useDeleteEvent } from "@/hooks/useEvents";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { EventManagementItem } from "@/types/dashboard";
@@ -17,18 +18,6 @@ interface EventsTableProps {
   onPageChange: (page: number) => void;
   totalCount: number;
 }
-
-const statusVariantMap = {
-  "live-now": "success",
-  upcoming: "info",
-  archived: "default",
-} as const;
-
-const statusLabelMap = {
-  "live-now": "Live Now",
-  upcoming: "Upcoming",
-  archived: "Archived",
-} as const;
 
 export function EventsTable({
   items,
@@ -71,7 +60,10 @@ export function EventsTable({
     <section className="space-y-6">
       {/* Card Grid Layout */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => (
+        {items.map((item) => {
+          const status = resolveEventStatus(item);
+
+          return (
           <div
             key={item.id}
             className="relative rounded-[12px] border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-gray-300"
@@ -175,17 +167,18 @@ export function EventsTable({
             {/* Status Badge */}
             <div className="border-t border-gray-100 pt-3 mt-3">
               <Badge
-                variant={statusVariantMap[item.status]}
+                variant={getEventStatusVariant(status)}
                 className={cn(
                   "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] w-full text-center",
-                  item.status === "live-now" && "bg-emerald-100 text-emerald-700"
+                  status === "live-now" && "bg-emerald-100 text-emerald-700"
                 )}
               >
-                {statusLabelMap[item.status]}
+                {getEventStatusLabel(status)}
               </Badge>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {showActions && openMenuId && (

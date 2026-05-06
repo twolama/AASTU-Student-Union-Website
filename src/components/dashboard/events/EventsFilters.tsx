@@ -41,9 +41,9 @@ const defaultVenueOptions = [
 
 const statusOptions = [
   { value: "all", label: "All Status" },
-  { value: "live-now", label: "Live Now" },
+  { value: "live-now", label: "Happening Now" },
   { value: "upcoming", label: "Upcoming" },
-  { value: "archived", label: "Archived" },
+  { value: "archived", label: "Past Event" },
 ];
 
 export function EventsFilters({

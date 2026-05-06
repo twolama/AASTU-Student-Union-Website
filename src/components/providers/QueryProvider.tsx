@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { ApiError } from "@/api/client";
 import { readCachedCurrentUser } from "@/lib/auth-cache";
 
 interface QueryProviderProps {
@@ -15,7 +16,13 @@ export function QueryProvider({ children }: QueryProviderProps) {
         defaultOptions: {
           queries: {
             refetchOnWindowFocus: false,
-            retry: 1,
+            retry: (failureCount, error) => {
+              if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+                return false;
+              }
+
+              return failureCount < 1;
+            },
             staleTime: 5 * 60 * 1000,
           },
           mutations: {

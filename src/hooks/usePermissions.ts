@@ -16,13 +16,18 @@ type PermissionResult = {
 
 type UsePermissionsOptions = {
   loadCurrentUser?: boolean;
+  hydrateFromCache?: boolean;
 };
 
 export function usePermissions(userId?: string, options?: UsePermissionsOptions): PermissionResult {
   const loadCurrentUser = options?.loadCurrentUser ?? true;
+  const hydrateFromCache = options?.hydrateFromCache ?? true;
   const shouldFetchCurrentUser = loadCurrentUser || Boolean(userId);
 
-  const currentUserQuery = useCurrentUser({ enabled: shouldFetchCurrentUser });
+  const currentUserQuery = useCurrentUser({
+    enabled: shouldFetchCurrentUser,
+    hydrateFromCache,
+  });
 
   const targetUserId = userId ?? currentUserQuery.data?.id;
 

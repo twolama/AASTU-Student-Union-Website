@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
 import { DashboardFooter } from "@/components/layout/DashboardFooter";
+import { getEventStatusLabel, getEventStatusVariant, resolveEventStatus } from "@/lib/events/status";
 import { useArchiveEvent, useDeleteEvent } from "@/hooks/useEvents";
 import { usePermissions } from "@/hooks/usePermissions";
 import type { EventDetailItem } from "@/types/dashboard";
@@ -25,18 +26,6 @@ import type { EventDetailItem } from "@/types/dashboard";
 interface EventDetailViewProps {
   item: EventDetailItem;
 }
-
-const statusLabelMap = {
-  "live-now": "Live Now",
-  upcoming: "Upcoming",
-  archived: "Archived",
-} as const;
-
-const statusVariantMap = {
-  "live-now": "success",
-  upcoming: "info",
-  archived: "default",
-} as const;
 
 function getVenueMapEmbedUrl(item: EventDetailItem) {
   const coordinates = (item as EventDetailItem & { venueMapCoordinates?: { lat?: number | null; lng?: number | null } | null }).venueMapCoordinates;
@@ -58,7 +47,7 @@ function getVenueMapEmbedUrl(item: EventDetailItem) {
 
 export function EventDetailView({ item }: EventDetailViewProps) {
   const router = useRouter();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions(undefined, { hydrateFromCache: false });
   const [pendingArchive, setPendingArchive] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const archiveEvent = useArchiveEvent();
@@ -68,6 +57,7 @@ export function EventDetailView({ item }: EventDetailViewProps) {
   const canDeleteEvent = hasPermission("events.delete");
   const venueGallery = item.venueGallery?.length ? item.venueGallery : [item.venueImageUrl || item.coverImageUrl].filter(Boolean);
   const mapEmbedUrl = getVenueMapEmbedUrl(item);
+  const status = resolveEventStatus(item);
 
   async function confirmArchive() {
     await archiveEvent.mutateAsync(item.id);
@@ -107,10 +97,10 @@ export function EventDetailView({ item }: EventDetailViewProps) {
                   </Badge>
                 ) : null}
                 <Badge
-                  variant={statusVariantMap[item.status]}
+                  variant={getEventStatusVariant(status)}
                   className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]"
                 >
-                  {statusLabelMap[item.status]}
+                  {getEventStatusLabel(status)}
                 </Badge>
               </div>
 

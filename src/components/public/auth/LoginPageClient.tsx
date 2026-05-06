@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -19,14 +20,17 @@ export function LoginPageClient() {
   const loginMutation = useAuthLogin();
   const currentUserQuery = useCurrentUser();
   const queryClient = useQueryClient();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+
     if (currentUserQuery.data) {
       router.replace("/dashboard");
     }
   }, [currentUserQuery.data, router]);
 
-  if (currentUserQuery.isLoading) {
+  if (!isMounted || currentUserQuery.isLoading) {
     return (
       <div className="flex items-center justify-center px-6 py-12" aria-busy="true">
         <Loader2 className="h-8 w-8 animate-spin text-[#c49a22]" />

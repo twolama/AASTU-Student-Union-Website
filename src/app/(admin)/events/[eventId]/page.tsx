@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EventDetailView } from "@/components/dashboard/events/EventDetailView";
 import type { EventDetailItem } from "@/types/dashboard";
+import { resolveEventStatus } from "@/lib/events/status";
+import { formatEventDateLabel, formatEventDateParts, formatEventTimeRange } from "@/lib/events/datetime";
 import { eventDetailItems, eventManagementItems } from "@/data/dummy";
 
 interface EventDetailPageProps {
@@ -90,32 +92,6 @@ type ApiEventDetail = {
   }>;
 };
 
-function formatDateLabel(value?: string) {
-  if (!value) {
-    return "TBD";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatTimeRange(start?: string, end?: string) {
-  if (!start || !end) {
-    return "TBD";
-  }
-
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-
-  return `${startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${endDate.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`;
-}
-
 function formatVenueLocationLabel(event: ApiEventDetail) {
   const venue = event.venue_details;
   const locationParts = [
@@ -138,15 +114,11 @@ function formatVenueGallery(event: ApiEventDetail) {
 }
 
 function formatEventDetail(event: ApiEventDetail): EventDetailItem {
-  const startDate = event.startDateTime ? new Date(event.startDateTime) : null;
-  const dateDay = event.dateDay || (startDate ? String(startDate.getDate()).padStart(2, "0") : "--");
-  const dateMonth = event.dateMonth || (startDate ? startDate.toLocaleString("en-US", { month: "short" }).toUpperCase() : "TBD");
+  const dateParts = formatEventDateParts(event.startDateTime);
   const venueTitle = event.venue || "Campus Venue";
   const venueDetails = event.venue_details;
   const venueGallery = formatVenueGallery(event);
-  const status = ["live-now", "upcoming", "archived"].includes(event.status || "")
-    ? (event.status as EventDetailItem["status"])
-    : "upcoming";
+  const status = resolveEventStatus(event);
 
   return {
     id: event.id,
@@ -157,12 +129,12 @@ function formatEventDetail(event: ApiEventDetail): EventDetailItem {
     coverImageUrl:
       event.coverImage ||
       "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1600&auto=format&fit=crop",
-    dateDay,
-    dateMonth,
+    dateDay: dateParts.day !== "--" ? dateParts.day : (event.dateDay || "--"),
+    dateMonth: dateParts.month !== "TBD" ? dateParts.month : (event.dateMonth || "TBD"),
     venueTitle,
     venueSubtitle: formatVenueLocationLabel(event),
-    timeRange: formatTimeRange(event.startDateTime, event.endDateTime),
-    startDateLabel: formatDateLabel(event.startDateTime),
+    timeRange: formatEventTimeRange(event.startDateTime, event.endDateTime),
+    startDateLabel: formatEventDateLabel(event.startDateTime),
     locationName: formatVenueLocationLabel(event),
     locationWing: venueDetails?.nearby_landmarks || event.physicalLocationDetails || "AASTU North Campus",
     description: event.description || "",

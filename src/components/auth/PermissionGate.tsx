@@ -11,7 +11,7 @@ interface PermissionGateProps {
 }
 
 export function PermissionGate({ children, anyOf, allOf, fallback = null }: PermissionGateProps) {
-  const { hasPermission, hasAnyPermission, isLoading } = usePermissions();
+  const { hasPermission, hasAnyPermission, isLoading } = usePermissions(undefined, { hydrateFromCache: false });
 
   const canRender =
     isLoading ||

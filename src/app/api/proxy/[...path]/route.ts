@@ -325,6 +325,26 @@ function handleLogoutResponse() {
   return response;
 }
 
+function clearAuthCookies(response: NextResponse) {
+  const isProd = process.env.NODE_ENV === "production";
+  const clearCookie = (name: string) =>
+    response.cookies.set({
+      name,
+      value: "",
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+
+  clearCookie("access_token");
+  clearCookie("refresh_token");
+  clearCookie("must_change_password");
+
+  return response;
+}
+
 async function refreshAccessToken(baseUrl: string, request: NextRequest) {
   const refreshToken = request.cookies.get("refresh_token")?.value;
   if (!refreshToken) {
@@ -503,6 +523,25 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
           return response;
         }
       }
+
+      const response = NextResponse.json(
+        {
+          success: false,
+          message: "Your session has expired. Please sign in again.",
+          data: null,
+          statusCode: 401,
+          error: { code: "AUTH_SESSION_EXPIRED" },
+        },
+        { status: 401 }
+      );
+
+      try {
+        response.headers.set("x-proxy-target", targetUrl);
+      } catch {
+        /* ignore */
+      }
+
+      return clearAuthCookies(response);
     }
 
     if (!upstreamResponse.ok) {

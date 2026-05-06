@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { EventEditor } from "@/components/dashboard/events/EventEditor";
 import type { EventEditorValues } from "@/components/dashboard/events/EventEditor";
+import { resolveEventStatus } from "@/lib/events/status";
 import { eventManagementItems } from "@/data/dummy";
 
 interface EditEventPageProps {
@@ -53,10 +54,17 @@ type Volunteer = {
 };
 
 function buildInitialValues(event: ApiEventDetail): EventEditorValues {
+  const normalizedStatus = resolveEventStatus({
+    status: event.status,
+    start_date_time: event.start_date_time || event.startDateTime || null,
+    end_date_time: event.end_date_time || event.endDateTime || null,
+    is_archived: Boolean(event.is_archived ?? event.isArchived),
+  });
+
   return {
     title: event.title || "",
     short_description: event.short_description || event.shortDescription || "",
-    status: event.status || "upcoming",
+    status: normalizedStatus,
     is_mega_event: Boolean(event.is_mega_event ?? event.isMegaEvent),
     is_archived: Boolean(event.is_archived ?? event.isArchived),
     max_capacity: event.max_capacity ?? event.maxCapacity ?? 0,

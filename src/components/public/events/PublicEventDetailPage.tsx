@@ -12,8 +12,12 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 import { useEvent, useEvents } from "@/hooks/useEvents";
+import type { EventListItem } from "@/schemas/event.schema";
 import dayjs from "dayjs";
+import { getEventStatusLabel, getEventStatusVariant, resolveEventStatus } from "@/lib/events/status";
+import { formatEventDateLabel, formatEventDateTime, formatEventTimeRange } from "@/lib/events/datetime";
 
 type PublicVenueDetails = {
   name?: string;
@@ -172,13 +176,13 @@ function getBookingTimeLabel(bookingDetails?: { time_label?: string | null; sele
 }
 
 export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
-  const { data: event, isLoading, isError, error } = useEvent(eventId);
+  const { data: event, isLoading, isError } = useEvent(eventId);
   const { data: relatedResponse } = useEvents(1, 4);
   const venue = event?.venue_details as PublicVenueDetails | undefined;
   const bookingDetails = (event as typeof event & { booking_details?: { time_label?: string | null; time_range?: string | null; selected_slots?: string[] | null; date_label?: string | null } | null })?.booking_details;
 
   const relatedEvents = relatedResponse?.data
-    ? relatedResponse.data.filter((e: any) => e.id !== eventId).slice(0, 3)
+    ? relatedResponse.data.filter((relatedEvent: EventListItem) => relatedEvent.id !== eventId).slice(0, 3)
     : [];
 
   if (isLoading) {
@@ -209,11 +213,9 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
     );
   }
 
-  const dateLabel = event.start_date_time ? dayjs(event.start_date_time).format("MMMM DD, YYYY") : "Date TBD";
+  const dateLabel = formatEventDateLabel(event.start_date_time);
   const bookingTimeLabel = getBookingTimeLabel(bookingDetails);
-  const timeLabel = bookingTimeLabel || (event.start_date_time && event.end_date_time && !dayjs(event.start_date_time).isSame(dayjs(event.end_date_time))
-    ? `${dayjs(event.start_date_time).format("hh:mm A")} - ${dayjs(event.end_date_time).format("hh:mm A")}`
-    : "Time TBD");
+  const timeLabel = bookingTimeLabel || formatEventTimeRange(event.start_date_time, event.end_date_time);
 
   // Find coordinator from volunteers if available
   const coordinator = event.volunteers?.find(v => v.role?.toLowerCase() === "host" || v.role?.toLowerCase() === "coordinator")?.full_name 
@@ -222,6 +224,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
   const venueGallery = getVenueGallery(venue);
   const venueMapEmbedUrl = getVenueMapEmbedUrl(venue, venueLocationLabel);
   const venueHeroImage = resolveMediaUrl(venue?.hero_image || venue?.thumbnail || venue?.image_url || event.cover_image) || "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200";
+  const status = resolveEventStatus(event);
 
   return (
     <main className="min-h-screen overflow-x-clip bg-[#f3f3f3] text-[#14213d]">
@@ -251,6 +254,12 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
                     <span className="rounded-full bg-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white">
                       {event.organizing_club.category_name || "General"}
                     </span>
+                    <Badge
+                      variant={getEventStatusVariant(status)}
+                      className="rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em]"
+                    >
+                      {getEventStatusLabel(status)}
+                    </Badge>
                   </div>
 
                   <h1 className="mt-3 text-3xl font-black leading-[1.05] text-white sm:text-4xl lg:text-5xl">
@@ -358,7 +367,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {venueGallery.map((image, index) => (
-                  <div key={`${event.id}-venue-gallery-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-[12px] bg-slate-100">
+                  <div key={`${event.id}-venue-gallery-${index}`} className="relative aspect-4/3 overflow-hidden rounded-[12px] bg-slate-100">
                     <Image src={image} alt={`${event.title} venue gallery ${index + 1}`} fill sizes="(max-width: 1280px) 50vw, 33vw" className="object-cover transition-transform duration-300 hover:scale-105" />
                   </div>
                 ))}
@@ -374,7 +383,7 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
               <article>
                 <h2 className="text-4xl font-black leading-tight text-[#0f1d49]">Event Logistics</h2>
                 <div className="mt-4 space-y-3">
-                  {event.logistics.map((item: any, idx: number) => (
+                  {event.logistics.map((item: { venue?: string; equipment?: string | string[] | null; selectedAmenities?: string[] | null }, idx: number) => (
                     <div
                       key={idx}
                       className="rounded-[12px] bg-white px-4 py-4 shadow-sm sm:flex sm:items-start sm:gap-6"
@@ -500,30 +509,30 @@ export function PublicEventDetailPage({ eventId }: PublicEventDetailPageProps) {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {relatedEvents.map((e: any) => (
-              <article key={e.id} className="overflow-hidden rounded-[14px] bg-white shadow-sm">
+            {relatedEvents.map((relatedEvent: EventListItem) => (
+              <article key={relatedEvent.id} className="overflow-hidden rounded-[14px] bg-white shadow-sm">
                 <div className="relative h-40">
                   <Image
-                    src={e.cover_image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800"}
-                    alt={e.title}
+                    src={relatedEvent.cover_image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800"}
+                    alt={relatedEvent.title}
                     fill
                     sizes="(max-width: 1280px) 50vw, 33vw"
                     className="object-cover"
                   />
                   <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold text-[#0f1d49]">
-                    {e.organizing_club.category_name || "General"}
+                    {relatedEvent.organizing_club.category_name || "General"}
                   </span>
                 </div>
 
                 <div className="p-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {e.date_month || (e.start_date_time ? dayjs(e.start_date_time).format("MMM") : "???")} {e.date_day || (e.start_date_time ? dayjs(e.start_date_time).format("DD") : "??")}{e.start_date_time ? `, ${dayjs(e.start_date_time).format("YYYY")}` : ''}
+                    {formatEventDateLabel(relatedEvent.start_date_time)}
                   </p>
-                  <h3 className="mt-2 text-2xl font-black leading-tight text-[#0f1d49] line-clamp-1">{e.title}</h3>
-                  <p className="mt-2 text-sm text-slate-500 line-clamp-1">{e.venue || "TBA"}</p>
+                  <h3 className="mt-2 text-2xl font-black leading-tight text-[#0f1d49] line-clamp-1">{relatedEvent.title}</h3>
+                  <p className="mt-2 text-sm text-slate-500 line-clamp-1">{relatedEvent.venue || "TBA"}</p>
 
                   <Link
-                    href={`/public/events/${e.id}`}
+                    href={`/public/events/${relatedEvent.id}`}
                     className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0f1d49] transition-colors hover:text-[#b6861f]"
                   >
                     Read More

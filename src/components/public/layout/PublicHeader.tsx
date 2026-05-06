@@ -12,7 +12,7 @@ import { clubService } from "@/api/services/club.service";
 import { eventService } from "@/api/services/event.service";
 import { announcementService } from "@/api/services/announcement.service";
 import { HeaderAccountMenu } from "@/components/layout/HeaderAccountMenu";
-import { readCachedCurrentUser } from "@/lib/auth-cache";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface NavItem {
   label: string;
@@ -31,22 +31,12 @@ export function PublicHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [cachedUserExists, setCachedUserExists] = useState(false);
-
-  useEffect(() => {
-    const updateCachedUserState = () => {
-      setCachedUserExists(Boolean(readCachedCurrentUser()?.data));
-    };
-
-    window.addEventListener("storage", updateCachedUserState);
-
-    // Also check on mount in case it changed before the listener was active
-    updateCachedUserState();
-
-    return () => {
-      window.removeEventListener("storage", updateCachedUserState);
-    };
-  }, []);
+  const currentUserQuery = useCurrentUser({
+    hydrateFromCache: false,
+    staleTimeMs: 0,
+    refetchOnMount: "always",
+  });
+  const isAuthenticated = currentUserQuery.isFetchedAfterMount && Boolean(currentUserQuery.data) && !currentUserQuery.isError;
 
   const prefetchTargets = useMemo(() => [...navItems.map((item) => item.href), "/login"], []);
 
@@ -122,7 +112,7 @@ export function PublicHeader() {
 
           <div className="flex items-center gap-2">
             <div className="flex items-center min-w-[80px] justify-end">
-              {cachedUserExists && !pathname.startsWith("/login") && !pathname.startsWith("/sign-up") ? (
+              {isAuthenticated && !pathname.startsWith("/login") && !pathname.startsWith("/sign-up") ? (
                 <div className="flex items-center">
                   <HeaderAccountMenu />
                 </div>

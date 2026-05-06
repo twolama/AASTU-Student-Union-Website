@@ -7,9 +7,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useEvents } from "@/hooks/useEvents";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Badge } from "@/components/ui/Badge";
 import type { EventListItem } from "@/schemas/event.schema";
 import dayjs from "dayjs";
 import { cn } from "@/lib/utils";
+import { getEventStatusLabel, getEventStatusVariant, resolveEventStatus } from "@/lib/events/status";
+import { formatEventDateParts, formatEventTimeRange, formatEventDateTime } from "@/lib/events/datetime";
 
 const PAGE_SIZE = 5;
 
@@ -48,12 +51,10 @@ function slugify(input?: string) {
 
 function EventCard({ event }: { event: EventListItem }) {
   const router = useRouter();
-  const dateDay = event.date_day || (event.start_date_time ? dayjs(event.start_date_time).format("DD") : "??");
-  const dateMonth = event.date_month || (event.start_date_time ? dayjs(event.start_date_time).format("MMM") : "???");
+  const { day: dateDay, month: dateMonth } = formatEventDateParts(event.start_date_time);
+  const status = resolveEventStatus(event);
 
-  const timeRange = event.start_date_time && event.end_date_time
-    ? `${dayjs(event.start_date_time).format("hh:mm A")} - ${dayjs(event.end_date_time).format("hh:mm A")}`
-    : "Time TBD";
+  const timeRange = formatEventTimeRange(event.start_date_time, event.end_date_time);
 
   return (
     <article
@@ -78,17 +79,26 @@ function EventCard({ event }: { event: EventListItem }) {
             {dateMonth}
           </span>
         </div>
+
+        <div className="absolute right-4 top-4">
+          <Badge
+            variant={getEventStatusVariant(status)}
+            className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] shadow-sm"
+          >
+            {getEventStatusLabel(status)}
+          </Badge>
+        </div>
       </div>
 
       <div className="p-5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b6861f]">
           {getCategoryName(event)}
         </p>
-        <h3 className="mt-3 text-[1.4rem] font-black leading-[1.2] text-[#0f1d49] sm:text-[1.55rem] line-clamp-2 min-h-[3rem]">
+        <h3 className="mt-3 text-[1.4rem] font-black leading-[1.2] text-[#0f1d49] sm:text-[1.55rem] line-clamp-2 min-h-12">
           {event.title}
         </h3>
 
-        <p className="mt-2 text-sm leading-6 text-slate-500 line-clamp-2 min-h-[3rem]">
+        <p className="mt-2 text-sm leading-6 text-slate-500 line-clamp-2 min-h-12">
           {excerpt(event.short_description || event.title, 140)}
         </p>
 
@@ -254,8 +264,13 @@ export function PublicEventsContent({
                   <span className="rounded-full bg-[#f1c44d] px-2.5 py-1 text-[10px] font-bold text-[#08143c]">
                     MEGA EVENT
                   </span>
-                  {megaEvent.start_date_time ? dayjs(megaEvent.start_date_time).format("MMMM DD, YYYY | hh:mm A") : ""}
+                  {megaEvent.start_date_time ? formatEventDateTime(megaEvent.start_date_time) : ""}
                 </p>
+                {resolveEventStatus(megaEvent) !== "upcoming" && (
+                  <Badge variant={getEventStatusVariant(resolveEventStatus(megaEvent))} className="w-fit">
+                    {getEventStatusLabel(resolveEventStatus(megaEvent))}
+                  </Badge>
+                )}
 
                 <h2 className="mt-4 text-[2.2rem] font-black leading-[0.98] sm:text-[3rem] lg:text-[4rem]">
                   {megaEvent.title}

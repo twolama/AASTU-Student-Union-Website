@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Trash2, PlusCircle, ChevronRight, Info, CheckCircle2, Link as LinkIcon, Clock3, Settings2, UserPlus2, Loader2 } from "lucide-react";
+import { Plus, Trash2, PlusCircle, ChevronRight, Info, CheckCircle2, Clock3, Settings2, UserPlus2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
@@ -13,6 +13,8 @@ import { FileUpload } from "@/components/ui/FileUpload";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { getEventStatusLabel, resolveEventStatus } from "@/lib/events/status";
+import { eventDateTimeToUtc, formatEventDateTime, utcToEventDateTime } from "@/lib/events/datetime";
 import { useCreateEvent, useUpdateEvent } from "@/hooks/useEvents";
 import { useBookings } from "@/hooks/useBookings";
 import { useClubs } from "@/hooks/useClubs";
@@ -26,21 +28,7 @@ import type { BookingListItem } from "@/schemas/booking.schema";
 // (Some helper fields were removed because they were unused.)
 
 function formatDisplayDate(isoString: string) {
-  if (!isoString) return "Not set";
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch {
-    return isoString;
-  }
+  return formatEventDateTime(isoString);
 }
 
 // Safe typed shape for unknown errors returned from API calls
@@ -172,6 +160,7 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
   const completionPercent = Math.round(
     (completionItems.filter((item) => item.done).length / completionItems.length) * 100
   );
+  const previewStatus = resolveEventStatus(values);
 
 
   function updateField<K extends keyof EventEditorValues>(key: K, value: EventEditorValues[K]) {
@@ -550,14 +539,30 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
           </div>
 
           <div className="rounded-[10px] border border-gray-200 bg-gray-50 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold text-gray-700">Event Status</p>
-                <p className="mt-0.5 text-xs text-gray-500">Controlled by the system. New events start as upcoming.</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">Effective Display Status</p>
+                  <p className="mt-0.5 text-[10px] text-gray-500">How the status currently appears to students based on schedule and overrides.</p>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-[#fdf8ec] px-3 py-1 text-xs font-semibold text-[#c49a22]">
+                  {getEventStatusLabel(previewStatus)}
+                </span>
               </div>
-              <span className="inline-flex items-center rounded-full bg-[#fdf8ec] px-3 py-1 text-xs font-semibold text-[#c49a22]">
-                {values.status === "live-now" ? "Live Now" : values.status === "archived" ? "Archived" : "Upcoming"}
-              </span>
+              
+              <div className="pt-2 border-t border-gray-200">
+                <label className="mb-1.5 block text-xs font-semibold text-gray-700">Manual Status Override</label>
+                <DropdownSelect
+                  label=""
+                  value={values.status}
+                  options={[
+                    { value: "upcoming", label: "Automatic (Follow Schedule)" },
+                    { value: "live-now", label: "Force Live Now" },
+                  ]}
+                  onValueChange={(value) => updateField("status", value)}
+                  className="[&>div>button]:h-9 [&>div>button]:rounded-[6px] bg-white"
+                />
+              </div>
             </div>
           </div>
 
@@ -689,12 +694,50 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
                   <p className="text-xs text-gray-500">{values.physical_location_details || 'No specific location details'}</p>
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Schedule</p>
-                  <p className="text-sm font-semibold text-[#1f2a44]">
-                    {formatDisplayDate(values.start_date_time)}
-                  </p>
-                  <p className="text-xs text-gray-500">to {formatDisplayDate(values.end_date_time)}</p>
+                <div className="space-y-2 sm:col-span-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Schedule (Editable)</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-600">Start Date & Time</label>
+                      <Input
+                        type="datetime-local"
+                        value={utcToEventDateTime(values.start_date_time)}
+                        onChange={(e) => updateField("start_date_time", e.target.value ? eventDateTimeToUtc(e.target.value) : "")}
+                        className={controlClassName}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-600">End Date & Time</label>
+                      <Input
+                        type="datetime-local"
+                        value={utcToEventDateTime(values.end_date_time)}
+                        onChange={(e) => updateField("end_date_time", e.target.value ? eventDateTimeToUtc(e.target.value) : "")}
+                        className={controlClassName}
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 bg-white p-3 mt-1">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Clock3 size={12} className="text-[#c49a22]" />
+                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Localized Time Preview</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-gray-400">Start</span>
+                          <span className="text-xs font-semibold text-[#1f2a44]">{formatDisplayDate(values.start_date_time) || "Not set"}</span>
+                        </div>
+                        <ChevronRight size={14} className="text-gray-300 mt-2" />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-gray-400">End</span>
+                          <span className="text-xs font-semibold text-[#1f2a44]">{formatDisplayDate(values.end_date_time) || "Not set"}</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1 italic">
+                        Note: Times are automatically converted to Africa/Addis_Ababa (+03:00) for all users.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -744,13 +787,52 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
               )}
             </div>
           ) : (
-            <div className="rounded-[12px] border-2 border-dashed border-gray-200 p-10 text-center bg-gray-50/50">
-               <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-4">
-                 <LinkIcon size={24} />
+            <div className="rounded-[12px] border border-gray-200 bg-white p-5 space-y-4">
+               <div>
+                 <p className="text-sm font-semibold text-gray-700 mb-3">Manual Schedule (Optional)</p>
+                 <p className="text-xs text-gray-500 mb-3">You can set event dates manually, or select a booking above to auto-fill</p>
+                 <div className="grid gap-4 sm:grid-cols-2">
+                   <div>
+                     <label className="text-[10px] font-semibold text-gray-600 mb-1.5 block">Start Date & Time</label>
+                     <Input
+                       type="datetime-local"
+                       value={utcToEventDateTime(values.start_date_time)}
+                       onChange={(e) => updateField("start_date_time", e.target.value ? eventDateTimeToUtc(e.target.value) : "")}
+                       className={controlClassName}
+                     />
+                   </div>
+                   <div>
+                     <label className="text-[10px] font-semibold text-gray-600 mb-1.5 block">End Date & Time</label>
+                     <Input
+                       type="datetime-local"
+                       value={utcToEventDateTime(values.end_date_time)}
+                       onChange={(e) => updateField("end_date_time", e.target.value ? eventDateTimeToUtc(e.target.value) : "")}
+                       className={controlClassName}
+                     />
+                   </div>
+                 </div>
+                 <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 mt-3">
+                   <div className="flex flex-col gap-2">
+                     <div className="flex items-center gap-2">
+                       <Clock3 size={12} className="text-[#c49a22]" />
+                       <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Localized Time Preview</span>
+                     </div>
+                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                       <div className="flex flex-col">
+                         <span className="text-[10px] text-gray-400">Start</span>
+                         <span className="text-xs font-semibold text-[#1f2a44]">{formatDisplayDate(values.start_date_time) || "Not set"}</span>
+                       </div>
+                       <ChevronRight size={14} className="text-gray-300 mt-2" />
+                       <div className="flex flex-col">
+                         <span className="text-[10px] text-gray-400">End</span>
+                         <span className="text-xs font-semibold text-[#1f2a44]">{formatDisplayDate(values.end_date_time) || "Not set"}</span>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
                </div>
-               <p className="text-base font-semibold text-gray-600">No Booking Linked</p>
-               <p className="text-sm text-gray-400 mt-1 mb-6">Select an approved venue booking above to automatically load the schedule and location details.</p>
                {fieldErrors.start_date_time && <p className="text-xs text-red-500 mb-1">{fieldErrors.start_date_time.join(" ")}</p>}
+               {fieldErrors.end_date_time && <p className="text-xs text-red-500 mb-1">{fieldErrors.end_date_time.join(" ")}</p>}
                {fieldErrors.max_capacity && <p className="text-xs text-red-500">{fieldErrors.max_capacity.join(" ")}</p>}
             </div>
           )}

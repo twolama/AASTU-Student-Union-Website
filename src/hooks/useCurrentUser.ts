@@ -6,19 +6,27 @@ import { readCachedCurrentUser } from "@/lib/auth-cache";
 
 type UseCurrentUserOptions = {
   enabled?: boolean;
+  hydrateFromCache?: boolean;
+  staleTimeMs?: number;
+  refetchOnMount?: boolean | "always";
 };
 
 export function useCurrentUser(options?: UseCurrentUserOptions) {
+  const hydrateFromCache = options?.hydrateFromCache ?? true;
+
   return useQuery({
     queryKey: ["auth", "current-user"],
     queryFn: getCurrentUser,
     enabled: options?.enabled ?? true,
-    initialData: () => {
-      const cached = readCachedCurrentUser();
-      return cached?.data;
-    },
+    initialData: hydrateFromCache
+      ? () => {
+          const cached = readCachedCurrentUser();
+          return cached?.data;
+        }
+      : undefined,
     retry: false,
-    staleTime: 15 * 60_000,
+    staleTime: options?.staleTimeMs ?? 15 * 60_000,
+    refetchOnMount: options?.refetchOnMount ?? true,
     gcTime: 30 * 60_000,
   });
 }

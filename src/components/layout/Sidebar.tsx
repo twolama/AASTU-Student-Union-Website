@@ -175,7 +175,7 @@ function NavLink({ item, isCollapsed, isActive, onClick }: NavLinkProps) {
       {isCollapsed && isTooltipOpen && typeof document !== "undefined" &&
         createPortal(
           <span
-            className="pointer-events-none fixed z-[9999] -translate-y-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs text-white shadow-lg"
+            className="pointer-events-none fixed z-9999 -translate-y-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs text-white shadow-lg"
             style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
           >
             {item.label}

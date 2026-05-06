@@ -6,6 +6,7 @@ import { useClub, useClubUpcomingEvents } from "@/hooks/useClubs";
 import { Loader2 } from "lucide-react";
 import type { ClubDetailItem, ClubMemberProfile, ClubUpcomingEventItem } from "@/types/dashboard";
 import dayjs from "dayjs";
+import { formatEventDateParts, formatEventTimeRange } from "@/lib/events/datetime";
 
 export default function ClubDetailPage() {
   const params = useParams();
@@ -74,19 +75,18 @@ export default function ClubDetailPage() {
     ],
     upcomingEvents: (upcomingEventsData || []).map((ev: any) => {
       const startDateTime = ev.startDateTime || ev.start_date_time;
-      const dateDay = ev.dateDay || ev.date_day;
-      const dateMonth = ev.dateMonth || ev.date_month;
+      const endDateTime = ev.endDateTime || ev.end_date_time;
       const venueName = ev.venueName || ev.venue_name || ev.venue || ev.location;
 
-      const start = startDateTime ? dayjs(startDateTime) : null;
-      const timeLabel = start ? start.format("HH:mm") : "TBD";
+      const { day, month } = formatEventDateParts(startDateTime);
+      const timeRange = formatEventTimeRange(startDateTime, endDateTime);
 
       return {
         id: ev.id,
-        day: dateDay || (start ? start.format("DD") : "--"),
-        month: dateMonth || (start ? start.format("MMM") : "TBD"),
+        day,
+        month,
         title: ev.title,
-        timeVenue: `${timeLabel} @ ${venueName || "AASTU"}`,
+        timeVenue: `${timeRange} @ ${venueName || "AASTU"}`,
       };
     }),
     recentActivities: [],

@@ -11,6 +11,7 @@ import { useEvents } from "@/hooks/useEvents";
 import type { EventManagementItem, VenueOccupancyPoint, StatsTrendPoint } from "@/types/dashboard";
 import type { EventListItem } from "@/schemas/event.schema";
 import { Loader2 } from "lucide-react";
+import { formatEventDateParts, formatEventTimeRange } from "@/lib/events/datetime";
 
 type EventDistributionItem = {
   id: string;
@@ -36,8 +37,9 @@ function normalize(value: string) {
 }
 
 function formatEventRow(item: any): EventManagementItem {
-  const scheduleDate = item.date_month && item.date_day ? `${item.date_month} ${item.date_day}` : "TBD";
-  const scheduleTime = item.start_date_time && item.end_date_time ? `${new Date(item.start_date_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_date_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "TBD";
+  const { day, month } = formatEventDateParts(item.start_date_time);
+  const scheduleDate = day !== "--" ? `${month} ${day}` : "TBD";
+  const scheduleTime = formatEventTimeRange(item.start_date_time, item.end_date_time);
   const status = item.status === "live-now" || item.status === "upcoming" || item.status === "archived" ? item.status : item.status || "upcoming";
 
   return {
