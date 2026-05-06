@@ -261,8 +261,8 @@ export function EventEditor({ mode, eventId, initialValues }: EventEditorProps) 
           short_description: overwriteContent ? (booking.purpose ? (booking.purpose.length > 100 ? booking.purpose.substring(0, 97) + "..." : booking.purpose) : prev.short_description) : prev.short_description,
           physical_location_details: booking.venue_name || prev.physical_location_details,
           max_capacity: booking.expected_attendance || venueData?.maxCapacity || prev.max_capacity,
-          start_date_time: booking.start_date || prev.start_date_time,
-          end_date_time: booking.end_date || prev.end_date_time,
+          start_date_time: overwriteContent ? (booking.start_date || prev.start_date_time) : prev.start_date_time,
+          end_date_time: overwriteContent ? (booking.end_date || prev.end_date_time) : prev.end_date_time,
           logistics: {
             ...prevLogistics,
             venue: booking.venue_name,

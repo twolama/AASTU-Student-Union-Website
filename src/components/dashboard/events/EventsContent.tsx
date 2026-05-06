@@ -40,7 +40,7 @@ function formatEventRow(item: any): EventManagementItem {
   const { day, month } = formatEventDateParts(item.start_date_time);
   const scheduleDate = day !== "--" ? `${month} ${day}` : "TBD";
   const scheduleTime = formatEventTimeRange(item.start_date_time, item.end_date_time);
-  const status = item.status === "live-now" || item.status === "upcoming" || item.status === "archived" ? item.status : item.status || "upcoming";
+  const status = item.effectiveStatus || item.status || "upcoming";
 
   return {
     id: item.id,
